@@ -106,7 +106,7 @@ The project uses a comprehensive ESLint setup with:
 - **Console removal** in production builds
 - **Strict TypeScript** with path aliases (`@/*` → `./src/*`)
 - **Tailwind CSS v4** with custom component utilities
-- **Automatic redirects** from `/dashboard` to `/dashboard/default`
+- **Automatic redirects** from `/dashboard` to `/dashboard/home`
 
 ### Theme Development
 
