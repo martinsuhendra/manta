@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/command";
 
 const searchItems = [
-  { group: "Dashboards", icon: LayoutDashboard, label: "Default" },
+  { group: "Dashboards", icon: LayoutDashboard, label: "Home" },
   { group: "Dashboards", icon: ChartBar, label: "CRM", disabled: true },
   { group: "Dashboards", icon: Gauge, label: "Analytics", disabled: true },
   { group: "Dashboards", icon: ShoppingBag, label: "E-Commerce", disabled: true },

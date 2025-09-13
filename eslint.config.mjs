@@ -134,15 +134,6 @@ export default [
       // React unnecessary import rules
       "react/jsx-no-useless-fragment": ["warn", { allowExpressions: true }],
 
-      // React JSX Pascal Case Rule
-      "react/jsx-pascal-case": [
-        "error",
-        {
-          allowAllCaps: false,
-          ignore: [],
-        },
-      ],
-
       // React: Prevent nesting component definitions inside another component
       "react/no-unstable-nested-components": ["error", { allowAsProps: true }],
 

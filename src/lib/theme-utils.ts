@@ -6,7 +6,3 @@ export function updateThemeMode(value: "light" | "dark") {
     doc.classList.remove("disable-transitions");
   });
 }
-
-export function updateThemePreset(value: string) {
-  document.documentElement.setAttribute("data-theme-preset", value);
-}

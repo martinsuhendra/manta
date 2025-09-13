@@ -15,6 +15,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
 
+const ACCOUNT_MENU_ITEMS = [
+  {
+    icon: BadgeCheck,
+    label: "Account",
+  },
+  {
+    icon: CreditCard,
+    label: "Billing",
+  },
+  {
+    icon: Bell,
+    label: "Notifications",
+  },
+] as const;
+
+const LOGOUT_MENU_ITEM = {
+  icon: LogOut,
+  label: "Log out",
+} as const;
+
 export function AccountSwitcher({
   users,
 }: {
@@ -31,7 +51,7 @@ export function AccountSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="size-9 rounded-lg">
+        <Avatar className="size-9 cursor-pointer rounded-lg">
           <AvatarImage src={activeUser.avatar || undefined} alt={activeUser.name} />
           <AvatarFallback className="rounded-lg">{getInitials(activeUser.name)}</AvatarFallback>
         </Avatar>
@@ -57,23 +77,20 @@ export function AccountSwitcher({
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <BadgeCheck />
-            Account
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCard />
-            Billing
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Bell />
-            Notifications
-          </DropdownMenuItem>
+          {ACCOUNT_MENU_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <DropdownMenuItem key={item.label}>
+                <Icon />
+                {item.label}
+              </DropdownMenuItem>
+            );
+          })}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <LogOut />
-          Log out
+          <LOGOUT_MENU_ITEM.icon />
+          {LOGOUT_MENU_ITEM.label}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
