@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import { BadgeCheck, Bell, CreditCard, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,6 +49,12 @@ export function AccountSwitcher({
   }>;
 }) {
   const [activeUser, setActiveUser] = useState(users[0]);
+  const router = useRouter();
+
+  const handleLogout = () => {
+    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/auth/login");
+  };
 
   return (
     <DropdownMenu>
@@ -88,7 +96,7 @@ export function AccountSwitcher({
           })}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
           <LOGOUT_MENU_ITEM.icon />
           {LOGOUT_MENU_ITEM.label}
         </DropdownMenuItem>
