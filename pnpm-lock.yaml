@@ -35,6 +35,9 @@ importers:
       '@prisma/adapter-neon':
         specifier: ^6.10.1
         version: 6.16.1
+      '@prisma/client':
+        specifier: ^6.16.1
+        version: 6.16.1(prisma@6.16.1(typescript@5.9.2))(typescript@5.9.2)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.16
         version: 2.1.16(@types/react-dom@18.3.7(@types/react@18.3.24))(@types/react@18.3.24)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -132,9 +135,6 @@ importers:
       '@eslint/js':
         specifier: ^9.16.0
         version: 9.35.0
-      '@prisma/client':
-        specifier: ^6.16.1
-        version: 6.16.1(prisma@6.16.1(typescript@5.9.2))(typescript@5.9.2)
       '@tailwindcss/postcss':
         specifier: ^4.1.13
         version: 4.1.13
