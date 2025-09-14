@@ -19,20 +19,18 @@ type LayoutControlsProps = {
   readonly contentLayout: ContentLayout;
 };
 
-export function LayoutControls(props: LayoutControlsProps) {
-  const { variant, collapsible, contentLayout } = props;
-
+export function LayoutControls(_props: LayoutControlsProps) {
   const themeMode = usePreferencesStore((s) => s.themeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
 
-  const handleValueChange = async (key: string, value: any) => {
+  const handleValueChange = async (key: string, value: string) => {
     if (key === "theme_mode") {
-      updateThemeMode(value);
+      updateThemeMode(value as ThemeMode);
       setThemeMode(value as ThemeMode);
     }
 
     if (key === "content_layout") {
-      updateContentLayout(value);
+      updateContentLayout(value as ContentLayout);
     }
     await setValueToCookie(key, value);
   };

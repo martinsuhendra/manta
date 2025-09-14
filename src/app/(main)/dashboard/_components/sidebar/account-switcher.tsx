@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 
-import { useRouter } from "next/navigation";
-
 import { BadgeCheck, Bell, CreditCard, LogOut } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -41,19 +40,18 @@ export function AccountSwitcher({
   users,
 }: {
   readonly users: ReadonlyArray<{
-    readonly id: string;
     readonly name: string;
     readonly email: string;
     readonly avatar: string;
-    readonly role: string;
   }>;
 }) {
   const [activeUser, setActiveUser] = useState(users[0]);
-  const router = useRouter();
 
-  const handleLogout = () => {
-    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: "/sign-in",
+      redirect: true,
+    });
   };
 
   return (
@@ -65,10 +63,10 @@ export function AccountSwitcher({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-56 space-y-1 rounded-lg" side="bottom" align="end" sideOffset={4}>
-        {users.map((user) => (
+        {users.map((user, index) => (
           <DropdownMenuItem
             key={user.email}
-            className={cn("p-0", user.id === activeUser.id && "bg-accent/50 border-l-primary border-l-2")}
+            className={cn("p-0", index === 0 && "bg-accent/50 border-l-primary border-l-2")}
             onClick={() => setActiveUser(user)}
           >
             <div className="flex w-full items-center justify-between gap-2 px-1 py-1.5">
@@ -78,7 +76,7 @@ export function AccountSwitcher({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs capitalize">{user.role}</span>
+                <span className="truncate text-xs">{user.email}</span>
               </div>
             </div>
           </DropdownMenuItem>

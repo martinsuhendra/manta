@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { auth } from "@/auth";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { users } from "@/data/users";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -23,6 +24,12 @@ import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
+  const session = await auth();
+
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
@@ -32,6 +39,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
   ]);
 
+  const currentUser = {
+    name: session.user.name ?? "Unknown User",
+    email: session.user.email ?? "",
+    avatar: session.user.image ?? "",
+  };
+
   const layoutPreferences = {
     contentLayout,
     variant: sidebarVariant,
@@ -40,7 +53,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar user={currentUser} variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -60,7 +73,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-2">
               <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
-              <AccountSwitcher users={users} />
+              <AccountSwitcher users={[currentUser]} />
             </div>
           </div>
         </header>

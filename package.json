@@ -18,6 +18,10 @@
     ]
   },
   "dependencies": {
+    "@auth/core": "latest",
+    "@auth/prisma-adapter": "^2.10.0",
+    "@neondatabase/serverless": "^1.0.1",
+    "@prisma/adapter-neon": "^6.10.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -27,6 +31,8 @@
     "@tanstack/react-query": "^5.87.4",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.11.0",
+    "bcrypt-ts-edge": "latest",
+    "bcryptjs": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -36,6 +42,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.453.0",
     "next": "^15.5.3",
+    "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
     "react": "^19.1.1",
@@ -52,6 +59,8 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "prisma": "^6.16.1",
+    "@prisma/client": "^6.16.1",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.16.0",
     "@tailwindcss/postcss": "^4.1.13",

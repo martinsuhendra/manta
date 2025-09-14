@@ -3,10 +3,9 @@ import { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 
-import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/components/providers";
 import { APP_CONFIG } from "@/config/app-config";
 import { getPreference } from "@/server/server-actions";
-import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 import { THEME_MODE_VALUES, type ThemeMode } from "@/types/preferences/theme";
 
 import "./globals.css";
@@ -24,10 +23,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" className={themeMode === "dark" ? "dark" : ""} suppressHydrationWarning>
       <body className={`${outfit.className} min-h-screen antialiased`}>
-        <PreferencesStoreProvider themeMode={themeMode}>
-          {children}
-          <Toaster />
-        </PreferencesStoreProvider>
+        <Providers themeMode={themeMode}>{children}</Providers>
       </body>
     </html>
   );

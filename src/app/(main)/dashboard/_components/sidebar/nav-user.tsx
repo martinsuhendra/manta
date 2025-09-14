@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 import { EllipsisVertical, CircleUser, CreditCard, MessageSquareDot, LogOut } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,11 +26,12 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
 
-  const handleLogout = () => {
-    document.cookie = "auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: "/sign-in",
+      redirect: true,
+    });
   };
 
   return (
