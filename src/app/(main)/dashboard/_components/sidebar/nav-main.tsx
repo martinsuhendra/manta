@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ChevronRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -143,6 +144,22 @@ const NavItemCollapsed = ({
 export function NavMain({ items }: NavMainProps) {
   const path = usePathname();
   const { state, isMobile } = useSidebar();
+  const { data: session } = useSession();
+
+  const userRole = session?.user?.role;
+
+  // Filter items based on user role
+  const filteredItems = items
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (!item.requiredRoles || item.requiredRoles.length === 0) {
+          return true; // No role requirement, show to all
+        }
+        return userRole && item.requiredRoles.includes(userRole);
+      }),
+    }))
+    .filter((group) => group.items.length > 0); // Remove empty groups
 
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
     if (subItems?.length) {
@@ -157,7 +174,7 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      {items.map((group) => (
+      {filteredItems.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">

@@ -117,7 +117,7 @@ export default [
       "computed-property-spacing": ["error", "never"],
 
       // Naming Conventions
-      "no-underscore-dangle": ["error", { allow: ["_id", "__dirname"] }],
+      "no-underscore-dangle": ["error", { allow: ["_id", "_count", "__dirname"] }],
 
       // Complexity
       complexity: ["error", { max: 10 }],
