@@ -13,6 +13,7 @@ import { DeleteUserDialog } from "./delete-user-dialog";
 import { EditUserDialog } from "./edit-user-dialog";
 import { RoleFilter } from "./role-filter";
 import { User } from "./schema";
+import { UsersSearch } from "./users-search";
 import { UsersTableSkeleton } from "./users-table-skeleton";
 import { ViewProfileDialog } from "./view-profile-dialog";
 
@@ -80,10 +81,15 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <UsersSearch
+            value={table.getState().globalFilter ?? ""}
+            onChange={(value) => table.setGlobalFilter(value)}
+            placeholder="Search by name, email, or phone..."
+          />
           <RoleFilter selectedRole={selectedRole} onRoleChange={setSelectedRole} />
         </div>
         <div className="text-muted-foreground text-sm">
-          {filteredData.length} of {data.length} user(s)
+          {table.getFilteredRowModel().rows.length} of {data.length} user(s)
         </div>
       </div>
 

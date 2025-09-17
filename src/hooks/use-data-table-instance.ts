@@ -34,6 +34,7 @@ export function useDataTableInstance<TData, TValue>({
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: defaultPageIndex ?? 0,
@@ -48,13 +49,16 @@ export function useDataTableInstance<TData, TValue>({
       columnVisibility,
       rowSelection,
       columnFilters,
+      globalFilter,
       pagination,
     },
     enableRowSelection,
+    enableGlobalFilter: true,
     getRowId: getRowId ?? ((row) => (row as any).id.toString()),
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
@@ -63,6 +67,15 @@ export function useDataTableInstance<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    globalFilterFn: (row, _columnId, value) => {
+      const search = value.toLowerCase();
+      const rowData = row.original as any;
+      const name = rowData.name?.toLowerCase() || "";
+      const email = rowData.email?.toLowerCase() || "";
+      const phoneNo = rowData.phoneNo?.toLowerCase() || "";
+
+      return name.includes(search) || email.includes(search) || phoneNo.includes(search);
+    },
   });
 
   return table;
