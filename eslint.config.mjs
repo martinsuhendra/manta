@@ -16,7 +16,18 @@ const compat = new FlatCompat({
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
-  { ignores: [".github/", ".husky/", "node_modules/", ".next/", "src/components/ui", "*.config.ts", "*.mjs"] },
+  { ignores: [
+    ".github/", 
+    ".husky/", 
+    "node_modules/", 
+    ".next/", 
+    "src/components/ui", 
+    "*.config.ts", 
+    "*.mjs", 
+    "next-env.d.ts",
+    "src/lib/generated/**/*",
+    "prisma/migrations/**/*"
+  ] },
   {
     languageOptions: {
       globals: globals.browser,
@@ -145,6 +156,7 @@ export default [
 
       // SonarJS: Detect commented-out code
       "sonarjs/no-commented-code": "warn",
+
     },
   },
 ];
