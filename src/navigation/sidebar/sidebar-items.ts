@@ -14,6 +14,8 @@ import {
   Banknote,
   Gauge,
   GraduationCap,
+  Package,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 
@@ -129,6 +131,19 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
         comingSoon: false,
         requiredRoles: ["ADMIN", "SUPERADMIN"],
+      },
+      {
+        title: "Products",
+        url: "/dashboard/products",
+        icon: Package,
+        comingSoon: false,
+        requiredRoles: ["SUPERADMIN"],
+      },
+      {
+        title: "My Memberships",
+        url: "/dashboard/memberships",
+        icon: CreditCard,
+        comingSoon: false,
       },
       // {
       //   title: "Roles",

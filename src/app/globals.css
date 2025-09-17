@@ -174,3 +174,59 @@
 .disable-transitions * {
   transition: none !important;
 }
+
+/* Rich text content styles */
+.prose ul {
+  list-style-type: disc !important;
+  margin-left: 0.75rem !important;
+  padding-left: 0.5rem !important;
+}
+
+.prose ol {
+  list-style-type: decimal !important;
+  margin-left: 0.75rem !important;
+  padding-left: 0.5rem !important;
+}
+
+.prose li {
+  margin-left: 0 !important;
+  padding-left: 0.125rem !important;
+  display: list-item !important;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  font-weight: 600 !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.prose h1 {
+  font-size: 1.25rem !important;
+}
+
+.prose h2 {
+  font-size: 1.125rem !important;
+}
+
+.prose h3 {
+  font-size: 1rem !important;
+}
+
+.prose p {
+  margin-bottom: 0.5rem !important;
+}
+
+.prose strong {
+  font-weight: 600 !important;
+}
+
+.prose em {
+  font-style: italic !important;
+}
+
+.prose a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline !important;
+}

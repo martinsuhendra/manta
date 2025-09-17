@@ -1,0 +1,31 @@
+"use client";
+
+import { RoleGuard } from "@/components/role-guard";
+import { useProducts } from "@/hooks/use-products-query";
+
+import { ProductsTable } from "./_components/products-table";
+
+export default function Page() {
+  const { data: products, isLoading, error } = useProducts();
+
+  if (error) throw new Error(error.message);
+
+  // Don't render until we have stable data
+  if (isLoading || !products) {
+    return (
+      <RoleGuard allowedRoles={["SUPERADMIN"]}>
+        <div className="@container/main flex flex-col gap-4 md:gap-6">
+          <ProductsTable data={[]} isLoading={true} />
+        </div>
+      </RoleGuard>
+    );
+  }
+
+  return (
+    <RoleGuard allowedRoles={["SUPERADMIN"]}>
+      <div className="@container/main flex flex-col gap-4 md:gap-6">
+        <ProductsTable data={products} isLoading={false} />
+      </div>
+    </RoleGuard>
+  );
+}

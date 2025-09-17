@@ -88,24 +88,44 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model Product {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  validDays     Int      @map("valid_days")
+  quota         Int
+  isActive      Boolean  @default(true) @map("is_active")
+  features      String[] @default([])
+  image         String?
+  paymentUrl    String?  @map("payment_url")
+  whatIsIncluded String? @map("what_is_included")
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  memberships   Membership[]
+
+  @@map("products")
+}
+
 model Membership {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  licenseCode     String   @unique @map("license_code")
-  userId          String   @map("user_id") @db.Uuid
-  status          String
-  useCount        Int      @default(0) @map("use_count")
-  joinDate        DateTime @default(now()) @map("join_date") @db.Timestamp(6)
-  expiredAt       DateTime @map("expired_at") @db.Timestamp(6)
-  transactionId   String?  @map("transaction_id")
-  productId       String?  @map("product_id")
-  productName     String?  @map("product_name")
-  customerName    String?  @map("customer_name")
-  customerEmail   String?  @map("customer_email")
-  activationLimit String      @map("activation_limit")
-  createdAt       DateTime @default(now()) @db.Timestamp(6)
-  updatedAt       DateTime @updatedAt @db.Timestamp(6)
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  licenseCode       String            @unique @map("license_code")
+  userId            String            @map("user_id") @db.Uuid
+  productId           String         @map("product_id") @db.Uuid
+  status            String            @default("ACTIVE")
+  useCount          Int               @default(0) @map("use_count")
+  remainingQuota    Int               @map("remaining_quota")
+  joinDate          DateTime          @default(now()) @map("join_date") @db.Timestamp(6)
+  expiredAt         DateTime          @map("expired_at") @db.Timestamp(6)
+  transactionId     String?           @map("transaction_id")
+  customerName      String?           @map("customer_name")
+  customerEmail     String?           @map("customer_email")
+  createdAt         DateTime          @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime          @updatedAt @db.Timestamp(6)
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("memberships")
 }

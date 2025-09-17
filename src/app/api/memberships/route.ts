@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+
+import { authOptions } from "@/auth";
+import { prisma } from "@/lib/generated/prisma";
+
+const purchaseMembershipSchema = z.object({
+  productId: z.string().uuid("Invalid product ID"),
+  transactionId: z.string().optional(),
+  customerName: z.string().optional(),
+  customerEmail: z.string().email().optional(),
+});
+
+function generateLicenseCode(): string {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `PIL-${timestamp}-${randomStr}`;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    let whereCondition = {};
+
+    if (userId && session.user.role === "SUPERADMIN") {
+      whereCondition = { userId };
+    } else {
+      whereCondition = { userId: session.user.id };
+    }
+
+    const memberships = await prisma.membership.findMany({
+      where: whereCondition,
+      include: {
+        product: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(memberships);
+  } catch (error) {
+    console.error("Failed to fetch memberships:", error);
+    return NextResponse.json({ error: "Failed to fetch memberships" }, { status: 500 });
+  }
+}
+
+async function validatePurchaseRequest(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { error: "Unauthorized", status: 401 };
+  }
+
+  const body = await request.json();
+  const validatedData = purchaseMembershipSchema.parse(body);
+  return { session, validatedData };
+}
+
+async function validateProduct(productId: string) {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+  });
+
+  if (!product) {
+    return { error: "Product not found", status: 404 };
+  }
+
+  if (!product.isActive) {
+    return { error: "Product is not available", status: 400 };
+  }
+
+  return { product };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const validation = await validatePurchaseRequest(request);
+    if ("error" in validation) {
+      return NextResponse.json({ error: validation.error }, { status: validation.status });
+    }
+
+    const { session, validatedData } = validation;
+
+    const productValidation = await validateProduct(validatedData.productId);
+    if ("error" in productValidation) {
+      return NextResponse.json({ error: productValidation.error }, { status: productValidation.status });
+    }
+
+    const { product } = productValidation;
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    const expiredAt = new Date();
+    expiredAt.setDate(expiredAt.getDate() + product.validDays);
+
+    const membership = await prisma.membership.create({
+      data: {
+        licenseCode: generateLicenseCode(),
+        userId: session.user.id,
+        productId: validatedData.productId,
+        remainingQuota: product.quota,
+        expiredAt,
+        transactionId: validatedData.transactionId,
+        customerName: validatedData.customerName || user?.name,
+        customerEmail: validatedData.customerEmail || user?.email,
+      },
+      include: {
+        product: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(membership, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
+    }
+
+    console.error("Failed to purchase membership:", error);
+    return NextResponse.json({ error: "Failed to purchase membership" }, { status: 500 });
+  }
+}
