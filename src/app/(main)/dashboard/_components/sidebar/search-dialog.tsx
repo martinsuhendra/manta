@@ -1,7 +1,9 @@
 "use client";
 import * as React from "react";
 
-import { LayoutDashboard, ChartBar, Gauge, ShoppingBag, GraduationCap, Forklift, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,18 +15,40 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
-const searchItems = [
-  { group: "Dashboards", icon: LayoutDashboard, label: "Home" },
-  { group: "Dashboards", icon: ChartBar, label: "CRM", disabled: true },
-  { group: "Dashboards", icon: Gauge, label: "Analytics", disabled: true },
-  { group: "Dashboards", icon: ShoppingBag, label: "E-Commerce", disabled: true },
-  { group: "Dashboards", icon: GraduationCap, label: "Academy", disabled: true },
-  { group: "Dashboards", icon: Forklift, label: "Logistics", disabled: true },
-];
+// Transform sidebar items into search items
+const getSearchItems = () => {
+  const searchItems: Array<{
+    group: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    url: string;
+    disabled: boolean;
+  }> = [];
+
+  sidebarItems.forEach((group) => {
+    group.items.forEach((item) => {
+      if (item.icon) {
+        searchItems.push({
+          group: group.label || "Other",
+          icon: item.icon,
+          label: item.title,
+          url: item.url,
+          disabled: item.comingSoon || false,
+        });
+      }
+    });
+  });
+
+  return searchItems;
+};
 
 export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
+  const searchItems = React.useMemo(() => getSearchItems(), []);
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
@@ -35,6 +59,13 @@ export function SearchDialog() {
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
   }, []);
+
+  const handleSelect = (item: { url: string; disabled: boolean }) => {
+    if (!item.disabled) {
+      router.push(item.url);
+    }
+    setOpen(false);
+  };
 
   return (
     <>
@@ -60,9 +91,15 @@ export function SearchDialog() {
                 {searchItems
                   .filter((item) => item.group === group)
                   .map((item) => (
-                    <CommandItem className="!py-1.5" key={item.label} onSelect={() => setOpen(false)}>
+                    <CommandItem
+                      className="cursor-pointer !py-1.5"
+                      key={item.label}
+                      onSelect={() => handleSelect(item)}
+                      disabled={item.disabled}
+                    >
                       <item.icon />
-                      <span>{item.label}</span>
+                      <span className={item.disabled ? "text-muted-foreground" : ""}>{item.label}</span>
+                      {item.disabled && <span className="text-muted-foreground ml-auto text-xs">Coming Soon</span>}
                     </CommandItem>
                   ))}
               </CommandGroup>

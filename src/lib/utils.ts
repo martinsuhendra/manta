@@ -40,3 +40,25 @@ export function formatCurrency(
 
   return new Intl.NumberFormat(locale, formatOptions).format(amount);
 }
+
+// ============================================================================
+// SECURITY UTILITIES
+// ============================================================================
+
+/**
+ * Escapes HTML characters to prevent XSS attacks
+ * @param text - The text to escape
+ * @returns HTML-escaped text
+ */
+export function escapeHtml(text: string): string {
+  const htmlEscapes: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "/": "&#x2F;",
+  };
+
+  return text.replace(/[&<>"'/]/g, (match) => htmlEscapes[match] || match);
+}

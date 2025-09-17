@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -24,7 +25,6 @@ const FormSchema = z.object({
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -120,6 +120,11 @@ export function LoginForm() {
         <Button className="w-full" type="submit" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Login"}
         </Button>
+        <div className="text-center">
+          <Link href="/forgot-password" className="muted-foreground hover:text-primary text-sm">
+            Forgot your password?
+          </Link>
+        </div>
       </form>
     </Form>
   );

@@ -48,7 +48,6 @@ model User {
   image         String?
   password      String?
   role          String    @default("MEMBER")
-  paymentMethod String?
   createdAt     DateTime  @default(now()) @db.Timestamp(6)
   updatedAt     DateTime  @updatedAt @db.Timestamp(6)
   licenseKey    String?

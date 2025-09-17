@@ -1,0 +1,83 @@
+import { EmailTemplate, baseStyles } from "./base";
+
+export function createPaymentSuccessPasswordResetTemplate(resetUrl: string, customerName?: string): EmailTemplate {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      ${baseStyles}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1 class="logo">Bodhi Studio Pilates</h1>
+        </div>
+        <div class="content">
+          <h2>✅ Payment Successful - Account Activation Required</h2>
+          <p>Congratulations${customerName ? `, ${customerName}` : ""}! Thank you for your trust in using Bodhi Studio Pilates services.</p>
+          
+          <div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="color: #15803d; font-weight: 600; margin: 0;">💰 Your payment has been successfully processed</p>
+          </div>
+          
+          <p>To use Bodhi Studio Pilates services, you need to set up a password for your account first. Please click the button below to create your password:</p>
+          
+          <a href="${resetUrl}" class="button">Create Account Password</a>
+          
+          <p><strong>Why do you need to set up a password?</strong></p>
+          <ul>
+            <li>🔒 Protect your account and data securely</li>
+            <li>📱 Easy access to Bodhi Studio Pilates dashboard</li>
+            <li>📊 Manage your receipts and financial reports</li>
+            <li>⚡ Use AI features for automatic scanning</li>
+          </ul>
+          
+          <p style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0;">
+            <strong>Important:</strong> This link will expire in 24 hours. Please set up your password immediately to start using the service.
+          </p>
+          
+          <p>If you experience any issues or have questions, our customer support team is ready to help you.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; 2025 Bodhi Studio Pilates. All rights reserved.</p>
+          <p>This is an automated email related to payment and account activation.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    ✅ Payment Successful - Bodhi Studio Pilates Account Activation
+
+    Congratulations${customerName ? `, ${customerName}` : ""}! Thank you for your trust in using Bodhi Studio Pilates services.
+
+    💰 PAYMENT SUCCESSFUL
+    Your payment has been successfully processed.
+
+    CREATE ACCOUNT PASSWORD
+    To use Bodhi Studio Pilates services, you need to set up a password for your account first.
+
+    Visit this link to create your password: ${resetUrl}
+
+    WHY DO YOU NEED TO SET UP A PASSWORD?
+    • Protect your account and data securely
+    • Easy access to Bodhi Studio Pilates dashboard
+    • Manage your receipts and financial reports
+    • Use AI features for automatic scanning
+
+    IMPORTANT: This link will expire in 24 hours. Please set up your password immediately to start using the service.
+
+    If you experience any issues or have questions, our customer support team is ready to help you.
+
+    ---
+    © 2025 Bodhi Studio Pilates. All rights reserved.
+    This is an automated email related to payment and account activation.
+  `;
+
+  return {
+    subject: "✅ Payment Successful - Create Your Bodhi Studio Pilates Account Password",
+    html,
+    text,
+  };
+}
