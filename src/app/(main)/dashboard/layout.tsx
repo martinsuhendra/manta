@@ -56,11 +56,13 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       <AppSidebar user={currentUser} variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
+        style={{ width: "100%", maxWidth: "none" }}
         className={cn(
           "data-[content-layout=centered]:!mx-auto data-[content-layout=centered]:max-w-screen-2xl",
-          // Adds right margin for inset sidebar in centered layout up to 113rem.
-          // On wider screens with collapsed sidebar, removes margin and sets margin auto for alignment.
-          "max-[113rem]:peer-data-[variant=inset]:!mr-2 min-[101rem]:peer-data-[variant=inset]:peer-data-[state=collapsed]:!mr-auto",
+          // Fix gap issue while maintaining full width
+          "peer-data-[variant=inset]:!ml-0 peer-data-[variant=inset]:peer-data-[state=collapsed]:!ml-0",
+          // Force full width by overriding all constraints
+          "!w-full !max-w-none !min-w-0 !flex-1",
         )}
       >
         <header className="flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -77,7 +79,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
           </div>
         </header>
-        <div className="h-full p-4 md:p-6">{children}</div>
+        <div className="h-full w-full px-4 py-4 md:px-6 md:py-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
