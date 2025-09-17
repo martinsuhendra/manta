@@ -7,7 +7,7 @@ import { User, Mail, Phone, Calendar, Shield } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { USER_ROLE_LABELS } from "@/lib/types";
+import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { User as UserType } from "./schema";
 
@@ -19,21 +19,6 @@ interface ViewProfileDialogProps {
 
 export function ViewProfileDialog({ user, open, onOpenChange }: ViewProfileDialogProps) {
   if (!user) return null;
-
-  const getRoleVariant = (role: string) => {
-    switch (role) {
-      case "SUPERADMIN":
-        return "destructive";
-      case "ADMIN":
-        return "default";
-      case "TEACHER":
-        return "secondary";
-      case "MEMBER":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

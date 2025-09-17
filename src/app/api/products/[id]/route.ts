@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { USER_ROLES } from "@/lib/types";
 
 const updateProductSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
@@ -62,7 +63,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       select: { role: true },
     });
 
-    if (user?.role !== "SUPERADMIN") {
+    if (user?.role !== USER_ROLES.SUPERADMIN) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -99,7 +100,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       select: { role: true },
     });
 
-    if (user?.role !== "SUPERADMIN") {
+    if (user?.role !== USER_ROLES.SUPERADMIN) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

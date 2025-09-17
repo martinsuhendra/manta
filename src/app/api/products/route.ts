@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { USER_ROLES } from "@/lib/types";
 
 const createProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       select: { role: true },
     });
 
-    if (user?.role !== "SUPERADMIN") {
+    if (user?.role !== USER_ROLES.SUPERADMIN) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

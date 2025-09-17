@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { USER_ROLES } from "@/lib/types";
 
 const purchaseMembershipSchema = z.object({
   productId: z.string().uuid("Invalid product ID"),
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     let whereCondition = {};
 
-    if (userId && session.user.role === "SUPERADMIN") {
+    if (userId && session.user.role === USER_ROLES.SUPERADMIN) {
       whereCondition = { userId };
     } else {
       whereCondition = { userId: session.user.id };

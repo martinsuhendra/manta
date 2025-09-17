@@ -19,6 +19,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { USER_ROLES } from "@/lib/types";
+
 export interface NavSubItem {
   title: string;
   url: string;
@@ -65,79 +67,25 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/finance",
         icon: Banknote,
       },
-      // {
-      //   title: "Analytics",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Gauge,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "E-commerce",
-      //   url: "/dashboard/coming-soon",
-      //   icon: ShoppingBag,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Academy",
-      //   url: "/dashboard/coming-soon",
-      //   icon: GraduationCap,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Logistics",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Forklift,
-      //   comingSoon: true,
-      // },
     ],
   },
   {
     id: 2,
     label: "Pages",
     items: [
-      // {
-      //   title: "Email",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Mail,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Chat",
-      //   url: "/dashboard/coming-soon",
-      //   icon: MessageSquare,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Calendar",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Calendar,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Kanban",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Kanban,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Invoice",
-      //   url: "/dashboard/coming-soon",
-      //   icon: ReceiptText,
-      //   comingSoon: true,
-      // },
       {
         title: "Users",
         url: "/dashboard/users",
         icon: Users,
         comingSoon: false,
-        requiredRoles: ["ADMIN", "SUPERADMIN"],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
       },
       {
         title: "Products",
         url: "/dashboard/products",
         icon: Package,
         comingSoon: false,
-        requiredRoles: ["SUPERADMIN"],
+        requiredRoles: [USER_ROLES.SUPERADMIN],
       },
       {
         title: "My Memberships",
@@ -145,24 +93,6 @@ export const sidebarItems: NavGroup[] = [
         icon: CreditCard,
         comingSoon: false,
       },
-      // {
-      //   title: "Roles",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Lock,
-      //   comingSoon: true,
-      // },
     ],
   },
-  // {
-  //   id: 3,
-  //   label: "Misc",
-  //   items: [
-  //     {
-  //       title: "Others",
-  //       url: "/dashboard/coming-soon",
-  //       icon: SquareArrowUpRight,
-  //       comingSoon: true,
-  //     },
-  //   ],
-  // },
 ];

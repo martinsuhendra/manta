@@ -8,14 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { USER_ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const roles = [
   { value: "all", label: "All Roles" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "SUPERADMIN", label: "Super Admin" },
-  { value: "TEACHER", label: "Teacher" },
-  { value: "MEMBER", label: "Member" },
+  { value: USER_ROLES.ADMIN, label: "Admin" },
+  { value: USER_ROLES.SUPERADMIN, label: "Super Admin" },
+  { value: USER_ROLES.TEACHER, label: "Teacher" },
+  { value: USER_ROLES.MEMBER, label: "Member" },
 ];
 
 interface RoleFilterProps {

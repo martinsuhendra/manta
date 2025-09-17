@@ -56,13 +56,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       <AppSidebar user={currentUser} variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
-        style={{ width: "100%", maxWidth: "none" }}
         className={cn(
-          "data-[content-layout=centered]:!mx-auto data-[content-layout=centered]:max-w-screen-2xl",
-          // Fix gap issue while maintaining full width
-          "peer-data-[variant=inset]:!ml-0 peer-data-[variant=inset]:peer-data-[state=collapsed]:!ml-0",
-          // Force full width by overriding all constraints
-          "!w-full !max-w-none !min-w-0 !flex-1",
+          "data-[content-layout=centered]:mx-auto data-[content-layout=centered]:max-w-full",
+          "data-[content-layout=full]:max-w-none",
+          // Fix gap issue while maintaining proper width constraints
+          "peer-data-[variant=inset]:ml-0 peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-0",
+          "w-full min-w-0 flex-1",
         )}
       >
         <header className="flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">

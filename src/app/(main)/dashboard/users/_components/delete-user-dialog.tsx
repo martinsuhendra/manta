@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useDeleteUser } from "@/hooks/use-users-query";
-import { USER_ROLES, UserRole, USER_ROLE_LABELS } from "@/lib/types";
+import { USER_ROLES, USER_ROLE_LABELS, UserRole, getRoleVariant } from "@/lib/types";
 
 import { User } from "./schema";
 
@@ -25,21 +25,6 @@ interface DeleteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const getRoleVariant = (role: string) => {
-  switch (role) {
-    case "SUPERADMIN":
-      return "destructive";
-    case "ADMIN":
-      return "default";
-    case "TEACHER":
-      return "secondary";
-    case "MEMBER":
-      return "outline";
-    default:
-      return "outline";
-  }
-};
 
 const useDeletePermissions = (user: User | null, session: any) => {
   const currentUserRole = session?.user.role as UserRole;

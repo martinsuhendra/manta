@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
@@ -74,39 +75,9 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
     cell: ({ row }) => {
       const role = row.original.role;
 
-      // Define role styling
-      const getRoleVariant = (role: string) => {
-        switch (role) {
-          case "SUPERADMIN":
-            return "destructive";
-          case "ADMIN":
-            return "default";
-          case "TEACHER":
-            return "secondary";
-          case "MEMBER":
-            return "outline";
-          default:
-            return "outline";
-        }
-      };
-
-      // Format role display text
-      const getRoleLabel = (role: string) => {
-        switch (role) {
-          case "SUPERADMIN":
-            return "Super Admin";
-          case "ADMIN":
-            return "Admin";
-          case "TEACHER":
-            return "Teacher";
-          case "MEMBER":
-            return "Member";
-          default:
-            return role;
-        }
-      };
-
-      return <Badge variant={getRoleVariant(role)}>{getRoleLabel(role)}</Badge>;
+      return (
+        <Badge variant={getRoleVariant(role)}>{USER_ROLE_LABELS[role as keyof typeof USER_ROLE_LABELS] || role}</Badge>
+      );
     },
   },
   {
