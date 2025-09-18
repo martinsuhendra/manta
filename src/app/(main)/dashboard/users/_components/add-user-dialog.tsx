@@ -39,7 +39,7 @@ export function AddUserDialog() {
   const createUser = useCreateUser();
   const { data: session } = useSession();
 
-  const currentUserRole = session?.user.role as UserRole;
+  const currentUserRole = session?.user.role;
   const canCreateSuperAdmin = currentUserRole === USER_ROLES.SUPERADMIN;
 
   const form = useForm<FormData>({
@@ -126,11 +126,14 @@ export function AddUserDialog() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {getAvailableRoles().map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {USER_ROLE_LABELS[role]}
-                        </SelectItem>
-                      ))}
+                      {getAvailableRoles().map((role) => {
+                        const label = Object.entries(USER_ROLE_LABELS).find(([key]) => key === role)?.[1] || role;
+                        return (
+                          <SelectItem key={role} value={role}>
+                            {label}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -26,8 +26,8 @@ export function ProductsTableSkeleton() {
 
       <div className="overflow-hidden rounded-lg border">
         <div className="space-y-2 p-4">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="flex items-center gap-4">
+          {Array.from({ length: 5 }, (_, index) => `skeleton-${index}`).map((skeletonKey) => (
+            <div key={skeletonKey} className="flex items-center gap-4">
               <Skeleton className="h-4 w-4" />
               <Skeleton className="h-4 w-48" />
               <Skeleton className="h-4 w-20" />

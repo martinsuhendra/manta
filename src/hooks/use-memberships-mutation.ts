@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
 interface PurchaseMembershipData {
@@ -24,8 +24,8 @@ export function usePurchaseMembership() {
       queryClient.invalidateQueries({ queryKey: ["memberships"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to purchase membership");
+    onError: (error: AxiosError<{ error: string }>) => {
+      toast.error(error.response?.data.error || "Failed to purchase membership");
     },
   });
 }

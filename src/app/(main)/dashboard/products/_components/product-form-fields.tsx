@@ -1,5 +1,7 @@
 "use client";
 
+import { UseFormReturn } from "react-hook-form";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -8,11 +10,23 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Textarea } from "@/components/ui/textarea";
 
+interface FormData {
+  name: string;
+  description?: string;
+  price: number;
+  validDays: number;
+  quota: number;
+  image?: string;
+  paymentUrl?: string;
+  whatIsIncluded?: string;
+  isActive: boolean;
+}
+
 interface ProductFormFieldsProps {
-  form: any;
-  mutation: any;
+  form: UseFormReturn<FormData>;
+  mutation: { isPending: boolean };
   isEdit: boolean;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: FormData) => void;
   onCancel: () => void;
 }
 

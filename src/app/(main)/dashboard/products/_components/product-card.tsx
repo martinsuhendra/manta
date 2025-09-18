@@ -2,20 +2,8 @@
 
 import * as React from "react";
 
-import Image from "next/image";
-
 import { format } from "date-fns";
-import {
-  Banknote,
-  Calendar,
-  Clock,
-  ExternalLink,
-  MoreVertical,
-  Package,
-  ChevronDown,
-  ChevronUp,
-  Users,
-} from "lucide-react";
+import { Calendar, ExternalLink, MoreVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { ProductCardImage } from "./product-card-image";
+import { ProductCardIncludes } from "./product-card-includes";
+import { ProductCardStats } from "./product-card-stats";
 import { Product } from "./schema";
 
 interface ProductData {
@@ -92,78 +83,6 @@ function ProductCardHeader({
         )}
       </div>
     </CardHeader>
-  );
-}
-function ProductCardImage({ data }: { data: ProductData }) {
-  return (
-    <div className="bg-muted relative mb-4 aspect-video overflow-hidden rounded-lg border">
-      {data.image ? (
-        <Image src={data.image} alt={data.name} fill className="object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <Package className="text-muted-foreground h-12 w-12" />
-        </div>
-      )}
-    </div>
-  );
-}
-function ProductCardStats({ data }: { data: ProductData }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2">
-        <Banknote className="text-muted-foreground h-4 w-4" />
-        <span className="font-semibold">Rp {Number(data.price || 0).toLocaleString("id-ID")}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Users className="text-muted-foreground h-4 w-4" />
-        <span className="font-semibold">{data.quota}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Clock className="text-muted-foreground h-4 w-4" />
-        <span>{data.validDays} days</span>
-      </div>
-    </div>
-  );
-}
-function ProductCardIncludes({
-  data,
-  isPreview,
-  isExpanded,
-  setIsExpanded,
-}: {
-  data: ProductData;
-  isPreview: boolean;
-  isExpanded: boolean;
-  setIsExpanded: (expanded: boolean) => void;
-}) {
-  if (!data.whatIsIncluded) return null;
-
-  const contentClasses =
-    "text-muted-foreground prose prose-sm max-w-none text-sm [&_li]:ml-0 [&_ol]:ml-3 [&_ol]:list-decimal [&_ul]:ml-3 [&_ul]:list-disc";
-  const content = <div className={contentClasses} dangerouslySetInnerHTML={{ __html: data.whatIsIncluded }} />;
-
-  return (
-    <div className="mt-4 border-t pt-4">
-      {isPreview ? (
-        <>
-          <h4 className="mb-2 text-sm font-medium">What&apos;s Included?</h4>
-          {content}
-        </>
-      ) : (
-        <>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-2 h-auto justify-between p-0 text-sm font-medium hover:bg-transparent"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            What&apos;s Included?
-            {isExpanded ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
-          </Button>
-          {isExpanded && content}
-        </>
-      )}
-    </div>
   );
 }
 function ProductCardFeatures({ product }: { product?: Product | null }) {

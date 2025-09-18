@@ -51,14 +51,14 @@ export function formatCurrency(
  * @returns HTML-escaped text
  */
 export function escapeHtml(text: string): string {
-  const htmlEscapes: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#x27;",
-    "/": "&#x2F;",
-  };
+  const htmlEscapes = new Map([
+    ["&", "&amp;"],
+    ["<", "&lt;"],
+    [">", "&gt;"],
+    ['"', "&quot;"],
+    ["'", "&#x27;"],
+    ["/", "&#x2F;"],
+  ]);
 
-  return text.replace(/[&<>"'/]/g, (match) => htmlEscapes[match] || match);
+  return text.replace(/[&<>"'/]/g, (match) => htmlEscapes.get(match) || match);
 }

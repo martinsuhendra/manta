@@ -101,7 +101,7 @@ function ProductIncludes({ product }: { product: Product }) {
 }
 
 function ProductFeatures({ product }: { product: Product }) {
-  if (!product.features?.length) return null;
+  if (!product.features.length) return null;
 
   return (
     <div className="space-y-2">

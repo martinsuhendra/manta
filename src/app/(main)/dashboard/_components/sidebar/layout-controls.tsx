@@ -10,7 +10,7 @@ import { updateContentLayout } from "@/lib/layout-utils";
 import { updateThemeMode } from "@/lib/theme-utils";
 import { setValueToCookie } from "@/server/server-actions";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
-import type { SidebarVariant, SidebarCollapsible, ContentLayout } from "@/types/preferences/layout";
+import type { ContentLayout } from "@/types/preferences/layout";
 import type { ThemeMode } from "@/types/preferences/theme";
 
 export function LayoutControls() {

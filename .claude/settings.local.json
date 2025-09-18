@@ -19,7 +19,10 @@
       "Bash(git log:*)",
       "Bash(npm install:*)",
       "Bash(npm uninstall:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "WebFetch(domain:next-auth.js.org)"
     ],
     "deny": [],
     "ask": []

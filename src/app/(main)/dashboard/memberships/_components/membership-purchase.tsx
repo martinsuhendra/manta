@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { format } from "date-fns";
 import { Calendar, Clock, DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +36,8 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
           <Skeleton className="h-4 w-64" />
         </CardHeader>
         <CardContent className="space-y-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="space-y-2 rounded-lg border p-4">
+          {Array.from({ length: 3 }, (_, index) => `skeleton-${index}`).map((skeletonKey) => (
+            <div key={skeletonKey} className="space-y-2 rounded-lg border p-4">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-full" />
               <div className="flex justify-between">
@@ -101,14 +100,14 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
                   </div>
                 </div>
 
-                {product.features && product.features.length > 0 && (
+                {product.features.length > 0 && (
                   <>
                     <Separator />
                     <div>
                       <p className="mb-2 text-sm font-medium">Features:</p>
                       <div className="flex flex-wrap gap-1">
-                        {product.features.map((feature, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                        {product.features.map((feature) => (
+                          <Badge key={feature} variant="outline" className="text-xs">
                             {feature}
                           </Badge>
                         ))}

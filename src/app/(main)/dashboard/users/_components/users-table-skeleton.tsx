@@ -39,8 +39,8 @@ export function UsersTableSkeleton() {
           </div>
 
           {/* Table Rows */}
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="flex items-center border-b px-4 py-4">
+          {Array.from({ length: 8 }, (_, index) => `skeleton-${index}`).map((skeletonKey) => (
+            <div key={skeletonKey} className="flex items-center border-b px-4 py-4">
               <div className="flex flex-1 items-center space-x-4">
                 {/* Checkbox */}
                 <Skeleton className="h-4 w-4" />

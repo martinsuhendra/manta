@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -81,10 +81,10 @@ function useSubmitHandler({
 }: {
   isEdit: boolean;
   product: Product | null;
-  createProduct: any;
-  updateProduct: any;
+  createProduct: { mutateAsync: (data: FormData) => Promise<unknown> };
+  updateProduct: { mutateAsync: (params: { id: string; data: Partial<FormData> }) => Promise<unknown> };
   onOpenChange: (open: boolean) => void;
-  form: any;
+  form: UseFormReturn<FormData>;
 }) {
   return React.useCallback(
     async (data: FormData) => {

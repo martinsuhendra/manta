@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
 interface CreateProductData {
@@ -27,8 +27,8 @@ export function useCreateProduct() {
       toast.success("Product created successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to create product");
+    onError: (error: AxiosError<{ error: string }>) => {
+      toast.error(error.response?.data.error || "Failed to create product");
     },
   });
 }
@@ -45,8 +45,8 @@ export function useUpdateProduct() {
       toast.success("Product updated successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to update product");
+    onError: (error: AxiosError<{ error: string }>) => {
+      toast.error(error.response?.data.error || "Failed to update product");
     },
   });
 }
@@ -63,8 +63,8 @@ export function useDeleteProduct() {
       toast.success("Product deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to delete product");
+    onError: (error: AxiosError<{ error: string }>) => {
+      toast.error(error.response?.data.error || "Failed to delete product");
     },
   });
 }
@@ -80,8 +80,8 @@ export function useReorderProducts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to reorder products");
+    onError: (error: AxiosError<{ error: string }>) => {
+      toast.error(error.response?.data.error || "Failed to reorder products");
     },
   });
 }

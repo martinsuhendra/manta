@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { differenceInDays, format, isAfter } from "date-fns";
-import { Calendar, Clock, CreditCard, Package, Users } from "lucide-react";
+import { Calendar, Clock, CreditCard, Package } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,8 +55,8 @@ export function MyMemberships({ memberships, isLoading }: MyMembershipsProps) {
           <Skeleton className="h-4 w-64" />
         </CardHeader>
         <CardContent className="space-y-4">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <div key={index} className="space-y-3 rounded-lg border p-4">
+          {Array.from({ length: 2 }, (_, index) => `skeleton-${index}`).map((skeletonKey) => (
+            <div key={skeletonKey} className="space-y-3 rounded-lg border p-4">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-full" />
               <div className="space-y-2">
@@ -168,14 +168,14 @@ export function MyMemberships({ memberships, isLoading }: MyMembershipsProps) {
                         </div>
                       </div>
 
-                      {membership.product.features && membership.product.features.length > 0 && (
+                      {membership.product.features.length > 0 && (
                         <>
                           <Separator />
                           <div>
                             <p className="mb-2 text-sm font-medium">Features:</p>
                             <div className="flex flex-wrap gap-1">
-                              {membership.product.features.map((feature, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
+                              {membership.product.features.map((feature) => (
+                                <Badge key={feature} variant="outline" className="text-xs">
                                   {feature}
                                 </Badge>
                               ))}

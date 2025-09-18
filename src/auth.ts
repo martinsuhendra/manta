@@ -7,7 +7,7 @@
  *  • `signOut`   – `signOut()` helper (client & server)
  */
 import bcrypt from "bcryptjs";
-import NextAuth, { type NextAuthOptions, type User } from "next-auth";
+import type { User, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { getServerSession } from "next-auth/next";
 import Credentials from "next-auth/providers/credentials";
@@ -15,7 +15,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/generated/prisma";
 import { signInFormSchema } from "@/lib/validators";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   providers: [
     Credentials({
       name: "Credentials",
@@ -51,7 +51,7 @@ export const authOptions: NextAuthOptions = {
     newUser: "/sign-up",
   },
   callbacks: {
-    async redirect({ url, baseUrl }) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       // If url is a relative path, make it absolute
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // If url is on the same origin, allow it
@@ -61,14 +61,14 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, trigger }: { token: JWT; user?: User; trigger?: "update" | "signIn" | "signUp" }) {
       if (user) {
-        token.role = (user as User & { role: string }).role;
-        token.emailVerified = (user as User & { emailVerified: Date | null }).emailVerified;
-        token.phoneNo = (user as User & { phoneNo: string | null }).phoneNo;
+        token.role = user.role;
+        token.emailVerified = user.emailVerified;
+        token.phoneNo = user.phoneNo;
       }
 
       if (trigger === "update") {
         const refreshedUser = await prisma.user.findUnique({
-          where: { email: token.email! },
+          where: { email: token.email as string },
           select: { emailVerified: true, role: true, phoneNo: true },
         });
         if (refreshedUser) {
@@ -80,27 +80,20 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }: { session: { user: User; expires: string }; token: JWT }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        session.user.role = token.role as string;
-        session.user.emailVerified = token.emailVerified as Date | null;
-        session.user.phoneNo = token.phoneNo as string | null;
-      }
+    async session({ session, token }: { session: Session; token: JWT }) {
+      session.user.id = token.sub as string;
+      session.user.role = token.role as string;
+      session.user.emailVerified = token.emailVerified;
+      session.user.phoneNo = token.phoneNo;
       return session;
     },
   },
 };
 
-export default NextAuth(authOptions);
-
 // Create auth function for server-side session access
-export function auth() {
+export function auth(): Promise<Session | null> {
   return getServerSession(authOptions);
 }
-
-// Export handlers for the API route
-export const handlers = NextAuth(authOptions);
 
 // Client-side auth functions
 export { signIn, signOut } from "next-auth/react";

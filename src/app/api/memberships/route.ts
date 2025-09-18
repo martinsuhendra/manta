@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
 async function validatePurchaseRequest(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  if (!session?.user.id) {
     return { error: "Unauthorized", status: 401 };
   }
 

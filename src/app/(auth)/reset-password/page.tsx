@@ -43,6 +43,7 @@ function ResetPasswordPageContent() {
       return;
     }
 
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (password !== confirmPassword) {
       toast.error("Error", {
         description: "Passwords do not match",

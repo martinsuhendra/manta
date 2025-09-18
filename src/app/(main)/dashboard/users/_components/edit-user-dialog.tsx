@@ -37,7 +37,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
   const updateUser = useUpdateUser();
   const { data: session } = useSession();
 
-  const currentUserRole = session?.user.role as UserRole;
+  const currentUserRole = session?.user.role;
   const canEditRoles = currentUserRole === USER_ROLES.SUPERADMIN;
 
   const form = useForm<EditUserFormData>({
@@ -145,11 +145,14 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {getAvailableRoles().map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {USER_ROLE_LABELS[role]}
-                        </SelectItem>
-                      ))}
+                      {getAvailableRoles().map((role) => {
+                        const label = Object.entries(USER_ROLE_LABELS).find(([key]) => key === role)?.[1] || role;
+                        return (
+                          <SelectItem key={role} value={role}>
+                            {label}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <FormMessage />

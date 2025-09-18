@@ -30,6 +30,7 @@ interface ProductsTableProps {
 export function ProductsTable({ data, isLoading }: ProductsTableProps) {
   const [viewMode, setViewMode] = React.useState<"card" | "table">("card");
   const [selectedStatus, setSelectedStatus] = React.useState("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [viewProductOpen, setViewProductOpen] = React.useState(false);
   const [editProductOpen, setEditProductOpen] = React.useState(false);
@@ -39,17 +40,32 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
   const reorderProducts = useReorderProducts();
 
   const filteredData = React.useMemo(() => {
-    if (selectedStatus === "all") {
-      return data;
-    }
-    const isActive = selectedStatus === "active";
-    return data.filter((product) => product.isActive === isActive);
-  }, [data, selectedStatus]);
+    let filtered = data;
 
-  // Update table data when filtered data changes
+    // Filter by status
+    if (selectedStatus !== "all") {
+      const isActive = selectedStatus === "active";
+      filtered = filtered.filter((product) => product.isActive === isActive);
+    }
+
+    // Filter by search query (for card view)
+    if (viewMode === "card" && searchQuery) {
+      const search = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(search) || (product.description?.toLowerCase().includes(search) ?? false),
+      );
+    }
+
+    return filtered;
+  }, [data, selectedStatus, searchQuery, viewMode]);
+
+  // Update table data when filtered data changes (for table view only)
   React.useEffect(() => {
-    setTableData(filteredData);
-  }, [filteredData]);
+    if (viewMode === "table") {
+      setTableData(filteredData);
+    }
+  }, [filteredData, viewMode]);
 
   const actions = React.useMemo(
     () => ({
@@ -77,6 +93,14 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
     columns,
     getRowId: (row) => row.id,
   });
+
+  // Clear search when switching views
+  React.useEffect(() => {
+    setSearchQuery("");
+    if (viewMode === "table") {
+      table.setGlobalFilter("");
+    }
+  }, [viewMode, table]);
 
   const handleReorder = React.useCallback(
     (newData: Product[]) => {
@@ -118,8 +142,14 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ProductsSearch
-            value={viewMode === "table" ? (table.getState().globalFilter ?? "") : ""}
-            onChange={(value) => viewMode === "table" && table.setGlobalFilter(value)}
+            value={viewMode === "table" ? (table.getState().globalFilter ?? "") : searchQuery}
+            onChange={(value) => {
+              if (viewMode === "table") {
+                table.setGlobalFilter(value);
+              } else {
+                setSearchQuery(value);
+              }
+            }}
             placeholder="Search by name or description..."
           />
           <StatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />

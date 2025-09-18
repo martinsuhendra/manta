@@ -146,7 +146,7 @@ export function NavMain({ items }: NavMainProps) {
   const { state, isMobile } = useSidebar();
   const { data: session } = useSession();
 
-  const userRole = session?.user?.role;
+  const userRole = session?.user.role;
 
   // Filter items based on user role
   const filteredItems = items

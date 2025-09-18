@@ -26,8 +26,8 @@ interface DeleteUserDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const useDeletePermissions = (user: User | null, session: any) => {
-  const currentUserRole = session?.user.role as UserRole;
+const useDeletePermissions = (user: User | null, session: ReturnType<typeof useSession>["data"]) => {
+  const currentUserRole = session?.user.role;
   const canDeleteSuperAdmin = currentUserRole === USER_ROLES.SUPERADMIN;
   const isTargetSuperAdmin = user?.role === USER_ROLES.SUPERADMIN;
   const isSelfDelete = user?.id === session?.user.id;

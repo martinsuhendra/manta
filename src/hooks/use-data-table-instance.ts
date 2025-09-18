@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-type UseDataTableInstanceProps<TData, TValue> = {
+type UseDataTableInstanceProps<TData extends Record<string, unknown>, TValue> = {
   data: TData[];
   columns: ColumnDef<TData, TValue>[];
   enableRowSelection?: boolean;
@@ -23,7 +23,17 @@ type UseDataTableInstanceProps<TData, TValue> = {
   getRowId?: (row: TData, index: number) => string;
 };
 
-export function useDataTableInstance<TData, TValue>({
+type WithId = {
+  id: string | number;
+};
+
+type SearchableData = {
+  name?: string;
+  email?: string;
+  phoneNo?: string;
+};
+
+export function useDataTableInstance<TData extends Record<string, unknown>, TValue>({
   data,
   columns,
   enableRowSelection = true,
@@ -54,7 +64,7 @@ export function useDataTableInstance<TData, TValue>({
     },
     enableRowSelection,
     enableGlobalFilter: true,
-    getRowId: getRowId ?? ((row) => (row as any).id.toString()),
+    getRowId: getRowId ?? ((row) => (row as TData & WithId).id.toString()),
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -69,7 +79,7 @@ export function useDataTableInstance<TData, TValue>({
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: (row, _columnId, value) => {
       const search = value.toLowerCase();
-      const rowData = row.original as any;
+      const rowData = row.original as TData & SearchableData;
       const name = rowData.name?.toLowerCase() || "";
       const email = rowData.email?.toLowerCase() || "";
       const phoneNo = rowData.phoneNo?.toLowerCase() || "";
