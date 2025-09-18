@@ -7,8 +7,10 @@ import { Grid3X3, Table } from "lucide-react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withDndColumn } from "@/components/data-table/table-utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { useReorderProducts } from "@/hooks/use-products-mutation";
 
 import { createProductColumns } from "./columns";
 import { DeleteProductDialog } from "./delete-product-dialog";
@@ -32,6 +34,9 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
   const [viewProductOpen, setViewProductOpen] = React.useState(false);
   const [editProductOpen, setEditProductOpen] = React.useState(false);
   const [deleteProductOpen, setDeleteProductOpen] = React.useState(false);
+  const [tableData, setTableData] = React.useState<Product[]>([]);
+
+  const reorderProducts = useReorderProducts();
 
   const filteredData = React.useMemo(() => {
     if (selectedStatus === "all") {
@@ -40,6 +45,11 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
     const isActive = selectedStatus === "active";
     return data.filter((product) => product.isActive === isActive);
   }, [data, selectedStatus]);
+
+  // Update table data when filtered data changes
+  React.useEffect(() => {
+    setTableData(filteredData);
+  }, [filteredData]);
 
   const actions = React.useMemo(
     () => ({
@@ -59,13 +69,23 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
     [],
   );
 
-  const columns = React.useMemo(() => createProductColumns(actions), [actions]);
+  const baseColumns = React.useMemo(() => createProductColumns(actions), [actions]);
+  const columns = React.useMemo(() => withDndColumn(baseColumns), [baseColumns]);
 
   const table = useDataTableInstance({
-    data: filteredData,
+    data: tableData,
     columns,
     getRowId: (row) => row.id,
   });
+
+  const handleReorder = React.useCallback(
+    (newData: Product[]) => {
+      setTableData(newData);
+      const productIds = newData.map((product) => product.id);
+      reorderProducts.mutate(productIds);
+    },
+    [reorderProducts],
+  );
 
   if (isLoading) return <ProductsTableSkeleton />;
 
@@ -121,7 +141,7 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
       ) : (
         <>
           <div className="overflow-hidden rounded-lg border">
-            <DataTable table={table} columns={columns} />
+            <DataTable table={table} columns={columns} dndEnabled={true} onReorder={handleReorder} />
           </div>
           <DataTablePagination table={table} />
         </>

@@ -11,21 +11,10 @@ export default function Page() {
 
   if (error) throw new Error(error.message);
 
-  // Don't render until we have stable data
-  if (isLoading || !products) {
-    return (
-      <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN]}>
-        <div className="@container/main flex flex-col gap-4 md:gap-6">
-          <ProductsTable data={[]} isLoading={true} />
-        </div>
-      </RoleGuard>
-    );
-  }
-
   return (
     <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN]}>
       <div className="@container/main flex flex-col gap-4 md:gap-6">
-        <ProductsTable data={products} isLoading={false} />
+        <ProductsTable data={products || []} isLoading={isLoading} />
       </div>
     </RoleGuard>
   );

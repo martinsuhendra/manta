@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { EllipsisVertical, Calendar, Banknote, Clock, Users, Package } from "lucide-react";
+import { EllipsisVertical, Calendar, Banknote, Clock, Package } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,10 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
       const description = row.original.description;
 
       return (
-        <div className="flex flex-col gap-1">
+        <div
+          className="hover:text-primary flex cursor-pointer flex-col gap-1 transition-colors"
+          onClick={() => actions.onViewProduct(row.original)}
+        >
           <div className="font-medium">{name}</div>
           {description && <div className="text-muted-foreground line-clamp-2 text-sm">{description}</div>}
         </div>

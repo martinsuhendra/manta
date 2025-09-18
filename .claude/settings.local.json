@@ -18,7 +18,8 @@
       "Bash(npm run lint:*)",
       "Bash(git log:*)",
       "Bash(npm install:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

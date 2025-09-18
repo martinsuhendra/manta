@@ -100,6 +100,7 @@ model Product {
   image         String?
   paymentUrl    String?  @map("payment_url")
   whatIsIncluded String? @map("what_is_included")
+  position      Int      @default(0)
   createdAt     DateTime @default(now()) @db.Timestamp(6)
   updatedAt     DateTime @updatedAt @db.Timestamp(6)
 

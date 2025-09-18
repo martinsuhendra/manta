@@ -158,7 +158,7 @@ export function ProductFormDialog({
       </DialogHeader>
       <div className="border-t" />
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="overflow-y-auto">
+        <div className="scrollbar-thin overflow-y-auto">
           <ProductFormFields
             form={form}
             mutation={mutation}

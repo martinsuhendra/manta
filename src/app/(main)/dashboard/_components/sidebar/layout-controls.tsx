@@ -13,13 +13,7 @@ import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 import type { SidebarVariant, SidebarCollapsible, ContentLayout } from "@/types/preferences/layout";
 import type { ThemeMode } from "@/types/preferences/theme";
 
-type LayoutControlsProps = {
-  readonly variant: SidebarVariant;
-  readonly collapsible: SidebarCollapsible;
-  readonly contentLayout: ContentLayout;
-};
-
-export function LayoutControls(_props: LayoutControlsProps) {
+export function LayoutControls() {
   const themeMode = usePreferencesStore((s) => s.themeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
 

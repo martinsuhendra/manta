@@ -31,7 +31,7 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
   };
 
   const handleRemove = () => {
-    onChange(undefined);
+    onChange("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

@@ -70,7 +70,9 @@ export function DataTable<TData, TValue>({
   dndEnabled = false,
   onReorder,
 }: DataTableProps<TData, TValue>) {
-  const dataIds: UniqueIdentifier[] = table.getRowModel().rows.map((row) => Number(row.id) as UniqueIdentifier);
+  const dataIds: UniqueIdentifier[] = table
+    .getRowModel()
+    .rows.map((row) => (row.original as { id: string | number }).id as UniqueIdentifier);
   const sortableId = React.useId();
   const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}));
 

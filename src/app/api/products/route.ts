@@ -29,7 +29,7 @@ export async function GET() {
     }
 
     const products = await prisma.product.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { position: "asc" },
       include: {
         _count: {
           select: { memberships: true },

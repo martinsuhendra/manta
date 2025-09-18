@@ -68,3 +68,20 @@ export function useDeleteProduct() {
     },
   });
 }
+
+export function useReorderProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (productIds: string[]) => {
+      const response = await axios.patch("/api/products/reorder", { productIds });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to reorder products");
+    },
+  });
+}

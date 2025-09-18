@@ -45,12 +45,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     avatar: session.user.image ?? "",
   };
 
-  const layoutPreferences = {
-    contentLayout,
-    variant: sidebarVariant,
-    collapsible: sidebarCollapsible,
-  };
-
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar user={currentUser} variant={sidebarVariant} collapsible={sidebarCollapsible} />
@@ -72,7 +66,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls {...layoutPreferences} />
+              <LayoutControls />
               <ThemeSwitcher />
               <AccountSwitcher users={[currentUser]} />
             </div>

@@ -9,7 +9,16 @@ import { Calendar, Clock, Banknote, Package, Users, ExternalLink } from "lucide-
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Product } from "./schema";
 
@@ -92,14 +101,14 @@ function ProductIncludes({ product }: { product: Product }) {
 }
 
 function ProductFeatures({ product }: { product: Product }) {
-  if (!product.features || product.features.length === 0) return null;
+  if (!product.features?.length) return null;
 
   return (
     <div className="space-y-2">
       <span className="text-sm font-medium">Features</span>
       <div className="flex flex-wrap gap-1">
-        {product.features.map((feature, index) => (
-          <Badge key={index} variant="outline">
+        {product.features.map((feature) => (
+          <Badge key={feature} variant="outline">
             {feature}
           </Badge>
         ))}
@@ -149,21 +158,22 @@ function ProductTimestamps({ product }: { product: Product }) {
 }
 
 export function ViewProductDialog({ product, open, onOpenChange }: ViewProductDialogProps) {
+  const isMobile = useIsMobile();
+
   if (!product) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onOpenChange} direction={isMobile ? "bottom" : "right"}>
+      <DrawerContent>
+        <DrawerHeader className="gap-1">
+          <DrawerTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             {product.name}
-          </DialogTitle>
-          <DialogDescription>Product details and statistics</DialogDescription>
-        </DialogHeader>
-        <div className="border-t" />
+          </DrawerTitle>
+          <DrawerDescription>Product details and statistics</DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-6">
+        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           <ProductImage product={product} />
 
           <div className="flex items-center justify-between">
@@ -180,7 +190,13 @@ export function ViewProductDialog({ product, open, onOpenChange }: ViewProductDi
           <ProductPayment product={product} />
           <ProductTimestamps product={product} />
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <DrawerFooter>
+          <DrawerClose asChild>
+            <Button variant="outline">Close</Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

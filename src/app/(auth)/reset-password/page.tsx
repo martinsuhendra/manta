@@ -31,7 +31,7 @@ function ResetPasswordPageContent() {
       });
       router.push("/forgot-password");
     }
-  }, [token, router, toast]);
+  }, [token, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

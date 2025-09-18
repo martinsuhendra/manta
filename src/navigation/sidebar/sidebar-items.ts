@@ -1,23 +1,4 @@
-import {
-  ShoppingBag,
-  Forklift,
-  Mail,
-  MessageSquare,
-  Calendar,
-  Kanban,
-  ReceiptText,
-  Users,
-  Lock,
-  SquareArrowUpRight,
-  LayoutDashboard,
-  ChartBar,
-  Banknote,
-  Gauge,
-  GraduationCap,
-  Package,
-  CreditCard,
-  type LucideIcon,
-} from "lucide-react";
+import { Users, LayoutDashboard, ChartBar, Banknote, Package, CreditCard, type LucideIcon } from "lucide-react";
 
 import { USER_ROLES } from "@/lib/types";
 
