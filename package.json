@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "postinstall": "prisma generate",
-    "generate:presets": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/scripts/generate-theme-presets.ts"
+    "generate:presets": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/scripts/generate-theme-presets.ts",
+    "seed:super-admin": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-super-admin.ts"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [

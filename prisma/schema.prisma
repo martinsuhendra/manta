@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
 model Account {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String   @map("user_id") @db.Uuid
@@ -55,6 +65,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   memberships   Membership[]
+  transactions  Transaction[]
 
   @@map("users")
 }
@@ -105,13 +116,35 @@ model Product {
   updatedAt     DateTime @updatedAt @db.Timestamp(6)
 
   memberships   Membership[]
+  transactions  Transaction[]
 
   @@map("products")
 }
 
+model Transaction {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  productId       String            @map("product_id") @db.Uuid
+  amount          Decimal           @db.Decimal(10, 2)
+  currency        String            @default("USD")
+  status          TransactionStatus @default(PENDING)
+  paymentMethod   String?           @map("payment_method")
+  paymentProvider String?           @map("payment_provider")
+  externalId      String?           @map("external_id")
+  metadata        Json?
+  paidAt          DateTime?         @map("paid_at") @db.Timestamp(6)
+  createdAt       DateTime          @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime          @updatedAt @db.Timestamp(6)
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  memberships     Membership[]
+
+  @@map("transactions")
+}
+
 model Membership {
   id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  licenseCode       String            @unique @map("license_code")
   userId            String            @map("user_id") @db.Uuid
   productId           String         @map("product_id") @db.Uuid
   status            String            @default("ACTIVE")
@@ -119,14 +152,13 @@ model Membership {
   remainingQuota    Int               @map("remaining_quota")
   joinDate          DateTime          @default(now()) @map("join_date") @db.Timestamp(6)
   expiredAt         DateTime          @map("expired_at") @db.Timestamp(6)
-  transactionId     String?           @map("transaction_id")
-  customerName      String?           @map("customer_name")
-  customerEmail     String?           @map("customer_email")
+  transactionId     String?           @map("transaction_id") @db.Uuid
   createdAt         DateTime          @default(now()) @db.Timestamp(6)
   updatedAt         DateTime          @updatedAt @db.Timestamp(6)
 
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   product           Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  transaction       Transaction?      @relation(fields: [transactionId], references: [id], onDelete: SetNull)
 
   @@map("memberships")
 }
