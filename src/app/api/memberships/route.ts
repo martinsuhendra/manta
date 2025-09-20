@@ -113,14 +113,11 @@ export async function POST(request: NextRequest) {
 
     const membership = await prisma.membership.create({
       data: {
-        licenseCode: generateLicenseCode(),
         userId: session.user.id,
         productId: validatedData.productId,
         remainingQuota: product.quota,
         expiredAt,
         transactionId: validatedData.transactionId,
-        customerName: validatedData.customerName || user?.name,
-        customerEmail: validatedData.customerEmail || user?.email,
       },
       include: {
         product: true,

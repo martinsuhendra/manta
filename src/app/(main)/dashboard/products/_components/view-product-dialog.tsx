@@ -19,6 +19,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatPrice } from "@/lib/utils";
 
 import { Product } from "./schema";
 
@@ -61,7 +62,7 @@ function ProductStats({ product }: { product: Product }) {
             <Banknote className="h-4 w-4" />
             Price
           </div>
-          <p className="text-lg font-semibold">Rp {Number(product.price || 0).toLocaleString("id-ID")}</p>
+          <p className="text-lg font-semibold">{formatPrice(product.price)}</p>
         </div>
 
         <div className="space-y-2">

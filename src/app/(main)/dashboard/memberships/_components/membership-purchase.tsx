@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePurchaseMembership } from "@/hooks/use-memberships-mutation";
+import { formatPrice } from "@/lib/utils";
 
 import { Product } from "../../products/_components/schema";
 
@@ -84,7 +85,7 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <DollarSign className="text-muted-foreground h-4 w-4" />
-                    <span className="font-medium">${product.price.toFixed(2)}</span>
+                    <span className="font-medium">{formatPrice(product.price)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="text-muted-foreground h-4 w-4" />

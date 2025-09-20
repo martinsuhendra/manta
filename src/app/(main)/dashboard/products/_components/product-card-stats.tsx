@@ -1,5 +1,7 @@
 import { Banknote, Clock, Users } from "lucide-react";
 
+import { formatPrice } from "@/lib/utils";
+
 interface ProductData {
   price: number;
   quota: number;
@@ -11,7 +13,7 @@ export function ProductCardStats({ data }: { data: ProductData }) {
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2">
         <Banknote className="text-muted-foreground h-4 w-4" />
-        <span className="font-semibold">Rp {Number(data.price || 0).toLocaleString("id-ID")}</span>
+        <span className="font-semibold">{formatPrice(data.price)}</span>
       </div>
       <div className="flex items-center gap-2">
         <Users className="text-muted-foreground h-4 w-4" />

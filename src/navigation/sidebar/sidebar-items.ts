@@ -1,4 +1,13 @@
-import { Users, LayoutDashboard, ChartBar, Banknote, Package, CreditCard, type LucideIcon } from "lucide-react";
+import {
+  Users,
+  LayoutDashboard,
+  ChartBar,
+  Banknote,
+  Package,
+  CreditCard,
+  UserCheck,
+  type LucideIcon,
+} from "lucide-react";
 
 import { USER_ROLES } from "@/lib/types";
 
@@ -73,6 +82,13 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/memberships",
         icon: CreditCard,
         comingSoon: false,
+      },
+      {
+        title: "Memberships",
+        url: "/dashboard/admin/memberships",
+        icon: UserCheck,
+        comingSoon: false,
+        requiredRoles: [USER_ROLES.SUPERADMIN],
       },
     ],
   },

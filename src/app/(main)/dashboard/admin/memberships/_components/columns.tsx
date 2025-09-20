@@ -1,0 +1,149 @@
+"use client";
+
+import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { Membership } from "./schema";
+
+interface ActionsType {
+  onView: (membership: Membership) => void;
+  onEdit: (membership: Membership) => void;
+  onDelete: (membership: Membership) => void;
+}
+
+export const createMembershipColumns = (actions: ActionsType): ColumnDef<Membership>[] => [
+  {
+    accessorKey: "user.name",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
+    cell: ({ row }) => {
+      const membership = row.original;
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium">{membership.user.name || "N/A"}</span>
+          <span className="text-muted-foreground text-sm">{membership.user.email}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "product.name",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Product" />,
+    cell: ({ row }) => {
+      const membership = row.original;
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium">{membership.product.name}</span>
+          <span className="text-muted-foreground text-sm">
+            ${membership.product.price} • {membership.product.validDays} days
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    cell: ({ row }) => {
+      const status = row.getValue("status");
+      const variant =
+        status === "ACTIVE"
+          ? "default"
+          : status === "EXPIRED"
+            ? "destructive"
+            : status === "SUSPENDED"
+              ? "secondary"
+              : "outline";
+
+      return <Badge variant={variant}>{String(status)}</Badge>;
+    },
+  },
+  {
+    accessorKey: "remainingQuota",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Quota" />,
+    cell: ({ row }) => {
+      const membership = row.original;
+      const remaining = membership.remainingQuota;
+      const total = membership.product.quota;
+      const used = total - remaining;
+
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium">
+            {remaining} / {total}
+          </span>
+          <span className="text-muted-foreground text-sm">{used} used</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "expiredAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Expires" />,
+    cell: ({ row }) => {
+      const expiredAt = new Date(row.getValue("expiredAt"));
+      const isExpired = expiredAt < new Date();
+
+      return (
+        <div className="flex flex-col">
+          <span className={isExpired ? "text-destructive font-medium" : ""}>{format(expiredAt, "MMM dd, yyyy")}</span>
+          <span className="text-muted-foreground text-sm">{format(expiredAt, "HH:mm")}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    cell: ({ row }) => {
+      const createdAt = new Date(row.getValue("createdAt"));
+      return (
+        <div className="flex flex-col">
+          <span>{format(createdAt, "MMM dd, yyyy")}</span>
+          <span className="text-muted-foreground text-sm">{format(createdAt, "HH:mm")}</span>
+        </div>
+      );
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const membership = row.original;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => actions.onView(membership)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => actions.onEdit(membership)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => actions.onDelete(membership)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
+];

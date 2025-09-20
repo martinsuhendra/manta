@@ -15,9 +15,20 @@ const createUserSchema = z.object({
   phoneNo: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get("role");
+
+    const whereCondition: any = {};
+
+    // Add role filter if provided
+    if (role && Object.values(USER_ROLES).includes(role as any)) {
+      whereCondition.role = role;
+    }
+
     const users = await prisma.user.findMany({
+      where: whereCondition,
       select: {
         id: true,
         name: true,

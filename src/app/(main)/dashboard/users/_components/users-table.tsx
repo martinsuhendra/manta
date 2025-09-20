@@ -93,9 +93,7 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border">
-        <DataTable table={table} columns={columns} />
-      </div>
+      <DataTable table={table} columns={columns} />
 
       <DataTablePagination table={table} />
 

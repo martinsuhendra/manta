@@ -41,6 +41,16 @@ export function formatCurrency(
   return new Intl.NumberFormat(locale, formatOptions).format(amount);
 }
 
+export function formatPrice(price: number | string): string {
+  const numPrice = Number(price || 0);
+  return numPrice.toLocaleString("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
 // ============================================================================
 // SECURITY UTILITIES
 // ============================================================================

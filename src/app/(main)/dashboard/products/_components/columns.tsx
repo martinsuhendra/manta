@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatPrice } from "@/lib/utils";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
@@ -97,7 +98,7 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
       return (
         <div className="flex items-center gap-1 text-sm font-medium">
           <Banknote className="h-3 w-3" />
-          Rp {Number(price || 0).toLocaleString("id-ID")}
+          {formatPrice(price)}
         </div>
       );
     },

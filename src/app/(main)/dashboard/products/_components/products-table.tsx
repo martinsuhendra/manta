@@ -170,9 +170,7 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
         />
       ) : (
         <>
-          <div className="overflow-hidden rounded-lg border">
-            <DataTable table={table} columns={columns} dndEnabled={true} onReorder={handleReorder} />
-          </div>
+          <DataTable table={table} columns={columns} dndEnabled={true} onReorder={handleReorder} />
           <DataTablePagination table={table} />
         </>
       )}

@@ -16,6 +16,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import { ColumnDef, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 import { DraggableRow } from "./draggable-row";
 
@@ -24,6 +25,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   dndEnabled?: boolean;
   onReorder?: (newData: TData[]) => void;
+  className?: string;
 }
 
 function renderTableBody<TData, TValue>({
@@ -69,6 +71,7 @@ export function DataTable<TData, TValue>({
   columns,
   dndEnabled = false,
   onReorder,
+  className,
 }: DataTableProps<TData, TValue>) {
   const dataIds: UniqueIdentifier[] = table
     .getRowModel()
@@ -109,6 +112,8 @@ export function DataTable<TData, TValue>({
     </Table>
   );
 
+  const wrappedTable = <div className={cn("overflow-hidden rounded-lg border", className)}>{tableContent}</div>;
+
   if (dndEnabled) {
     return (
       <DndContext
@@ -118,10 +123,10 @@ export function DataTable<TData, TValue>({
         sensors={sensors}
         id={sortableId}
       >
-        {tableContent}
+        {wrappedTable}
       </DndContext>
     );
   }
 
-  return tableContent;
+  return wrappedTable;
 }
