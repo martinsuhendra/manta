@@ -74,10 +74,6 @@ export function ViewMembershipDialog({ membership, open, onOpenChange }: ViewMem
                 <span className="text-muted-foreground font-medium">Valid Days:</span>
                 <div>{membership.product.validDays} days</div>
               </div>
-              <div>
-                <span className="text-muted-foreground font-medium">Total Quota:</span>
-                <div>{membership.product.quota} sessions</div>
-              </div>
             </div>
           </div>
 
@@ -93,16 +89,7 @@ export function ViewMembershipDialog({ membership, open, onOpenChange }: ViewMem
                   <Badge variant={statusVariant}>{membership.status}</Badge>
                 </div>
               </div>
-              <div>
-                <span className="text-muted-foreground font-medium">Remaining Quota:</span>
-                <div>
-                  {membership.remainingQuota} / {membership.product.quota}
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground font-medium">Sessions Used:</span>
-                <div>{membership.useCount}</div>
-              </div>
+
               <div>
                 <span className="text-muted-foreground font-medium">Join Date:</span>
                 <div>{format(new Date(membership.joinDate), "MMM dd, yyyy")}</div>

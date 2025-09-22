@@ -80,14 +80,26 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
 
       return (
         <div
-          className="hover:text-primary flex cursor-pointer flex-col gap-1 transition-colors"
+          className="hover:text-primary flex max-w-[200px] min-w-0 cursor-pointer flex-col gap-1 transition-colors"
           onClick={() => actions.onViewProduct(row.original)}
         >
-          <div className="font-medium">{name}</div>
-          {description && <div className="text-muted-foreground line-clamp-2 text-sm">{description}</div>}
+          <div className="truncate font-medium" title={name}>
+            {name}
+          </div>
+          {description && (
+            <div className="text-muted-foreground line-clamp-2 text-sm break-words" title={description}>
+              {description}
+            </div>
+          )}
         </div>
       );
     },
+    meta: {
+      className: "whitespace-normal",
+    },
+    size: 200,
+    minSize: 180,
+    maxSize: 220,
   },
   {
     accessorKey: "price",
@@ -115,15 +127,6 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
           {validDays} days
         </div>
       );
-    },
-  },
-  {
-    accessorKey: "quota",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Quota" />,
-    cell: ({ row }) => {
-      const quota = row.original.quota;
-
-      return <div className="flex items-center gap-1 text-sm">{quota}</div>;
     },
   },
   {

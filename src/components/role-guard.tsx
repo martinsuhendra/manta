@@ -26,7 +26,7 @@ export function RoleGuard({ children, allowedRoles, fallbackUrl = "/unauthorized
       return;
     }
 
-    const userRole = session.user?.role;
+    const userRole = session.user.role;
     if (!userRole || !allowedRoles.includes(userRole)) {
       // User doesn't have required role
       router.push(fallbackUrl);
@@ -55,7 +55,7 @@ export function RoleGuard({ children, allowedRoles, fallbackUrl = "/unauthorized
     );
   }
 
-  const userRole = session.user?.role;
+  const userRole = session.user.role;
   if (!userRole || !allowedRoles.includes(userRole)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">

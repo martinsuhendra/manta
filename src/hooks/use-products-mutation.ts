@@ -9,7 +9,10 @@ interface CreateProductData {
   description?: string;
   price: number;
   validDays: number;
-  quota: number;
+  features: string[];
+  image?: string;
+  paymentUrl?: string;
+  whatIsIncluded?: string;
   isActive: boolean;
 }
 

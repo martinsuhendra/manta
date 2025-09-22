@@ -14,12 +14,6 @@ const purchaseMembershipSchema = z.object({
   customerEmail: z.string().email().optional(),
 });
 
-function generateLicenseCode(): string {
-  const timestamp = Date.now().toString(36);
-  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `PIL-${timestamp}-${randomStr}`;
-}
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,10 +98,6 @@ export async function POST(request: NextRequest) {
 
     const { product } = productValidation;
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    });
-
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + product.validDays);
 
@@ -115,7 +105,6 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         productId: validatedData.productId,
-        remainingQuota: product.quota,
         expiredAt,
         transactionId: validatedData.transactionId,
       },

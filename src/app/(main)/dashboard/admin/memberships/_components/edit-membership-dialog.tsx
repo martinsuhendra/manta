@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -44,7 +43,6 @@ export function EditMembershipDialog({ membership, open, onOpenChange }: EditMem
     if (membership && open) {
       form.reset({
         status: membership.status as "ACTIVE" | "EXPIRED" | "SUSPENDED",
-        remainingQuota: membership.remainingQuota,
         expiredAt: format(new Date(membership.expiredAt), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
       });
     }
@@ -129,26 +127,6 @@ export function EditMembershipDialog({ membership, open, onOpenChange }: EditMem
                       <SelectItem value="SUSPENDED">Suspended</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="remainingQuota"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remaining Quota</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      max={membership.product.quota}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

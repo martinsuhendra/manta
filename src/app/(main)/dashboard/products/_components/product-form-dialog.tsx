@@ -27,7 +27,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   price: z.coerce.number().positive("Price must be positive"),
   validDays: z.coerce.number().positive("Valid days must be positive"),
-  quota: z.coerce.number().positive("Quota must be positive"),
+  features: z.array(z.string()).default([]),
   image: z.string().optional(),
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
@@ -41,7 +41,7 @@ const DEFAULT_FORM_VALUES: FormData = {
   description: "",
   price: 0,
   validDays: 30,
-  quota: 10,
+  features: [],
   image: "",
   paymentUrl: "",
   whatIsIncluded: "",
@@ -137,7 +137,7 @@ export function ProductFormDialog({
         description: product.description || "",
         price: product.price,
         validDays: product.validDays,
-        quota: product.quota,
+        features: product.features,
         image: product.image || "",
         paymentUrl: product.paymentUrl || "",
         whatIsIncluded: product.whatIsIncluded || "",
@@ -149,37 +149,40 @@ export function ProductFormDialog({
   }, [product, form, isEdit, open]);
 
   const dialogContent = (
-    <DialogContent className="flex h-[90vh] max-h-[90vh] flex-col sm:max-w-4xl">
-      <DialogHeader>
+    <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-6xl flex-col">
+      <DialogHeader className="flex-shrink-0">
         <DialogTitle>{isEdit ? "Edit Product" : "Add Product"}</DialogTitle>
         <DialogDescription>
           {isEdit ? "Update the product details." : "Create a new product for users to purchase."}
         </DialogDescription>
       </DialogHeader>
-      <div className="border-t" />
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="scrollbar-thin overflow-y-auto">
-          <ProductFormFields
-            form={form}
-            mutation={mutation}
-            isEdit={isEdit}
-            onSubmit={onSubmit}
-            onCancel={() => onOpenChange(false)}
-          />
+      <div className="flex-shrink-0 border-t" />
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-2">
+        <div className="flex min-h-0 flex-col overflow-hidden">
+          <div className="scrollbar-thin flex-1 overflow-y-auto">
+            <ProductFormFields
+              form={form}
+              mutation={mutation}
+              isEdit={isEdit}
+              onSubmit={onSubmit}
+              onCancel={() => onOpenChange(false)}
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col">
-          <ProductPreview
-            name={form.watch("name")}
-            description={form.watch("description")}
-            price={form.watch("price") || 0}
-            validDays={form.watch("validDays") || 30}
-            quota={form.watch("quota") || 10}
-            image={form.watch("image")}
-            paymentUrl={form.watch("paymentUrl")}
-            whatIsIncluded={form.watch("whatIsIncluded")}
-            isActive={form.watch("isActive")}
-          />
+        <div className="flex min-h-0 flex-col overflow-hidden">
+          <div className="scrollbar-thin flex-1 overflow-y-auto">
+            <ProductPreview
+              name={form.watch("name")}
+              description={form.watch("description")}
+              price={form.watch("price") || 0}
+              validDays={form.watch("validDays") || 30}
+              image={form.watch("image")}
+              paymentUrl={form.watch("paymentUrl")}
+              whatIsIncluded={form.watch("whatIsIncluded")}
+              isActive={form.watch("isActive")}
+            />
+          </div>
         </div>
       </div>
     </DialogContent>

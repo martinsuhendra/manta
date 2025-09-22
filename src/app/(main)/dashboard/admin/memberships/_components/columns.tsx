@@ -68,25 +68,7 @@ export const createMembershipColumns = (actions: ActionsType): ColumnDef<Members
       return <Badge variant={variant}>{String(status)}</Badge>;
     },
   },
-  {
-    accessorKey: "remainingQuota",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Quota" />,
-    cell: ({ row }) => {
-      const membership = row.original;
-      const remaining = membership.remainingQuota;
-      const total = membership.product.quota;
-      const used = total - remaining;
-
-      return (
-        <div className="flex flex-col">
-          <span className="font-medium">
-            {remaining} / {total}
-          </span>
-          <span className="text-muted-foreground text-sm">{used} used</span>
-        </div>
-      );
-    },
-  },
+  // Quota column removed - quota management now handled through product items and quota pools
   {
     accessorKey: "expiredAt",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Expires" />,

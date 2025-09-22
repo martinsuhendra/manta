@@ -64,10 +64,6 @@ export function MembershipsTable({ data, isLoading }: MembershipsTableProps) {
     defaultPageSize: 10,
   });
 
-  if (isLoading) {
-    return <MembershipsTableSkeleton />;
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -84,7 +80,7 @@ export function MembershipsTable({ data, isLoading }: MembershipsTableProps) {
         </div>
       </div>
 
-      <DataTable table={tableInstance} columns={columns} />
+      {isLoading ? <MembershipsTableSkeleton /> : <DataTable table={tableInstance} columns={columns} />}
 
       <DataTablePagination table={tableInstance} />
 

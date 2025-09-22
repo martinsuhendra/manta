@@ -28,6 +28,7 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
   const [viewProfileOpen, setViewProfileOpen] = React.useState(false);
   const [editUserOpen, setEditUserOpen] = React.useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
 
   // Filter data based on selected role
   const filteredData = React.useMemo(() => {
@@ -64,6 +65,11 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
     getRowId: (row) => row.id,
   });
 
+  // Sync search value with table global filter
+  React.useEffect(() => {
+    table.setGlobalFilter(searchValue);
+  }, [searchValue, table]);
+
   if (isLoading) return <UsersTableSkeleton />;
 
   return (
@@ -81,11 +87,7 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <UsersSearch
-            value={table.getState().globalFilter ?? ""}
-            onChange={(value) => table.setGlobalFilter(value)}
-            placeholder="Search by name, email, or phone..."
-          />
+          <UsersSearch value={searchValue} onChange={setSearchValue} placeholder="Search by name, email, or phone..." />
           <RoleFilter selectedRole={selectedRole} onRoleChange={setSelectedRole} />
         </div>
         <div className="text-muted-foreground text-sm">

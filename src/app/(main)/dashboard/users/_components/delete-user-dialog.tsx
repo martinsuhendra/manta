@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useDeleteUser } from "@/hooks/use-users-query";
-import { USER_ROLES, USER_ROLE_LABELS, UserRole, getRoleVariant } from "@/lib/types";
+import { USER_ROLES, USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { User } from "./schema";
 

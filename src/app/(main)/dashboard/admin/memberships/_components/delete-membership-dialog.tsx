@@ -85,12 +85,6 @@ export function DeleteMembershipDialog({ membership, open, onOpenChange }: Delet
               <span className="font-medium">Status:</span>
               <span className="capitalize">{membership.status.toLowerCase()}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Remaining Quota:</span>
-              <span>
-                {membership.remainingQuota} / {membership.product.quota}
-              </span>
-            </div>
           </div>
         </div>
         <AlertDialogFooter>

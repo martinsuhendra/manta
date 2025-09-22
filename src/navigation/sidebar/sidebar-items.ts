@@ -6,6 +6,7 @@ import {
   Package,
   CreditCard,
   UserCheck,
+  Calendar,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,9 +72,24 @@ export const sidebarItems: NavGroup[] = [
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
       },
       {
+        title: "Items",
+        url: "/dashboard/admin/items",
+        icon: Calendar,
+        comingSoon: false,
+        requiredRoles: [USER_ROLES.SUPERADMIN],
+      },
+      {
         title: "Products",
         url: "/dashboard/products",
         icon: Package,
+        comingSoon: false,
+        requiredRoles: [USER_ROLES.SUPERADMIN],
+      },
+
+      {
+        title: "Memberships",
+        url: "/dashboard/admin/memberships",
+        icon: UserCheck,
         comingSoon: false,
         requiredRoles: [USER_ROLES.SUPERADMIN],
       },
@@ -82,13 +98,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/memberships",
         icon: CreditCard,
         comingSoon: false,
-      },
-      {
-        title: "Memberships",
-        url: "/dashboard/admin/memberships",
-        icon: UserCheck,
-        comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.MEMBER],
       },
     ],
   },

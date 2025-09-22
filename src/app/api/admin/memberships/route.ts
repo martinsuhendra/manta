@@ -41,7 +41,6 @@ export async function GET() {
             name: true,
             price: true,
             validDays: true,
-            quota: true,
           },
         },
         transaction: {
@@ -107,7 +106,6 @@ export async function POST(request: NextRequest) {
         userId: validatedData.userId,
         productId: validatedData.productId,
         status: validatedData.status,
-        remainingQuota: product.quota,
         expiredAt,
       },
       include: {
@@ -125,7 +123,6 @@ export async function POST(request: NextRequest) {
             name: true,
             price: true,
             validDays: true,
-            quota: true,
           },
         },
       },

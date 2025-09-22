@@ -15,7 +15,7 @@ interface FormData {
   description?: string;
   price: number;
   validDays: number;
-  quota: number;
+  features: string[];
   image?: string;
   paymentUrl?: string;
   whatIsIncluded?: string;
@@ -28,9 +28,17 @@ interface ProductFormFieldsProps {
   isEdit: boolean;
   onSubmit: (data: FormData) => void;
   onCancel: () => void;
+  hideButtons?: boolean;
 }
 
-export function ProductFormFields({ form, mutation, isEdit, onSubmit, onCancel }: ProductFormFieldsProps) {
+export function ProductFormFields({
+  form,
+  mutation,
+  isEdit,
+  onSubmit,
+  onCancel,
+  hideButtons = false,
+}: ProductFormFieldsProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-1">
@@ -139,19 +147,6 @@ export function ProductFormFields({ form, mutation, isEdit, onSubmit, onCancel }
         </div>
         <FormField
           control={form.control}
-          name="quota"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Usage Quota</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="10" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="isActive"
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-y-0 space-x-3">
@@ -165,20 +160,22 @@ export function ProductFormFields({ form, mutation, isEdit, onSubmit, onCancel }
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending
-              ? isEdit
-                ? "Updating..."
-                : "Creating..."
-              : isEdit
-                ? "Update Product"
-                : "Create Product"}
-          </Button>
-        </div>
+        {!hideButtons && (
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending
+                ? isEdit
+                  ? "Updating..."
+                  : "Creating..."
+                : isEdit
+                  ? "Update Product"
+                  : "Create Product"}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

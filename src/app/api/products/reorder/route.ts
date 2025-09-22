@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import type { Session } from "next-auth";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
@@ -16,7 +15,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

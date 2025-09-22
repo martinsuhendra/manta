@@ -169,7 +169,7 @@ export function RichTextEditor({
       <div className={cn("prose prose-sm max-w-none", disabled && "opacity-50")}>
         <EditorContent
           editor={editor}
-          className="min-h-[100px] p-3 focus:outline-none"
+          className="min-h-[100px] max-h-[200px] overflow-y-auto p-3 focus:outline-none"
         />
       </div>
 
@@ -177,6 +177,8 @@ export function RichTextEditor({
         .rich-text-editor .ProseMirror {
           outline: none;
           min-height: 100px;
+          max-height: 200px;
+          overflow-y: auto;
         }
         .rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
           content: "${placeholder}";

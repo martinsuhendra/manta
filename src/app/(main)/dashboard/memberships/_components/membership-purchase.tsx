@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Calendar, Clock, DollarSign, Package, ShoppingCart, Users } from "lucide-react";
+import { Calendar, Clock, DollarSign, Package, ShoppingCart } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,10 +90,6 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
                   <div className="flex items-center gap-2">
                     <Clock className="text-muted-foreground h-4 w-4" />
                     <span>{product.validDays} days</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="text-muted-foreground h-4 w-4" />
-                    <span>{product.quota}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="text-muted-foreground h-4 w-4" />

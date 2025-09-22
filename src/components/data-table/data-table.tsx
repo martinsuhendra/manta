@@ -20,22 +20,22 @@ import { cn } from "@/lib/utils";
 
 import { DraggableRow } from "./draggable-row";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData = unknown> {
   table: TanStackTable<TData>;
-  columns: ColumnDef<TData, TValue>[];
+  columns: ColumnDef<TData, unknown>[];
   dndEnabled?: boolean;
   onReorder?: (newData: TData[]) => void;
   className?: string;
 }
 
-function renderTableBody<TData, TValue>({
+function renderTableBody<TData>({
   table,
   columns,
   dndEnabled,
   dataIds,
 }: {
   table: TanStackTable<TData>;
-  columns: ColumnDef<TData, TValue>[];
+  columns: ColumnDef<TData, unknown>[];
   dndEnabled: boolean;
   dataIds: UniqueIdentifier[];
 }) {
@@ -66,13 +66,7 @@ function renderTableBody<TData, TValue>({
   ));
 }
 
-export function DataTable<TData, TValue>({
-  table,
-  columns,
-  dndEnabled = false,
-  onReorder,
-  className,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<TData>({ table, columns, dndEnabled = false, onReorder, className }: DataTableProps<TData>) {
   const dataIds: UniqueIdentifier[] = table
     .getRowModel()
     .rows.map((row) => (row.original as { id: string | number }).id as UniqueIdentifier);

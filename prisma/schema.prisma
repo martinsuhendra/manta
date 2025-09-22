@@ -7,16 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum TransactionStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  CANCELLED
-  REFUNDED
-  EXPIRED
-}
-
 model Account {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String   @map("user_id") @db.Uuid
@@ -51,20 +41,23 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String?   @default("NO_NAME")
-  email         String?   @unique(map: "user_email_idx")
-  emailVerified DateTime? @db.Timestamp(6)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String?        @default("NO_NAME")
+  email         String?        @unique(map: "user_email_idx")
+  emailVerified DateTime?      @db.Timestamp(6)
   image         String?
   password      String?
-  role          String    @default("MEMBER")
-  createdAt     DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime  @updatedAt @db.Timestamp(6)
+  role          String         @default("MEMBER")
+  createdAt     DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamp(6)
   licenseKey    String?
-  phoneNo       String?  @map("phone_no")
+  phoneNo       String?        @map("phone_no")
   accounts      Account[]
-  sessions      Session[]
+  bookings      Booking[]
+  classSessions ClassSession[] @relation("SessionTeacher")
   memberships   Membership[]
+  sessions      Session[]
+  teacherItems  TeacherItem[]  @relation("TeacherItems")
   transactions  Transaction[]
 
   @@map("users")
@@ -100,24 +93,27 @@ model PasswordResetToken {
 }
 
 model Product {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String
-  description   String?
-  price         Decimal  @db.Decimal(10, 2)
-  validDays     Int      @map("valid_days")
-  quota         Int
-  isActive      Boolean  @default(true) @map("is_active")
-  features      String[] @default([])
-  image         String?
-  paymentUrl    String?  @map("payment_url")
-  whatIsIncluded String? @map("what_is_included")
-  position      Int      @default(0)
-  createdAt     DateTime @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  price          Decimal  @db.Decimal(10, 2)
+  validDays      Int      @map("valid_days")
+  isActive       Boolean  @default(true) @map("is_active")
+  features       String[] @default([])
+  image          String?
+  paymentUrl     String?  @map("payment_url")
+  whatIsIncluded String?  @map("what_is_included")
+  position       Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime @updatedAt @db.Timestamp(6)
 
-  memberships   Membership[]
-  transactions  Transaction[]
+  memberships  Membership[]
+  transactions Transaction[]
+  productItems ProductItem[]
+  quotaPools   QuotaPool[]
 
+  @@index([isActive, position]) // Index for active products with ordering
+  @@index([isActive, createdAt]) // Index for active products by creation date
   @@map("products")
 }
 
@@ -135,30 +131,207 @@ model Transaction {
   paidAt          DateTime?         @map("paid_at") @db.Timestamp(6)
   createdAt       DateTime          @default(now()) @db.Timestamp(6)
   updatedAt       DateTime          @updatedAt @db.Timestamp(6)
-
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product         Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
   memberships     Membership[]
+  product         Product           @relation(fields: [productId], references: [id])
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
 }
 
 model Membership {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String            @map("user_id") @db.Uuid
-  productId           String         @map("product_id") @db.Uuid
-  status            String            @default("ACTIVE")
-  useCount          Int               @default(0) @map("use_count")
-  remainingQuota    Int               @map("remaining_quota")
-  joinDate          DateTime          @default(now()) @map("join_date") @db.Timestamp(6)
-  expiredAt         DateTime          @map("expired_at") @db.Timestamp(6)
-  transactionId     String?           @map("transaction_id") @db.Uuid
-  createdAt         DateTime          @default(now()) @db.Timestamp(6)
-  updatedAt         DateTime          @updatedAt @db.Timestamp(6)
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  status        String   @default("ACTIVE")
+  joinDate      DateTime @default(now()) @map("join_date") @db.Timestamp(6)
+  expiredAt     DateTime @map("expired_at") @db.Timestamp(6)
+  transactionId String?  @map("transaction_id") @db.Uuid
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
 
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product           Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
-  transaction       Transaction?      @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  transaction Transaction?          @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  bookings   Booking[]
+  quotaUsage MembershipQuotaUsage[]
 
   @@map("memberships")
+}
+
+model Item {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  description   String?
+  duration      Int
+  capacity      Int
+  isActive      Boolean        @default(true) @map("is_active")
+  image         String?
+  color         String?
+  createdAt     DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamp(6)
+  classSessions ClassSession[]
+  schedules     ItemSchedule[]
+  productItems  ProductItem[]
+  teacherItems  TeacherItem[]
+
+  @@map("items")
+}
+
+model TeacherItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  teacher   User     @relation("TeacherItems", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, itemId])
+  @@map("teacher_items")
+}
+
+model ItemSchedule {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  dayOfWeek Int      @map("day_of_week")
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("item_schedules")
+}
+
+model ClassSession {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId    String        @map("item_id") @db.Uuid
+  teacherId String?       @map("teacher_id") @db.Uuid
+  date      DateTime      @db.Date
+  startTime String        @map("start_time")
+  endTime   String        @map("end_time")
+  status    SessionStatus @default(SCHEDULED)
+  notes     String?
+  createdAt DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt DateTime      @updatedAt @db.Timestamp(6)
+  bookings  Booking[]
+  item      Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  teacher   User?         @relation("SessionTeacher", fields: [teacherId], references: [id])
+
+  @@unique([itemId, date, startTime])
+  @@map("class_sessions")
+}
+
+model ProductItem {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String    @map("product_id") @db.Uuid
+  itemId      String    @map("item_id") @db.Uuid
+
+  // Quota Management
+  quotaType   QuotaType @map("quota_type")
+  quotaValue  Int?      @map("quota_value") // for individual quotas, null for free/shared
+  quotaPoolId String?   @map("quota_pool_id") @db.Uuid // for shared quotas
+
+  // Metadata
+  isActive  Boolean  @default(true) @map("is_active")
+  order     Int      @default(0) // for display ordering
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  product              Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  item                 Item                    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quotaPool            QuotaPool?              @relation(fields: [quotaPoolId], references: [id], onDelete: SetNull)
+  membershipQuotaUsage MembershipQuotaUsage[]
+
+  @@unique([productId, itemId]) // Prevent duplicate items within the same product
+  @@index([productId, isActive, order]) // Index for active items with ordering
+  @@index([quotaPoolId]) // Index for quota pool lookups
+  @@map("product_items")
+}
+
+model Booking {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  classSessionId String        @map("class_session_id") @db.Uuid
+  membershipId   String        @map("membership_id") @db.Uuid
+  status         BookingStatus @default(CONFIRMED)
+  notes          String?
+  createdAt      DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime      @updatedAt @db.Timestamp(6)
+  classSession   ClassSession  @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  membership     Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classSessionId, userId])
+  @@map("bookings")
+}
+
+model QuotaPool {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  name        String   // e.g., "Beginner Classes", "All Group Classes"
+  description String?
+  totalQuota  Int      @map("total_quota")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @db.Timestamp(6)
+
+  product              Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productItems         ProductItem[]
+  membershipQuotaUsage MembershipQuotaUsage[]
+
+  @@unique([productId, name]) // Prevent duplicate pool names within the same product
+  @@index([productId, isActive]) // Index for active pools by product
+  @@map("quota_pools")
+}
+
+model MembershipQuotaUsage {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId  String   @map("membership_id") @db.Uuid
+  productItemId String?  @map("product_item_id") @db.Uuid // for individual quotas
+  quotaPoolId   String?  @map("quota_pool_id") @db.Uuid // for shared quotas
+  usedCount     Int      @default(0) @map("used_count")
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+
+  membership  Membership   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  productItem ProductItem? @relation(fields: [productItemId], references: [id], onDelete: Cascade)
+  quotaPool   QuotaPool?   @relation(fields: [quotaPoolId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, productItemId]) // One record per membership per product item
+  @@unique([membershipId, quotaPoolId]) // One record per membership per quota pool
+  @@index([membershipId]) // Index for membership lookups
+  @@index([productItemId]) // Index for product item usage lookups
+  @@index([quotaPoolId]) // Index for quota pool usage lookups
+  @@map("membership_quota_usage")
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum QuotaType {
+  INDIVIDUAL  // Each item has its own quota allocation
+  SHARED      // Items share from a quota pool
+  FREE        // Items don't consume quota
 }

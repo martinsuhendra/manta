@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
 
-    const whereCondition: any = {};
+    const whereCondition: { role?: string } = {};
 
     // Add role filter if provided
-    if (role && Object.values(USER_ROLES).includes(role as any)) {
+    if (role && Object.values(USER_ROLES).includes(role as (typeof USER_ROLES)[keyof typeof USER_ROLES])) {
       whereCondition.role = role;
     }
 

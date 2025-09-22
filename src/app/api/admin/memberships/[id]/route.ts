@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (validatedData.status) {
       updateData.status = validatedData.status;
@@ -70,7 +70,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             name: true,
             price: true,
             validDays: true,
-            quota: true,
           },
         },
         transaction: {

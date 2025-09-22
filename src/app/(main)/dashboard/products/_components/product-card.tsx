@@ -26,7 +26,6 @@ interface ProductData {
   description?: string | null;
   price: number;
   validDays: number;
-  quota: number;
   image?: string | null;
   paymentUrl?: string | null;
   whatIsIncluded?: string | null;
@@ -143,7 +142,6 @@ interface ProductCardProps {
   description?: string;
   price?: number;
   validDays?: number;
-  quota?: number;
   image?: string;
   paymentUrl?: string;
   whatIsIncluded?: string;
@@ -158,7 +156,6 @@ const DEFAULT_PRODUCT_DATA: ProductData = {
   description: "",
   price: 0,
   validDays: 30,
-  quota: 10,
   image: "",
   paymentUrl: "",
   whatIsIncluded: "",
@@ -205,7 +202,6 @@ export function ProductPreview({
   description,
   price,
   validDays,
-  quota,
   image,
   paymentUrl,
   whatIsIncluded,
@@ -215,7 +211,6 @@ export function ProductPreview({
   description?: string;
   price: number;
   validDays: number;
-  quota: number;
   image?: string;
   paymentUrl?: string;
   whatIsIncluded?: string;
@@ -229,7 +224,6 @@ export function ProductPreview({
         description={description}
         price={price}
         validDays={validDays}
-        quota={quota}
         image={image}
         paymentUrl={paymentUrl}
         whatIsIncluded={whatIsIncluded}

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import type { Session } from "next-auth";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
@@ -13,7 +12,6 @@ const createProductSchema = z.object({
   description: z.string().optional(),
   price: z.number().positive("Price must be positive"),
   validDays: z.number().positive("Valid days must be positive"),
-  quota: z.number().positive("Quota must be positive"),
   features: z.array(z.string()).optional().default([]),
   image: z.string().optional(),
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
@@ -25,7 +23,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -41,7 +39,13 @@ export async function GET() {
     return NextResponse.json(products);
   } catch (error) {
     console.error("Failed to fetch membership products:", error);
-    return NextResponse.json({ error: "Failed to fetch membership products" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Failed to fetch membership products",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -72,10 +76,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
       return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
     }
 
     console.error("Failed to create membership product:", error);
-    return NextResponse.json({ error: "Failed to create membership product" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Failed to create membership product",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 }

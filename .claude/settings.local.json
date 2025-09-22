@@ -22,7 +22,10 @@
       "Bash(wc:*)",
       "mcp__ide__getDiagnostics",
       "WebSearch",
-      "WebFetch(domain:next-auth.js.org)"
+      "WebFetch(domain:next-auth.js.org)",
+      "Bash(pnpm build:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

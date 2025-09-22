@@ -5,8 +5,6 @@ export const membershipSchema = z.object({
   userId: z.string(),
   productId: z.string(),
   status: z.string(),
-  useCount: z.number(),
-  remainingQuota: z.number(),
   joinDate: z.string(),
   expiredAt: z.string(),
   createdAt: z.string(),
@@ -22,7 +20,6 @@ export const membershipSchema = z.object({
     name: z.string(),
     price: z.number(),
     validDays: z.number(),
-    quota: z.number(),
   }),
 });
 
@@ -38,7 +35,6 @@ export type CreateMembershipForm = z.infer<typeof createMembershipSchema>;
 
 export const updateMembershipSchema = z.object({
   status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).optional(),
-  remainingQuota: z.number().min(0).optional(),
   expiredAt: z.string().optional(),
 });
 

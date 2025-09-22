@@ -19,15 +19,15 @@ export function MembershipsTableSkeleton() {
       <div className="rounded-md border">
         <div className="bg-muted/50 h-12 border-b">
           <div className="flex items-center px-4 py-3">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="mr-4 h-4 w-20" />
+            {Array.from({ length: 7 }, (_, i) => `header-${i}`).map((key) => (
+              <Skeleton key={key} className="mr-4 h-4 w-20" />
             ))}
           </div>
         </div>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex items-center border-b px-4 py-3">
-            {Array.from({ length: 7 }).map((_, j) => (
-              <Skeleton key={j} className="mr-4 h-8 w-20" />
+        {Array.from({ length: 10 }, (_, i) => `row-${i}`).map((rowKey) => (
+          <div key={rowKey} className="flex items-center border-b px-4 py-3">
+            {Array.from({ length: 7 }, (_, j) => `cell-${j}`).map((cellKey) => (
+              <Skeleton key={cellKey} className="mr-4 h-8 w-20" />
             ))}
           </div>
         ))}

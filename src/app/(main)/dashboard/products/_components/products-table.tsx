@@ -14,7 +14,7 @@ import { useReorderProducts } from "@/hooks/use-products-mutation";
 
 import { createProductColumns } from "./columns";
 import { DeleteProductDialog } from "./delete-product-dialog";
-import { AddProductDialog, ProductFormDialog } from "./product-form-dialog";
+import { AddProductDialog, ProductFormTabbedDialog } from "./product-form-tabbed-dialog";
 import { ProductsGrid } from "./products-grid";
 import { ProductsSearch } from "./products-search";
 import { ProductsTableSkeleton } from "./products-table-skeleton";
@@ -176,7 +176,7 @@ export function ProductsTable({ data, isLoading }: ProductsTableProps) {
       )}
 
       <ViewProductDialog product={selectedProduct} open={viewProductOpen} onOpenChange={setViewProductOpen} />
-      <ProductFormDialog
+      <ProductFormTabbedDialog
         mode="edit"
         product={selectedProduct}
         open={editProductOpen}
