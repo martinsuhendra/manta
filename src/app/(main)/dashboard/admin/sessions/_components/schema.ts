@@ -1,0 +1,182 @@
+import { z } from "zod";
+
+// Helper function to convert time string to minutes
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+// Session schemas extending from existing ClassSession model
+export const sessionSchema = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  teacherId: z.string().nullable(),
+  date: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
+  status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]),
+  notes: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  item: z.object({
+    id: z.string(),
+    name: z.string(),
+    duration: z.number(),
+    capacity: z.number(),
+    color: z.string().nullable(),
+  }),
+  teacher: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      email: z.string().nullable(),
+    })
+    .nullable(),
+  _count: z
+    .object({
+      bookings: z.number(),
+    })
+    .optional(),
+  bookings: z
+    .array(
+      z.object({
+        id: z.string(),
+        status: z.enum(["CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW"]),
+        user: z.object({
+          id: z.string(),
+          name: z.string().nullable(),
+          email: z.string().nullable(),
+        }),
+      }),
+    )
+    .optional(),
+});
+
+export type Session = z.infer<typeof sessionSchema>;
+
+export const createSessionSchema = z
+  .object({
+    itemId: z.string().min(1, "Item is required"),
+    teacherId: z.string().optional(),
+    date: z.string().min(1, "Date is required"),
+    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+    status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).default("SCHEDULED"),
+    notes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const startMinutes = timeToMinutes(data.startTime);
+      const endMinutes = timeToMinutes(data.endTime);
+      return endMinutes > startMinutes;
+    },
+    {
+      message: "End time must be after start time",
+      path: ["endTime"],
+    },
+  );
+
+export type CreateSessionForm = z.infer<typeof createSessionSchema>;
+
+export const updateSessionSchema = z
+  .object({
+    itemId: z.string().min(1, "Item is required").optional(),
+    teacherId: z.string().optional(),
+    date: z.string().min(1, "Date is required").optional(),
+    startTime: z
+      .string()
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
+      .optional(),
+    endTime: z
+      .string()
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
+      .optional(),
+    status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+    notes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startTime || !data.endTime) return true; // Skip validation if either is not provided
+      const startMinutes = timeToMinutes(data.startTime);
+      const endMinutes = timeToMinutes(data.endTime);
+      return endMinutes > startMinutes;
+    },
+    {
+      message: "End time must be after start time",
+      path: ["endTime"],
+    },
+  );
+
+export type UpdateSessionForm = z.infer<typeof updateSessionSchema>;
+
+// Item schema for dropdowns
+export const itemOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  duration: z.number(),
+  capacity: z.number(),
+  color: z.string().nullable(),
+});
+
+export type ItemOption = z.infer<typeof itemOptionSchema>;
+
+// Teacher schema for dropdowns
+export const teacherOptionSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+});
+
+export type TeacherOption = z.infer<typeof teacherOptionSchema>;
+
+// Session filter schema
+export const sessionFilterSchema = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  teacherId: z.string().optional(),
+  itemId: z.string().optional(),
+  status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+});
+
+export type SessionFilter = z.infer<typeof sessionFilterSchema>;
+
+// Session status labels and colors
+export const SESSION_STATUS_LABELS = {
+  SCHEDULED: "Scheduled",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
+} as const;
+
+export const SESSION_STATUS_COLORS = {
+  SCHEDULED: "#3B82F6", // Blue
+  CANCELLED: "#EF4444", // Red
+  COMPLETED: "#10B981", // Green
+} as const;
+
+// Time slots for scheduling (15-minute intervals)
+export const TIME_SLOTS = Array.from({ length: 24 * 4 }, (_, i) => {
+  const hour = Math.floor(i / 4);
+  const minute = (i % 4) * 15;
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+});
+
+// Calendar event schema for display
+export const calendarEventSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  start: z.date(),
+  end: z.date(),
+  color: z.string(),
+  textColor: z.string().optional(),
+  extendedProps: z.object({
+    sessionId: z.string(),
+    itemId: z.string(),
+    teacherId: z.string().nullable(),
+    status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]),
+    capacity: z.number(),
+    bookingCount: z.number(),
+    notes: z.string().nullable(),
+  }),
+});
+
+export type CalendarEvent = z.infer<typeof calendarEventSchema>;

@@ -1,89 +1,54 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
-import { User } from "@/app/(main)/dashboard/users/_components/schema";
-import { userQueryKeys, fetchUsers, fetchUser, createUser, updateUser, deleteUser } from "@/lib/queries/users";
-
-export function useUsers() {
-  return useQuery({
-    queryKey: userQueryKeys.lists(),
-    queryFn: fetchUsers,
-  });
+export interface User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: "ADMIN" | "SUPERADMIN" | "MEMBER" | "TEACHER";
+  phoneNo: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count: {
+    memberships: number;
+  };
 }
 
-export function useUser(id: string) {
-  return useQuery({
-    queryKey: userQueryKeys.detail(id),
-    queryFn: () => fetchUser(id),
-    enabled: !!id,
-  });
-}
+// Re-export from mutations for backward compatibility
+export { useCreateUser, useUpdateUser, useDeleteUser } from "./use-users-mutation";
 
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-      toast.success("User created successfully");
-    },
-    onError: (error) => {
-      let errorMessage = "Failed to create user";
-
-      if (error instanceof Error) {
-        if (error.message.includes("email already exists") || error.message.includes("already exists")) {
-          errorMessage = "Email already exists";
-        } else {
-          errorMessage = error.message;
-        }
+export function useTeachers() {
+  return useQuery<User[]>({
+    queryKey: ["users", "teachers"],
+    queryFn: async () => {
+      try {
+        const response = await axios.get("/api/users", {
+          params: { role: "TEACHER" },
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Teachers API error:", error);
+        throw error;
       }
-
-      toast.error(errorMessage);
     },
+    retry: false,
   });
 }
 
-export function useUpdateUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) => updateUser(id, data),
-    onSuccess: (updatedUser, { id }) => {
-      queryClient.setQueryData(userQueryKeys.detail(id), updatedUser);
-      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-      toast.success("User updated successfully");
-    },
-    onError: (error) => {
-      let errorMessage = "Failed to update user";
-
-      if (error instanceof Error) {
-        if (error.message.includes("email already exists") || error.message.includes("already exists")) {
-          errorMessage = "Email already exists";
-        } else {
-          errorMessage = error.message;
-        }
+export function useUsers(params?: { role?: string }) {
+  return useQuery<User[]>({
+    queryKey: ["users", params],
+    queryFn: async () => {
+      try {
+        const response = await axios.get("/api/users", { params });
+        return response.data;
+      } catch (error) {
+        console.error("Users API error:", error);
+        throw error;
       }
-
-      toast.error(errorMessage);
     },
-  });
-}
-
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteUser,
-    onSuccess: (_, deletedId) => {
-      queryClient.removeQueries({ queryKey: userQueryKeys.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-      toast.success("User deleted successfully");
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to delete user");
-    },
+    retry: false,
   });
 }
