@@ -44,7 +44,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (teacherId) {
-      whereConditions.teacherId = teacherId;
+      if (teacherId === "unassigned") {
+        whereConditions.teacherId = null;
+      } else {
+        whereConditions.teacherId = teacherId;
+      }
     }
 
     if (itemId) {
@@ -103,14 +107,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { itemId, teacherId, date, startTime, endTime, status, notes } = body;
+    const { itemId, teacherId, date, startTime, status, notes } = body;
 
     // Validate required fields
-    if (!itemId || !date || !startTime || !endTime) {
-      return NextResponse.json({ error: "Missing required fields: itemId, date, startTime, endTime" }, { status: 400 });
+    if (!itemId || !date || !startTime) {
+      return NextResponse.json({ error: "Missing required fields: itemId, date, startTime" }, { status: 400 });
     }
 
-    // Validate that the item exists
+    // Validate that the item exists and get its duration
     const item = await prisma.item.findUnique({
       where: { id: itemId },
     });
@@ -118,6 +122,15 @@ export async function POST(request: NextRequest) {
     if (!item) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
+
+    // Calculate end time based on start time + item duration
+    const [startHours, startMinutes] = startTime.split(":").map(Number);
+    const startTimeInMinutes = startHours * 60 + startMinutes;
+    const endTimeInMinutes = startTimeInMinutes + item.duration;
+
+    const endHours = Math.floor(endTimeInMinutes / 60);
+    const endMins = endTimeInMinutes % 60;
+    const calculatedEndTime = `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`;
 
     // If teacher is provided, validate that the teacher exists and has TEACHER role
     if (teacherId) {
@@ -158,7 +171,7 @@ export async function POST(request: NextRequest) {
         teacherId: teacherId || null,
         date: new Date(date),
         startTime,
-        endTime,
+        endTime: calculatedEndTime,
         status: status || "SCHEDULED",
         notes: notes || null,
       },

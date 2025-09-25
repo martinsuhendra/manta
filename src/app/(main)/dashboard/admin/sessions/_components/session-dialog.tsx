@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useItems } from "@/hooks/use-items-query";
-import { useCreateSession } from "@/hooks/use-sessions-mutation";
+import { useCreateSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 import { useTeachers } from "@/hooks/use-users-query";
 
 import { CreateSessionForm, createSessionSchema, TIME_SLOTS } from "./schema";
@@ -22,75 +22,78 @@ interface SessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
+  editingSession?: any; // The session being edited, null for create mode
   onSuccess?: () => void;
 }
 
-export function SessionDialog({ open, onOpenChange, selectedDate, onSuccess }: SessionDialogProps) {
+export function SessionDialog({ open, onOpenChange, selectedDate, editingSession, onSuccess }: SessionDialogProps) {
   const { data: items = [], isLoading: itemsLoading } = useItems();
   const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
   const createSessionMutation = useCreateSession();
+  const updateSessionMutation = useUpdateSession();
+
+  const isEditMode = !!editingSession;
 
   const form = useForm<CreateSessionForm>({
     resolver: zodResolver(createSessionSchema),
     defaultValues: {
-      itemId: "",
-      teacherId: "none",
+      itemId: editingSession?.itemId || "",
+      teacherId: editingSession?.teacherId || "none",
       date: (() => {
+        if (editingSession) {
+          // Use the editing session's date
+          const sessionDate = new Date(editingSession.date);
+          const year = sessionDate.getFullYear();
+          const month = String(sessionDate.getMonth() + 1).padStart(2, "0");
+          const day = String(sessionDate.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        }
         const dateToUse = selectedDate || new Date();
         const year = dateToUse.getFullYear();
         const month = String(dateToUse.getMonth() + 1).padStart(2, "0");
         const day = String(dateToUse.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       })(),
-      startTime: "09:00",
-      endTime: "10:00",
-      status: "SCHEDULED",
-      notes: "",
+      startTime: editingSession?.startTime || "09:00",
+      status: editingSession?.status || "SCHEDULED",
+      notes: editingSession?.notes || "",
     },
   });
-
-  const watchedItemId = form.watch("itemId");
 
   // Update form when selectedDate changes or dialog opens
   useEffect(() => {
     if (open) {
-      const dateToUse = selectedDate || new Date();
-      // Fix timezone issue by using local date formatting
-      const year = dateToUse.getFullYear();
-      const month = String(dateToUse.getMonth() + 1).padStart(2, "0");
-      const day = String(dateToUse.getDate()).padStart(2, "0");
-      const localDateString = `${year}-${month}-${day}`;
+      if (editingSession) {
+        // Populate form with editing session data
+        const sessionDate = new Date(editingSession.date);
+        const year = sessionDate.getFullYear();
+        const month = String(sessionDate.getMonth() + 1).padStart(2, "0");
+        const day = String(sessionDate.getDate()).padStart(2, "0");
+        const localDateString = `${year}-${month}-${day}`;
 
-      form.setValue("date", localDateString);
-      // Reset other form fields when opening
-      form.setValue("itemId", "");
-      form.setValue("teacherId", "none");
-      form.setValue("startTime", "09:00");
-      form.setValue("endTime", "10:00");
-      form.setValue("status", "SCHEDULED");
-      form.setValue("notes", "");
-    }
-  }, [selectedDate, open, form]);
+        form.setValue("itemId", editingSession.itemId || "");
+        form.setValue("teacherId", editingSession.teacherId || "none");
+        form.setValue("date", localDateString);
+        form.setValue("startTime", editingSession.startTime || "09:00");
+        form.setValue("status", editingSession.status || "SCHEDULED");
+        form.setValue("notes", editingSession.notes || "");
+      } else {
+        // Reset form for create mode
+        const dateToUse = selectedDate || new Date();
+        const year = dateToUse.getFullYear();
+        const month = String(dateToUse.getMonth() + 1).padStart(2, "0");
+        const day = String(dateToUse.getDate()).padStart(2, "0");
+        const localDateString = `${year}-${month}-${day}`;
 
-  // Calculate end time based on item duration
-  useEffect(() => {
-    if (watchedItemId) {
-      const selectedItem = items.find((item) => item.id === watchedItemId);
-      const startTime = form.getValues("startTime");
-
-      if (selectedItem && startTime) {
-        const [hours, minutes] = startTime.split(":").map(Number);
-        const startMinutes = hours * 60 + minutes;
-        const endMinutes = startMinutes + selectedItem.duration;
-
-        const endHours = Math.floor(endMinutes / 60);
-        const endMins = endMinutes % 60;
-        const endTime = `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`;
-
-        form.setValue("endTime", endTime);
+        form.setValue("date", localDateString);
+        form.setValue("itemId", "");
+        form.setValue("teacherId", "none");
+        form.setValue("startTime", "09:00");
+        form.setValue("status", "SCHEDULED");
+        form.setValue("notes", "");
       }
     }
-  }, [watchedItemId, form.watch("startTime"), items, form]);
+  }, [selectedDate, open, form, editingSession]);
 
   const onSubmit = (data: CreateSessionForm) => {
     // Convert "none" teacherId to undefined
@@ -99,19 +102,36 @@ export function SessionDialog({ open, onOpenChange, selectedDate, onSuccess }: S
       teacherId: data.teacherId === "none" ? undefined : data.teacherId,
     };
 
-    createSessionMutation.mutate(submitData, {
-      onSuccess: () => {
-        form.reset();
-        onSuccess?.();
-      },
-    });
+    if (isEditMode && editingSession) {
+      // Update existing session
+      updateSessionMutation.mutate(
+        {
+          sessionId: editingSession.id,
+          data: submitData,
+        },
+        {
+          onSuccess: () => {
+            form.reset();
+            onSuccess?.();
+          },
+        },
+      );
+    } else {
+      // Create new session
+      createSessionMutation.mutate(submitData, {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      });
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Session</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Session" : "Create New Session"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -181,57 +201,30 @@ export function SessionDialog({ open, onOpenChange, selectedDate, onSuccess }: S
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select start time" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {TIME_SLOTS.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select end time" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {TIME_SLOTS.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Time</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select start time" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {TIME_SLOTS.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -276,10 +269,18 @@ export function SessionDialog({ open, onOpenChange, selectedDate, onSuccess }: S
               </Button>
               <Button
                 type="submit"
-                disabled={createSessionMutation.isPending || itemsLoading || teachersLoading}
+                disabled={
+                  createSessionMutation.isPending || updateSessionMutation.isPending || itemsLoading || teachersLoading
+                }
                 className="flex-1"
               >
-                {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+                {createSessionMutation.isPending || updateSessionMutation.isPending
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditMode
+                    ? "Update Session"
+                    : "Create Session"}
               </Button>
             </div>
           </form>

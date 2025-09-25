@@ -1,7 +1,14 @@
-import { Clock, User, Users } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+
+import { Clock, User, Users, Edit2, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useDeleteSession } from "@/hooks/use-sessions-mutation";
 
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { Session } from "./schema";
 
 const SESSION_STATUS_COLORS = {
@@ -14,12 +21,32 @@ const SESSION_STATUS_COLORS = {
 interface CompactSessionCardProps {
   session: Session;
   onSessionSelect: (session: Session) => void;
+  onEdit?: (session: Session) => void;
 }
 
-export function CompactSessionCard({ session, onSessionSelect }: CompactSessionCardProps) {
+export function CompactSessionCard({ session, onSessionSelect, onEdit }: CompactSessionCardProps) {
+  const deleteSessionMutation = useDeleteSession();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+
+  const handleDeleteClick = (session: Session) => {
+    setSessionToDelete(session);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!sessionToDelete) return;
+
+    deleteSessionMutation.mutate(sessionToDelete.id, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+        setSessionToDelete(null);
+      },
+    });
+  };
   return (
     <div
-      className="bg-card cursor-pointer rounded-lg border border-l-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+      className="bg-card cursor-pointer rounded-lg border border-l-4 transition-all duration-200 hover:shadow-lg"
       style={{ borderLeftColor: session.item.color || SESSION_STATUS_COLORS[session.status] }}
       onClick={() => onSessionSelect(session)}
     >
@@ -77,9 +104,46 @@ export function CompactSessionCard({ session, onSessionSelect }: CompactSessionC
                 <span className="text-foreground font-medium">Note:</span> {session.notes}
               </div>
             )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(session);
+                  }}
+                >
+                  <Edit2 className="mr-1 h-3 w-3" />
+                  Edit
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive-foreground hover:bg-destructive h-7 px-2 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(session);
+                }}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Delete
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        session={sessionToDelete}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={deleteSessionMutation.isPending}
+      />
     </div>
   );
 }

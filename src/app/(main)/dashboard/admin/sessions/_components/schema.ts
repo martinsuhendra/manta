@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Helper function to convert time string to minutes
+// Helper function to convert time string to minutes (still used by updateSessionSchema)
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -54,27 +54,14 @@ export const sessionSchema = z.object({
 
 export type Session = z.infer<typeof sessionSchema>;
 
-export const createSessionSchema = z
-  .object({
-    itemId: z.string().min(1, "Item is required"),
-    teacherId: z.string().optional(),
-    date: z.string().min(1, "Date is required"),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).default("SCHEDULED"),
-    notes: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      const startMinutes = timeToMinutes(data.startTime);
-      const endMinutes = timeToMinutes(data.endTime);
-      return endMinutes > startMinutes;
-    },
-    {
-      message: "End time must be after start time",
-      path: ["endTime"],
-    },
-  );
+export const createSessionSchema = z.object({
+  itemId: z.string().min(1, "Item is required"),
+  teacherId: z.string().optional(),
+  date: z.string().min(1, "Date is required"),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).default("SCHEDULED"),
+  notes: z.string().optional(),
+});
 
 export type CreateSessionForm = z.infer<typeof createSessionSchema>;
 

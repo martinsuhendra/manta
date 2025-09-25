@@ -17,10 +17,11 @@ interface SessionCalendarProps {
   filters: SessionFilter;
   onDateSelect: (date: Date, hasSessions?: boolean, sessions?: Session[]) => void;
   onSessionSelect: (session: Session) => void;
+  onEditSession?: (session: Session) => void;
   refreshTrigger?: number;
 }
 
-export function SessionCalendar({ filters, onDateSelect, onSessionSelect }: SessionCalendarProps) {
+export function SessionCalendar({ filters, onDateSelect, onSessionSelect, onEditSession }: SessionCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
@@ -118,46 +119,48 @@ export function SessionCalendar({ filters, onDateSelect, onSessionSelect }: Sess
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Calendar */}
       <div className="lg:col-span-2">
-        <Card className="border-none">
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              month={currentMonth}
-              onMonthChange={handleMonthChange}
-              className="w-full rounded-md border"
-              classNames={{
-                day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md m-0.5",
-                day_selected:
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-md m-0.5",
-                day_today: "bg-accent text-accent-foreground rounded-md m-0.5",
-                day_outside: "text-muted-foreground opacity-50",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                day_hidden: "invisible",
-              }}
-              components={{
-                DayButton: ({ day, ...props }: { day: any; [key: string]: any }) => (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground m-0.5 h-12 w-full rounded-md p-0 font-normal"
-                    {...props}
-                  >
-                    {renderDayContent(day)}
-                  </Button>
-                ),
-              }}
-            />
-            {isLoading && <div className="text-muted-foreground mt-4 text-center text-sm">Loading sessions...</div>}
-          </CardContent>
-        </Card>
+        <div className="sticky top-4">
+          <Card className="border-none">
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                month={currentMonth}
+                onMonthChange={handleMonthChange}
+                className="w-full rounded-md border"
+                classNames={{
+                  day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md m-0.5",
+                  day_selected:
+                    "bg-blue-500 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-md m-0.5",
+                  day_today: "bg-accent text-accent-foreground rounded-md m-0.5 border border-primary/30",
+                  day_outside: "text-muted-foreground opacity-50",
+                  day_disabled: "text-muted-foreground opacity-50",
+                  day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                  day_hidden: "invisible",
+                }}
+                components={{
+                  DayButton: ({ day, ...props }: { day: any; [key: string]: any }) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground m-0.5 h-12 w-full rounded-md p-0 font-normal"
+                      {...props}
+                    >
+                      {renderDayContent(day)}
+                    </Button>
+                  ),
+                }}
+              />
+              {isLoading && <div className="text-muted-foreground mt-4 text-center text-sm">Loading sessions...</div>}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Session Details for Selected Date */}
-      <div className="space-y-4">
-        <div>
+      <div className="flex h-[calc(100vh-12rem)] flex-col space-y-4">
+        <div className="shrink-0">
           <h3 className="text-lg font-semibold">
             {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
           </h3>
@@ -166,7 +169,7 @@ export function SessionCalendar({ filters, onDateSelect, onSessionSelect }: Sess
           </p>
         </div>
 
-        <div className="max-h-96 space-y-3 overflow-y-auto">
+        <div className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto">
           {selectedDateSessions.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground p-4 text-center">
@@ -185,7 +188,12 @@ export function SessionCalendar({ filters, onDateSelect, onSessionSelect }: Sess
             selectedDateSessions
               .sort((a, b) => a.startTime.localeCompare(b.startTime))
               .map((session) => (
-                <CompactSessionCard key={session.id} session={session} onSessionSelect={onSessionSelect} />
+                <CompactSessionCard
+                  key={session.id}
+                  session={session}
+                  onSessionSelect={onSessionSelect}
+                  onEdit={onEditSession}
+                />
               ))
           )}
         </div>

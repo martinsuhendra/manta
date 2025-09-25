@@ -168,40 +168,92 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
 
       {/* Active Filter Badges */}
       {activeFilterCount > 0 && (
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
           {filters.startDate && (
-            <Badge variant="secondary" className="gap-1">
-              From: {filters.startDate}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("startDate")} />
-            </Badge>
+            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+              <span>From: {filters.startDate}</span>
+              <button
+                type="button"
+                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearFilter("startDate");
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
           {filters.endDate && (
-            <Badge variant="secondary" className="gap-1">
-              To: {filters.endDate}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("endDate")} />
-            </Badge>
+            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+              <span>To: {filters.endDate}</span>
+              <button
+                type="button"
+                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearFilter("endDate");
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
           {filters.itemId && (
-            <Badge variant="secondary" className="gap-1">
-              {items.find((item) => item.id === filters.itemId)?.name || "Unknown Item"}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("itemId")} />
-            </Badge>
+            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+              <span>{items.find((item) => item.id === filters.itemId)?.name || "Unknown Item"}</span>
+              <button
+                type="button"
+                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearFilter("itemId");
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
           {filters.teacherId && (
-            <Badge variant="secondary" className="gap-1">
-              {filters.teacherId === "unassigned"
-                ? "Unassigned"
-                : teachers.find((teacher) => teacher.id === filters.teacherId)?.name ||
-                  teachers.find((teacher) => teacher.id === filters.teacherId)?.email ||
-                  "Unknown Teacher"}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("teacherId")} />
-            </Badge>
+            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+              <span>
+                {filters.teacherId === "unassigned"
+                  ? "Unassigned"
+                  : teachers.find((teacher) => teacher.id === filters.teacherId)?.name ||
+                    teachers.find((teacher) => teacher.id === filters.teacherId)?.email ||
+                    "Unknown Teacher"}
+              </span>
+              <button
+                type="button"
+                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearFilter("teacherId");
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
           {filters.status && (
-            <Badge variant="secondary" className="gap-1">
-              {filters.status}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("status")} />
-            </Badge>
+            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
+              <span>{filters.status}</span>
+              <button
+                type="button"
+                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearFilter("status");
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
         </div>
       )}
