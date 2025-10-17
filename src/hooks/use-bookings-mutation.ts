@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -13,6 +13,14 @@ interface AddParticipantData {
 interface RemoveParticipantData {
   sessionId: string;
   bookingId: string;
+}
+
+interface Session {
+  id: string;
+  _count?: {
+    bookings?: number;
+  };
+  [key: string]: unknown;
 }
 
 export function useAddSessionParticipant() {
@@ -31,19 +39,19 @@ export function useAddSessionParticipant() {
       await queryClient.cancelQueries({ queryKey: ["sessions"] });
 
       // Get all existing sessions queries
-      const previousQueriesData = queryClient.getQueriesData({ queryKey: ["sessions"] });
+      const previousQueriesData = queryClient.getQueriesData<Session[]>({ queryKey: ["sessions"] });
 
       // Optimistically update session booking count
-      queryClient.setQueriesData({ queryKey: ["sessions"] }, (old: unknown) => {
-        if (!old || !Array.isArray(old)) return old;
+      queryClient.setQueriesData<Session[]>({ queryKey: ["sessions"] }, (old) => {
+        if (!old) return old;
 
-        return old.map((session: Record<string, unknown>) =>
+        return old.map((session) =>
           session.id === sessionId
             ? {
                 ...session,
                 _count: {
-                  ...(session._count as Record<string, unknown>),
-                  bookings: ((session._count as { bookings?: number })?.bookings || 0) + 1,
+                  ...session._count,
+                  bookings: (session._count?.bookings ?? 0) + 1,
                 },
               }
             : session,
@@ -56,16 +64,19 @@ export function useAddSessionParticipant() {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast.success("Participant added successfully");
     },
-    onError: (error: unknown, variables, context) => {
+    onError: (error, variables, context) => {
       // Roll back on error
       if (context?.previousQueriesData) {
-        context.previousQueriesData.forEach(([queryKey, data]: [unknown, unknown]) => {
-          queryClient.setQueryData(queryKey, data);
+        context.previousQueriesData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData<Session[]>(queryKey, data);
         });
       }
 
       const message =
-        (error as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to add participant";
+        error instanceof Error && "response" in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ??
+            "Failed to add participant")
+          : "Failed to add participant";
       toast.error(message);
       throw error;
     },
@@ -85,19 +96,19 @@ export function useRemoveSessionParticipant() {
       await queryClient.cancelQueries({ queryKey: ["sessions"] });
 
       // Get all existing sessions queries
-      const previousQueriesData = queryClient.getQueriesData({ queryKey: ["sessions"] });
+      const previousQueriesData = queryClient.getQueriesData<Session[]>({ queryKey: ["sessions"] });
 
       // Optimistically update session booking count
-      queryClient.setQueriesData({ queryKey: ["sessions"] }, (old: unknown) => {
-        if (!old || !Array.isArray(old)) return old;
+      queryClient.setQueriesData<Session[]>({ queryKey: ["sessions"] }, (old) => {
+        if (!old) return old;
 
-        return old.map((session: Record<string, unknown>) =>
+        return old.map((session) =>
           session.id === sessionId
             ? {
                 ...session,
                 _count: {
-                  ...(session._count as Record<string, unknown>),
-                  bookings: Math.max(((session._count as { bookings?: number })?.bookings || 0) - 1, 0),
+                  ...session._count,
+                  bookings: Math.max((session._count?.bookings ?? 0) - 1, 0),
                 },
               }
             : session,
@@ -110,16 +121,19 @@ export function useRemoveSessionParticipant() {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast.success("Participant removed successfully");
     },
-    onError: (error: unknown, variables, context) => {
+    onError: (error, variables, context) => {
       // Roll back on error
       if (context?.previousQueriesData) {
-        context.previousQueriesData.forEach(([queryKey, data]: [unknown, unknown]) => {
-          queryClient.setQueryData(queryKey, data);
+        context.previousQueriesData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData<Session[]>(queryKey, data);
         });
       }
 
       const message =
-        (error as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to remove participant";
+        error instanceof Error && "response" in error
+          ? ((error as { response?: { data?: { error?: string } } }).response?.data?.error ??
+            "Failed to remove participant")
+          : "Failed to remove participant";
       toast.error(message);
       throw error;
     },
