@@ -19,9 +19,8 @@ import { ViewItemDialog } from "./view-item-dialog";
 export function ItemsTable() {
   const [selectedItems] = React.useState<Item[]>([]);
   const [itemToView, setItemToView] = React.useState<Item | null>(null);
-  const [itemToEdit, setItemToEdit] = React.useState<Item | null>(null);
+  const [itemDialogState, setItemDialogState] = React.useState<Item | "new" | null>(null);
   const [itemToDelete, setItemToDelete] = React.useState<Item | null>(null);
-  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
 
   const { data: items = [], isLoading } = useQuery<Item[]>({
     queryKey: ["admin-items"],
@@ -34,7 +33,7 @@ export function ItemsTable() {
 
   const actions = {
     onViewItem: setItemToView,
-    onEditItem: setItemToEdit,
+    onEditItem: setItemDialogState,
     onDeleteItem: setItemToDelete,
   };
 
@@ -54,7 +53,7 @@ export function ItemsTable() {
             <span className="text-muted-foreground text-sm">{selectedItems.length} item(s) selected</span>
           )}
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
+        <Button onClick={() => setItemDialogState("new")}>
           <Plus className="mr-2 h-4 w-4" />
           Add Class
         </Button>
@@ -62,11 +61,13 @@ export function ItemsTable() {
 
       {isLoading ? <ItemsTableSkeleton /> : <DataTable table={tableInstance} columns={columns} />}
 
-      <ItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <ItemDialog
+        item={itemDialogState === "new" ? undefined : itemDialogState || undefined}
+        open={itemDialogState !== null}
+        onOpenChange={(open) => !open && setItemDialogState(null)}
+      />
 
       <ViewItemDialog item={itemToView} open={!!itemToView} onOpenChange={(open) => !open && setItemToView(null)} />
-
-      <ItemDialog item={itemToEdit} open={!!itemToEdit} onOpenChange={(open) => !open && setItemToEdit(null)} />
 
       <DeleteItemDialog
         item={itemToDelete}

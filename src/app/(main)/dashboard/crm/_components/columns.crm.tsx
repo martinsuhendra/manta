@@ -3,9 +3,9 @@ import { EllipsisVertical } from "lucide-react";
 import z from "zod";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { recentLeadSchema } from "./schema";
 
@@ -55,13 +55,13 @@ export const recentLeadsColumns: ColumnDef<z.infer<typeof recentLeadSchema>>[] =
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <Badge variant="secondary">{row.original.status}</Badge>,
+    cell: ({ row }) => <StatusBadge variant="secondary">{row.original.status}</StatusBadge>,
     enableSorting: false,
   },
   {
     accessorKey: "source",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Source" />,
-    cell: ({ row }) => <Badge variant="outline">{row.original.source}</Badge>,
+    cell: ({ row }) => <StatusBadge variant="outline">{row.original.source}</StatusBadge>,
     enableSorting: false,
   },
   {

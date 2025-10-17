@@ -5,7 +5,6 @@ import * as React from "react";
 import { format } from "date-fns";
 import { Calendar, ExternalLink, MoreVertical } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
@@ -15,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { ProductCardImage } from "./product-card-image";
 import { ProductCardIncludes } from "./product-card-includes";
@@ -91,14 +91,14 @@ function ProductCardFeatures({ product }: { product?: Product | null }) {
     <div className="mt-3">
       <div className="flex flex-wrap gap-1">
         {product.features.slice(0, 3).map((feature) => (
-          <Badge key={feature} variant="outline" className="text-xs">
+          <StatusBadge key={feature} variant="outline" className="text-xs">
             {feature}
-          </Badge>
+          </StatusBadge>
         ))}
         {product.features.length > 3 && (
-          <Badge variant="outline" className="text-xs">
+          <StatusBadge variant="outline" className="text-xs">
             +{product.features.length - 3} more
-          </Badge>
+          </StatusBadge>
         )}
       </div>
     </div>
@@ -129,9 +129,9 @@ function ProductCardFooter({ data, isPreview }: { data: ProductData; isPreview: 
             Payment
           </Button>
         )}
-        <Badge variant={data.isActive ? "default" : "secondary"} className="shrink-0">
+        <StatusBadge variant={data.isActive ? "success" : "secondary"} className="shrink-0">
           {data.isActive ? "Active" : "Inactive"}
-        </Badge>
+        </StatusBadge>
       </div>
     </CardFooter>
   );

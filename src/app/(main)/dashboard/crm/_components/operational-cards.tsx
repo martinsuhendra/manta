@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { ChartContainer } from "@/components/ui/chart";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency, cn } from "@/lib/utils";
 
 import { salesPipelineChartData, salesPipelineChartConfig, regionSalesData, actionItems } from "./crm.config";
@@ -89,16 +90,13 @@ export function OperationalCards() {
                 <div className="flex items-center gap-2">
                   <Checkbox defaultChecked={item.checked} />
                   <span className="text-sm font-medium">{item.title}</span>
-                  <span
-                    className={cn(
-                      "w-fit rounded-md px-2 py-1 text-xs font-medium",
-                      item.priority === "High" && "text-destructive bg-destructive/20",
-                      item.priority === "Medium" && "bg-yellow-500/20 text-yellow-500",
-                      item.priority === "Low" && "bg-green-500/20 text-green-500",
-                    )}
+                  <StatusBadge
+                    variant={
+                      item.priority === "High" ? "destructive" : item.priority === "Medium" ? "warning" : "success"
+                    }
                   >
                     {item.priority}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <div className="text-muted-foreground text-xs font-medium">{item.desc}</div>
                 <div className="flex items-center gap-1">

@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { Clock, User, Users as UsersIcon, Edit2, Trash2, UserPlus } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useDeleteSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
@@ -67,7 +67,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
                 />
                 <h4 className="text-foreground truncate text-sm font-semibold">{session.item.name}</h4>
               </div>
-              <Badge
+              <StatusBadge
                 variant="secondary"
                 className="flex-shrink-0 px-2.5 py-1 text-xs font-medium"
                 style={{
@@ -76,8 +76,11 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
                   border: `1px solid ${SESSION_STATUS_COLORS[session.status]}30`,
                 }}
               >
-                {session.status}
-              </Badge>
+                {session.status
+                  .split("_")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                  .join(" ")}
+              </StatusBadge>
             </div>
 
             {/* Details Grid */}

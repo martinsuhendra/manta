@@ -22,6 +22,7 @@ export function SessionsView() {
   const [activeTab, setActiveTab] = useState("calendar");
 
   const handleCreateSession = () => {
+    setEditingSession(null);
     setIsDialogOpen(true);
   };
 

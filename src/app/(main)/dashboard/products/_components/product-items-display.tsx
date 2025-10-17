@@ -2,8 +2,8 @@ import * as React from "react";
 
 import { Clock, Users } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { Item } from "../../admin/items/_components/schema";
 
@@ -57,9 +57,9 @@ function ProductItemCard({
             <div className="text-muted-foreground mt-2 text-sm">{getQuotaInfo()}</div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={productItem.isActive ? "default" : "secondary"}>
+            <StatusBadge variant={productItem.isActive ? "success" : "secondary"}>
               {productItem.isActive ? "Active" : "Inactive"}
-            </Badge>
+            </StatusBadge>
           </div>
         </div>
       </CardContent>

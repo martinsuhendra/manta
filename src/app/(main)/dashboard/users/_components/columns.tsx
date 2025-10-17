@@ -2,7 +2,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { EllipsisVertical, Mail, Phone, Calendar } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -12,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
@@ -76,7 +76,9 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
       const role = row.original.role;
 
       return (
-        <Badge variant={getRoleVariant(role)}>{USER_ROLE_LABELS[role as keyof typeof USER_ROLE_LABELS] || role}</Badge>
+        <StatusBadge variant={getRoleVariant(role) as any}>
+          {USER_ROLE_LABELS[role as keyof typeof USER_ROLE_LABELS] || role}
+        </StatusBadge>
       );
     },
   },
@@ -102,7 +104,7 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
     cell: ({ row }) => {
       const count = row.original._count.memberships;
 
-      return <Badge variant="secondary">{count}</Badge>;
+      return <StatusBadge variant="secondary">{count}</StatusBadge>;
     },
   },
   {

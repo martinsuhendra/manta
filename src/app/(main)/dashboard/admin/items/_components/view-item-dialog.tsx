@@ -7,7 +7,6 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { Calendar, Clock, Users, User, Palette, Package } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -18,6 +17,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { DAY_OF_WEEK_LABELS, Item } from "./schema";
@@ -292,7 +292,9 @@ export function ViewItemDialog({ item, open, onOpenChange }: ViewItemDialogProps
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Status</span>
-            <Badge variant={item.isActive ? "default" : "secondary"}>{item.isActive ? "Active" : "Inactive"}</Badge>
+            <StatusBadge variant={item.isActive ? "success" : "secondary"}>
+              {item.isActive ? "Active" : "Inactive"}
+            </StatusBadge>
           </div>
 
           <ItemDescription item={item} />

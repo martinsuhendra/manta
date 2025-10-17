@@ -5,11 +5,11 @@ import * as React from "react";
 import { differenceInDays, format, isAfter } from "date-fns";
 import { Calendar, Clock, CreditCard, Package } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface Membership {
   id: string;
@@ -133,7 +133,7 @@ export function MyMemberships({ memberships, isLoading }: MyMembershipsProps) {
                           <h5 className="font-semibold">{membership.product.name}</h5>
                           <p className="text-muted-foreground text-sm">License: {membership.licenseCode}</p>
                         </div>
-                        <Badge variant={getStatusVariant(membership)}>{getStatusLabel(membership)}</Badge>
+                        <StatusBadge variant={getStatusVariant(membership)}>{getStatusLabel(membership)}</StatusBadge>
                       </div>
 
                       <div className="space-y-2">
@@ -175,9 +175,9 @@ export function MyMemberships({ memberships, isLoading }: MyMembershipsProps) {
                             <p className="mb-2 text-sm font-medium">Features:</p>
                             <div className="flex flex-wrap gap-1">
                               {membership.product.features.map((feature) => (
-                                <Badge key={feature} variant="outline" className="text-xs">
+                                <StatusBadge key={feature} variant="outline" className="text-xs">
                                   {feature}
-                                </Badge>
+                                </StatusBadge>
                               ))}
                             </div>
                           </div>
@@ -198,7 +198,7 @@ export function MyMemberships({ memberships, isLoading }: MyMembershipsProps) {
                     <div key={membership.id} className="space-y-2 rounded-lg border p-4 opacity-60">
                       <div className="flex items-center justify-between">
                         <h5 className="font-medium">{membership.product.name}</h5>
-                        <Badge variant={getStatusVariant(membership)}>{getStatusLabel(membership)}</Badge>
+                        <StatusBadge variant={getStatusVariant(membership)}>{getStatusLabel(membership)}</StatusBadge>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>

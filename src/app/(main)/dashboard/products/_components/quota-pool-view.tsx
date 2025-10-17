@@ -2,8 +2,8 @@ import * as React from "react";
 
 import { Edit2, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { QuotaPool } from "./schema";
 
@@ -26,7 +26,9 @@ export function QuotaPoolView({ pool, hasUsage, onEdit, onDelete }: QuotaPoolVie
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant={pool.isActive ? "default" : "secondary"}>{pool.isActive ? "Active" : "Inactive"}</Badge>
+        <StatusBadge variant={pool.isActive ? "success" : "secondary"}>
+          {pool.isActive ? "Active" : "Inactive"}
+        </StatusBadge>
         <Button
           type="button"
           size="sm"

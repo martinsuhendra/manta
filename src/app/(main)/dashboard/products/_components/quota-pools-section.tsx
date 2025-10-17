@@ -3,11 +3,11 @@ import { useState } from "react";
 import { Plus, Edit2, Check, XIcon, AlertTriangle } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { QuotaPool, CreateQuotaPoolForm } from "./schema";
 
@@ -133,9 +133,9 @@ export function QuotaPoolsSection({ quotaPools, setQuotaPools }: QuotaPoolsSecti
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium">{pool.name}</h4>
-                        <Badge variant={pool.isActive ? "default" : "secondary"}>
+                        <StatusBadge variant={pool.isActive ? "success" : "secondary"}>
                           {pool.isActive ? "Active" : "Inactive"}
-                        </Badge>
+                        </StatusBadge>
                       </div>
                       {pool.description && <p className="text-muted-foreground text-sm">{pool.description}</p>}
                       <p className="text-muted-foreground text-sm">Total Quota: {pool.totalQuota}</p>

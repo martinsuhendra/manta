@@ -6,7 +6,6 @@ import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { Calendar, Clock, Edit, MoreHorizontal, Trash2, User, UserPlus, Users as UsersIcon } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -17,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useUpdateSession, useDeleteSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
@@ -77,7 +77,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 />
                 <h3 className="truncate text-base font-semibold">{session.item.name}</h3>
               </div>
-              <Badge
+              <StatusBadge
                 variant="secondary"
                 className="flex-shrink-0 px-2 py-0.5 text-sm"
                 style={{
@@ -87,7 +87,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 }}
               >
                 {session.status}
-              </Badge>
+              </StatusBadge>
             </div>
 
             {/* Details Grid */}
@@ -223,7 +223,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 style={{ backgroundColor: session.item.color || SESSION_STATUS_COLORS[session.status] }}
               />
               <h3 className="text-base font-semibold">{session.item.name}</h3>
-              <Badge
+              <StatusBadge
                 variant="secondary"
                 className="px-2 py-1 text-xs"
                 style={{
@@ -233,7 +233,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 }}
               >
                 {session.status}
-              </Badge>
+              </StatusBadge>
             </div>
 
             {/* Details Grid */}

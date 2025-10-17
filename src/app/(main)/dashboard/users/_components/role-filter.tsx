@@ -4,10 +4,10 @@ import * as React from "react";
 
 import { Check, Filter } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { USER_ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +39,9 @@ export function RoleFilter({ selectedRole, onRoleChange }: RoleFilterProps) {
           {hasFilter && (
             <>
               <div className="bg-border mx-2 h-4 w-px" />
-              <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+              <StatusBadge variant="secondary" className="rounded-sm px-1 font-normal">
                 {selectedRoleLabel}
-              </Badge>
+              </StatusBadge>
             </>
           )}
         </Button>

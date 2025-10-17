@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Calendar, Clock, Banknote, Package, ExternalLink, Settings } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +19,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatPrice } from "@/lib/utils";
@@ -110,7 +110,9 @@ function BasicInfoTab({ product }: { product: Product }) {
 
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Status</span>
-          <Badge variant={product.isActive ? "default" : "secondary"}>{product.isActive ? "Active" : "Inactive"}</Badge>
+          <StatusBadge variant={product.isActive ? "success" : "secondary"}>
+            {product.isActive ? "Active" : "Inactive"}
+          </StatusBadge>
         </div>
       </div>
 
@@ -155,9 +157,9 @@ function BasicInfoTab({ product }: { product: Product }) {
           <h4 className="text-sm font-medium">Features</h4>
           <div className="flex flex-wrap gap-1">
             {product.features.map((feature) => (
-              <Badge key={feature} variant="outline">
+              <StatusBadge key={feature} variant="outline">
                 {feature}
-              </Badge>
+              </StatusBadge>
             ))}
           </div>
         </div>
@@ -227,7 +229,9 @@ function QuotaPoolsTab({ quotaPools }: { quotaPools: QuotaPool[] }) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{pool.name}</CardTitle>
-                <Badge variant={pool.isActive ? "default" : "secondary"}>{pool.isActive ? "Active" : "Inactive"}</Badge>
+                <StatusBadge variant={pool.isActive ? "success" : "secondary"}>
+                  {pool.isActive ? "Active" : "Inactive"}
+                </StatusBadge>
               </div>
               {pool.description && <p className="text-muted-foreground text-sm">{pool.description}</p>}
             </CardHeader>
@@ -281,17 +285,17 @@ export function ViewProductDialog({ product, open, onOpenChange }: ViewProductDi
               <TabsTrigger value="items" className="relative">
                 Items
                 {productItems.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                  <StatusBadge variant="secondary" className="ml-1 h-4 px-1 text-xs">
                     {productItems.length}
-                  </Badge>
+                  </StatusBadge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="pools" className="relative">
                 Quota Pools
                 {quotaPools.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                  <StatusBadge variant="secondary" className="ml-1 h-4 px-1 text-xs">
                     {quotaPools.length}
-                  </Badge>
+                  </StatusBadge>
                 )}
               </TabsTrigger>
             </TabsList>

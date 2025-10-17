@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { Membership } from "./schema";
 
@@ -58,14 +58,18 @@ export const createMembershipColumns = (actions: ActionsType): ColumnDef<Members
       const status = row.getValue("status");
       const variant =
         status === "ACTIVE"
-          ? "default"
+          ? "success"
           : status === "EXPIRED"
             ? "destructive"
             : status === "SUSPENDED"
               ? "secondary"
               : "outline";
 
-      return <Badge variant={variant}>{String(status)}</Badge>;
+      const formatStatus = (str: string) => {
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+      };
+
+      return <StatusBadge variant={variant}>{formatStatus(String(status))}</StatusBadge>;
     },
   },
   // Quota column removed - quota management now handled through product items and quota pools

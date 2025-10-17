@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 import { UserCombobox } from "@/app/(main)/dashboard/admin/memberships/_components/user-combobox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useAddSessionParticipant } from "@/hooks/use-bookings-mutation";
 import { useEligibleMembersQuery } from "@/hooks/use-eligible-members-query";
 
@@ -212,15 +212,15 @@ function MembershipCard({ membership, isSelected, onSelect, disabled = false }: 
             {membership.product.name}
           </Label>
           {membership.isEligible ? (
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
+            <StatusBadge variant="secondary" className="bg-green-100 text-green-800">
               <CheckCircle className="mr-1 h-3 w-3" />
               Eligible
-            </Badge>
+            </StatusBadge>
           ) : (
-            <Badge variant="secondary" className="bg-red-100 text-red-800">
+            <StatusBadge variant="secondary" className="bg-red-100 text-red-800">
               <AlertCircle className="mr-1 h-3 w-3" />
               Not Eligible
-            </Badge>
+            </StatusBadge>
           )}
         </div>
 

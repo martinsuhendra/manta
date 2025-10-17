@@ -3,7 +3,6 @@ import { CircleCheck, Loader, EllipsisVertical } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
@@ -59,9 +59,9 @@ export const dashboardColumns: ColumnDef<z.infer<typeof sectionSchema>>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Section Type" />,
     cell: ({ row }) => (
       <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
+        <StatusBadge variant="outline" className="text-muted-foreground px-1.5">
           {row.original.type}
-        </Badge>
+        </StatusBadge>
       </div>
     ),
     enableSorting: false,
@@ -70,14 +70,14 @@ export const dashboardColumns: ColumnDef<z.infer<typeof sectionSchema>>[] = [
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
+      <StatusBadge variant="outline" className="text-muted-foreground px-1.5">
         {row.original.status === "Done" ? (
           <CircleCheck className="stroke-border fill-green-500 dark:fill-green-400" />
         ) : (
           <Loader />
         )}
         {row.original.status}
-      </Badge>
+      </StatusBadge>
     ),
     enableSorting: false,
   },

@@ -4,7 +4,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Clock, Eye, Edit, Trash2, MoreHorizontal, Calendar, Users } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { Item } from "./schema";
 
@@ -65,11 +65,6 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
               {item.name}
             </span>
           </div>
-          {item.description && (
-            <div className="text-muted-foreground line-clamp-2 text-sm break-words" title={item.description}>
-              {item.description}
-            </div>
-          )}
         </div>
       );
     },
@@ -111,7 +106,7 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
       const isActive = row.original.isActive;
-      return <Badge variant={isActive ? "default" : "secondary"}>{isActive ? "Active" : "Inactive"}</Badge>;
+      return <StatusBadge variant={isActive ? "success" : "secondary"}>{isActive ? "Active" : "Inactive"}</StatusBadge>;
     },
   },
   {
@@ -121,10 +116,10 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
       const item = row.original as Item & { _count?: { teacherItems: number } };
       const teacherCount = item._count?.teacherItems || 0;
       return (
-        <Badge variant="outline" className="gap-1">
+        <StatusBadge variant="outline" className="gap-1">
           <Users className="h-3 w-3" />
           {teacherCount}
-        </Badge>
+        </StatusBadge>
       );
     },
   },
@@ -135,10 +130,10 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
       const item = row.original as Item & { _count?: { schedules: number } };
       const scheduleCount = item._count?.schedules || 0;
       return (
-        <Badge variant="outline" className="gap-1">
+        <StatusBadge variant="outline" className="gap-1">
           <Calendar className="h-3 w-3" />
           {scheduleCount}
-        </Badge>
+        </StatusBadge>
       );
     },
   },
@@ -149,10 +144,10 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
       const item = row.original as Item & { _count?: { classSessions: number } };
       const sessionCount = item._count?.classSessions || 0;
       return (
-        <Badge variant="outline" className="gap-1">
+        <StatusBadge variant="outline" className="gap-1">
           <Calendar className="h-3 w-3" />
           {sessionCount}
-        </Badge>
+        </StatusBadge>
       );
     },
   },

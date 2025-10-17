@@ -5,8 +5,8 @@ import * as React from "react";
 import { format } from "date-fns";
 import { User, Mail, Phone, Calendar, Shield } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { User as UserType } from "./schema";
@@ -50,10 +50,10 @@ export function ViewProfileDialog({ user, open, onOpenChange }: ViewProfileDialo
             <div>
               <label className="text-muted-foreground text-sm font-medium">Role</label>
               <div className="mt-1">
-                <Badge variant={getRoleVariant(user.role)}>
+                <StatusBadge variant={getRoleVariant(user.role)}>
                   <Shield className="mr-1 h-3 w-3" />
                   {USER_ROLE_LABELS[user.role]}
-                </Badge>
+                </StatusBadge>
               </div>
             </div>
 
@@ -73,7 +73,7 @@ export function ViewProfileDialog({ user, open, onOpenChange }: ViewProfileDialo
             <div>
               <label className="text-muted-foreground text-sm font-medium">Memberships</label>
               <div className="mt-1">
-                <Badge variant="secondary">{user._count.memberships} membership(s)</Badge>
+                <StatusBadge variant="secondary">{user._count.memberships} membership(s)</StatusBadge>
               </div>
             </div>
 

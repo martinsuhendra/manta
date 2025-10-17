@@ -2,8 +2,8 @@ import * as React from "react";
 
 import { Calendar, Clock, Banknote, ExternalLink, Settings } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
 import { Product } from "./schema";
@@ -45,9 +45,9 @@ export function BasicInfoTab({ product }: BasicInfoTabProps) {
             <div>
               <label className="text-muted-foreground text-sm font-medium">Status</label>
               <div className="mt-1">
-                <Badge variant={product.isActive ? "default" : "secondary"}>
+                <StatusBadge variant={product.isActive ? "success" : "secondary"}>
                   {product.isActive ? "Active" : "Inactive"}
-                </Badge>
+                </StatusBadge>
               </div>
             </div>
             <div>
@@ -94,9 +94,9 @@ export function BasicInfoTab({ product }: BasicInfoTabProps) {
               <label className="text-muted-foreground text-sm font-medium">Features</label>
               <div className="mt-1 flex flex-wrap gap-2">
                 {product.features.map((feature) => (
-                  <Badge key={feature} variant="outline">
+                  <StatusBadge key={feature} variant="outline">
                     {feature}
-                  </Badge>
+                  </StatusBadge>
                 ))}
               </div>
             </div>

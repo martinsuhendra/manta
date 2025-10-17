@@ -4,7 +4,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { EllipsisVertical, Calendar, Banknote, Clock, Package } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
@@ -135,7 +135,7 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
     cell: ({ row }) => {
       const isActive = row.original.isActive;
 
-      return <Badge variant={isActive ? "default" : "secondary"}>{isActive ? "Active" : "Inactive"}</Badge>;
+      return <StatusBadge variant={isActive ? "success" : "secondary"}>{isActive ? "Active" : "Inactive"}</StatusBadge>;
     },
   },
   {
@@ -144,7 +144,7 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
     cell: ({ row }) => {
       const count = row.original._count.memberships;
 
-      return <Badge variant="outline">{count}</Badge>;
+      return <StatusBadge variant="outline">{count}</StatusBadge>;
     },
   },
   {

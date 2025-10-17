@@ -4,11 +4,11 @@ import * as React from "react";
 
 import { Calendar, Clock, DollarSign, Package, ShoppingCart } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { usePurchaseMembership } from "@/hooks/use-memberships-mutation";
 import { formatPrice } from "@/lib/utils";
 
@@ -79,7 +79,7 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
                     <h4 className="font-semibold">{product.name}</h4>
                     {product.description && <p className="text-muted-foreground text-sm">{product.description}</p>}
                   </div>
-                  <Badge variant="default">Active</Badge>
+                  <StatusBadge variant="default">Active</StatusBadge>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -104,9 +104,9 @@ export function MembershipPurchase({ products, isLoading }: MembershipPurchasePr
                       <p className="mb-2 text-sm font-medium">Features:</p>
                       <div className="flex flex-wrap gap-1">
                         {product.features.map((feature) => (
-                          <Badge key={feature} variant="outline" className="text-xs">
+                          <StatusBadge key={feature} variant="outline" className="text-xs">
                             {feature}
-                          </Badge>
+                          </StatusBadge>
                         ))}
                       </div>
                     </div>

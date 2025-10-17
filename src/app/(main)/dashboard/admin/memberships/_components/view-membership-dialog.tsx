@@ -2,9 +2,9 @@
 
 import { format } from "date-fns";
 
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { Membership } from "./schema";
 
@@ -86,7 +86,7 @@ export function ViewMembershipDialog({ membership, open, onOpenChange }: ViewMem
               <div>
                 <span className="text-muted-foreground font-medium">Status:</span>
                 <div className="mt-1">
-                  <Badge variant={statusVariant}>{membership.status}</Badge>
+                  <StatusBadge variant={statusVariant}>{membership.status}</StatusBadge>
                 </div>
               </div>
 

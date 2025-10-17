@@ -5,12 +5,12 @@ import { useState } from "react";
 
 import { Filter, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useItems } from "@/hooks/use-items-query";
 import { useTeachers } from "@/hooks/use-users-query";
 
@@ -67,9 +67,12 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
             <Filter className="mr-2 h-4 w-4" />
             Filters
             {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="ml-2 flex h-5 w-5 items-center justify-center rounded-full p-0">
+              <StatusBadge
+                variant="secondary"
+                className="ml-2 flex h-5 w-5 items-center justify-center rounded-full p-0"
+              >
                 {activeFilterCount}
-              </Badge>
+              </StatusBadge>
             )}
           </Button>
         </PopoverTrigger>

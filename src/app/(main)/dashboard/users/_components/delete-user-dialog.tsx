@@ -5,7 +5,6 @@ import * as React from "react";
 import { Trash2, AlertTriangle } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useDeleteUser } from "@/hooks/use-users-query";
 import { USER_ROLES, USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
@@ -116,7 +116,7 @@ export function DeleteUserDialog({ user, open, onOpenChange }: DeleteUserDialogP
           <div className="space-y-3 rounded-lg border p-4">
             <div className="flex items-center justify-between">
               <span className="font-medium">{user.name ?? "No Name"}</span>
-              <Badge variant={getRoleVariant(user.role)}>{USER_ROLE_LABELS[user.role]}</Badge>
+              <StatusBadge variant={getRoleVariant(user.role)}>{USER_ROLE_LABELS[user.role]}</StatusBadge>
             </div>
             <div className="text-muted-foreground text-sm">{user.email ?? "No Email"}</div>
             <div className="text-muted-foreground text-sm">{user._count.memberships} membership(s)</div>
