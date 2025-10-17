@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const eligibleMembers = members.map((member) => ({
       ...member,
       memberships: member.memberships.map((membership) => {
-        const productItem = membership.product.productItems[0];
+        const productItem = membership.product.productItems[0] ?? null;
 
         if (!productItem) {
           return {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           if (!isEligible) {
             reason = "No remaining quota for this class";
           }
-        } else if (productItem.quotaType === "SHARED") {
+        } else if (productItem.quotaType === "SHARED" && productItem.quotaPoolId) {
           const quotaUsage = membership.quotaUsage.find((usage) => usage.quotaPoolId === productItem.quotaPoolId);
           const usedCount = quotaUsage?.usedCount || 0;
           remainingQuota = (productItem.quotaPool?.totalQuota || 0) - usedCount;
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check if product includes this item
-    const productItem = membership.product.productItems[0];
+    const productItem = membership.product.productItems[0] ?? null;
 
     if (!productItem) {
       return NextResponse.json({ error: "Membership does not include this class type" }, { status: 400 });

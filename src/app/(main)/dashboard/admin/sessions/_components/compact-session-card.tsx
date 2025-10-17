@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Clock, User, Users, Edit2, Trash2, UserPlus } from "lucide-react";
+import { Clock, User, Users as UsersIcon, Edit2, Trash2, UserPlus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useDeleteSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
+import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
 
 const SESSION_STATUS_COLORS = {
@@ -30,6 +31,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [showAddParticipantDialog, setShowAddParticipantDialog] = useState(false);
+  const [showParticipantsDialog, setShowParticipantsDialog] = useState(false);
 
   const handleDeleteClick = (session: Session) => {
     setSessionToDelete(session);
@@ -92,8 +94,15 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
                   {session.teacher?.name || session.teacher?.email || "No teacher assigned"}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+              <div
+                className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowParticipantsDialog(true);
+                }}
+                title="View participants"
+              >
+                <UsersIcon className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="font-medium">
                   {session._count?.bookings || 0} / {session.item.capacity} participants
                 </span>
@@ -112,7 +121,17 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 px-2 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowParticipantsDialog(true);
+                }}
+              >
+                <UsersIcon className="mr-1 h-3 w-3" />
+                View
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowAddParticipantDialog(true);
@@ -125,7 +144,6 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(session);
@@ -136,9 +154,8 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant="destructive"
                 size="sm"
-                className="text-destructive hover:text-destructive-foreground hover:bg-destructive h-7 px-2 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteClick(session);
@@ -156,6 +173,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
         onOpenChange={setShowAddParticipantDialog}
         session={session}
       />
+      <ParticipantsDialog open={showParticipantsDialog} onOpenChange={setShowParticipantsDialog} session={session} />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

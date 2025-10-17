@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 
 import { format, parseISO } from "date-fns";
-import { Calendar, Clock, Edit, MoreHorizontal, Trash2, User, UserPlus, Users } from "lucide-react";
+import { Calendar, Clock, Edit, MoreHorizontal, Trash2, User, UserPlus, Users as UsersIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { useUpdateSession, useDeleteSession } from "@/hooks/use-sessions-mutatio
 
 import { AddParticipantDialog } from "./add-participant-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
+import { ParticipantsDialog } from "./participants-dialog";
 import { Session, SESSION_STATUS_COLORS } from "./schema";
 
 interface SessionCardProps {
@@ -36,6 +37,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [showAddParticipantDialog, setShowAddParticipantDialog] = useState(false);
+  const [showParticipantsDialog, setShowParticipantsDialog] = useState(false);
 
   const handleStatusUpdate = (sessionId: string, newStatus: "SCHEDULED" | "CANCELLED" | "COMPLETED") => {
     updateSessionMutation.mutate({ sessionId, data: { status: newStatus } });
@@ -96,8 +98,15 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                   {session.startTime}-{session.endTime}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Users className="h-4 w-4 flex-shrink-0" />
+              <div
+                className="hover:text-primary flex cursor-pointer items-center gap-1.5 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowParticipantsDialog(true);
+                }}
+                title="View participants"
+              >
+                <UsersIcon className="h-4 w-4 flex-shrink-0" />
                 <span>
                   {session._count?.bookings || 0}/{session.item.capacity}
                 </span>
@@ -146,13 +155,18 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                   Add Participant
                 </DropdownMenuItem>
 
+                <DropdownMenuItem onClick={() => setShowParticipantsDialog(true)} className="cursor-pointer text-sm">
+                  <UsersIcon className="mr-2 h-3.5 w-3.5" />
+                  View Participants
+                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
 
                 {/* Status Updates */}
                 {session.status !== "SCHEDULED" && (
                   <DropdownMenuItem
                     onClick={() => handleStatusUpdate(session.id, "SCHEDULED")}
-                    className="cursor-pointer text-xs"
+                    className="cursor-pointer text-sm"
                   >
                     Mark as Scheduled
                   </DropdownMenuItem>
@@ -161,7 +175,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 {session.status !== "CANCELLED" && (
                   <DropdownMenuItem
                     onClick={() => handleStatusUpdate(session.id, "CANCELLED")}
-                    className="cursor-pointer text-xs"
+                    className="cursor-pointer text-sm"
                   >
                     Cancel Session
                   </DropdownMenuItem>
@@ -170,7 +184,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 {session.status !== "COMPLETED" && (
                   <DropdownMenuItem
                     onClick={() => handleStatusUpdate(session.id, "COMPLETED")}
-                    className="cursor-pointer text-xs"
+                    className="cursor-pointer text-sm"
                   >
                     Mark as Completed
                   </DropdownMenuItem>
@@ -179,7 +193,8 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
-                  className="text-destructive cursor-pointer text-xs"
+                  variant="destructive"
+                  className="cursor-pointer text-sm"
                   onClick={() => handleDeleteClick(session)}
                 >
                   <Trash2 className="mr-2 h-3.5 w-3.5" />
@@ -237,8 +252,15 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 flex-shrink-0" />
+              <div
+                className="hover:text-primary flex cursor-pointer items-center gap-2 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowParticipantsDialog(true);
+                }}
+                title="View participants"
+              >
+                <UsersIcon className="h-4 w-4 flex-shrink-0" />
                 <span>
                   {session._count?.bookings || 0}/{session.item.capacity}
                 </span>
@@ -283,6 +305,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
         onOpenChange={setShowAddParticipantDialog}
         session={session}
       />
+      <ParticipantsDialog open={showParticipantsDialog} onOpenChange={setShowParticipantsDialog} session={session} />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
