@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 
 import { format, parseISO } from "date-fns";
-import { Calendar, Clock, Edit, MoreHorizontal, Trash2, User, Users } from "lucide-react";
+import { Calendar, Clock, Edit, MoreHorizontal, Trash2, User, UserPlus, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUpdateSession, useDeleteSession } from "@/hooks/use-sessions-mutation";
 
+import { AddParticipantDialog } from "./add-participant-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { Session, SESSION_STATUS_COLORS } from "./schema";
 
@@ -34,6 +35,7 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
   const deleteSessionMutation = useDeleteSession();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [showAddParticipantDialog, setShowAddParticipantDialog] = useState(false);
 
   const handleStatusUpdate = (sessionId: string, newStatus: "SCHEDULED" | "CANCELLED" | "COMPLETED") => {
     updateSessionMutation.mutate({ sessionId, data: { status: newStatus } });
@@ -137,6 +139,11 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
                 <DropdownMenuItem onClick={() => onEdit?.(session)} className="cursor-pointer text-sm">
                   <Edit className="mr-2 h-3.5 w-3.5" />
                   Edit Session
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setShowAddParticipantDialog(true)} className="cursor-pointer text-sm">
+                  <UserPlus className="mr-2 h-3.5 w-3.5" />
+                  Add Participant
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -248,6 +255,9 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
 
           {/* Actions */}
           <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+            <Button variant="ghost" size="sm" onClick={() => setShowAddParticipantDialog(true)} className="h-8 w-8 p-0">
+              <UserPlus className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => onEdit?.(session)} className="h-8 w-8 p-0">
               <Edit className="h-4 w-4" />
             </Button>
@@ -268,6 +278,11 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
   return (
     <>
       {variant === "compact" ? compactCard : detailedCard}
+      <AddParticipantDialog
+        open={showAddParticipantDialog}
+        onOpenChange={setShowAddParticipantDialog}
+        session={session}
+      />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

@@ -167,3 +167,39 @@ export const calendarEventSchema = z.object({
 });
 
 export type CalendarEvent = z.infer<typeof calendarEventSchema>;
+
+// Eligible membership schema for add participant
+export const eligibleMembershipSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  productId: z.string(),
+  status: z.string(),
+  expiredAt: z.date(),
+  product: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  isEligible: z.boolean(),
+  reason: z.string(),
+  remainingQuota: z.number().nullable(),
+});
+
+export type EligibleMembership = z.infer<typeof eligibleMembershipSchema>;
+
+// Member with eligible memberships
+export const eligibleMemberSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+  memberships: z.array(eligibleMembershipSchema),
+});
+
+export type EligibleMember = z.infer<typeof eligibleMemberSchema>;
+
+// Add participant form schema
+export const addParticipantSchema = z.object({
+  userId: z.string().min(1, "User is required"),
+  membershipId: z.string().min(1, "Membership is required"),
+});
+
+export type AddParticipantForm = z.infer<typeof addParticipantSchema>;

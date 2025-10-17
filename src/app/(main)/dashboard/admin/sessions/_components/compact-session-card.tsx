@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 
-import { Clock, User, Users, Edit2, Trash2 } from "lucide-react";
+import { Clock, User, Users, Edit2, Trash2, UserPlus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDeleteSession } from "@/hooks/use-sessions-mutation";
 
+import { AddParticipantDialog } from "./add-participant-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { Session } from "./schema";
 
@@ -28,6 +29,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
   const deleteSessionMutation = useDeleteSession();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [showAddParticipantDialog, setShowAddParticipantDialog] = useState(false);
 
   const handleDeleteClick = (session: Session) => {
     setSessionToDelete(session);
@@ -107,6 +109,18 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
 
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddParticipantDialog(true);
+                }}
+              >
+                <UserPlus className="mr-1 h-3 w-3" />
+                Add
+              </Button>
               {onEdit && (
                 <Button
                   variant="outline"
@@ -137,6 +151,11 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
           </div>
         </div>
       </div>
+      <AddParticipantDialog
+        open={showAddParticipantDialog}
+        onOpenChange={setShowAddParticipantDialog}
+        session={session}
+      />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

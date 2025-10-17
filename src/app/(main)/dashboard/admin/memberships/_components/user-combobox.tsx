@@ -60,9 +60,9 @@ export function UserCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full min-w-[300px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search users by name or email..." />
+          <CommandInput placeholder="Search members by name or email..." />
           <CommandList>
             <CommandEmpty>No users found.</CommandEmpty>
             <CommandGroup>
