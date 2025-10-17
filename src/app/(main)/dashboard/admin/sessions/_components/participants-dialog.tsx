@@ -73,7 +73,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
     } else {
       setSessionWithBookings(null);
     }
-  }, [open, session.id, removeParticipantMutation.isSuccess]);
+  }, [open, session.id]);
 
   const handleRemoveClick = (booking: Booking) => {
     setBookingToRemove(booking);
