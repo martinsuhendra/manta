@@ -56,7 +56,7 @@ export function ItemsTable() {
         </div>
         <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Item
+          Add Class
         </Button>
       </div>
 

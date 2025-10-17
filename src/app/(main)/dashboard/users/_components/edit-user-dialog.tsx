@@ -77,7 +77,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
     if (!user) return;
 
     updateUser.mutate(
-      { id: user.id, data },
+      { userId: user.id, data },
       {
         onSuccess: () => {
           onOpenChange(false);
