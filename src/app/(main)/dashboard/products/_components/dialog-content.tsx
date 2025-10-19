@@ -211,110 +211,201 @@ function ReviewTab({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Basic Information</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Name:</span>
-              <span className="font-medium">{form.watch("name") || "Not set"}</span>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Basic Information Section */}
+        <div className="bg-card rounded-lg border p-5 shadow-sm">
+          <h4 className="mb-4 flex items-center gap-2 text-base font-semibold">
+            <div className="bg-primary/10 text-primary rounded-md p-1.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Price:</span>
-              <span className="font-medium">{formatPrice(form.watch("price") || 0)}</span>
+            Basic Information
+          </h4>
+          <div className="space-y-3 text-sm">
+            <div className="bg-muted/30 flex items-center justify-between rounded-md border p-3">
+              <span className="text-muted-foreground font-medium">Name:</span>
+              <span className="font-semibold">{form.watch("name") || "Not set"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Valid Days:</span>
-              <span className="font-medium">{form.watch("validDays") || 0} days</span>
+            <div className="bg-muted/30 flex items-center justify-between rounded-md border p-3">
+              <span className="text-muted-foreground font-medium">Price:</span>
+              <span className="font-semibold">{formatPrice(form.watch("price") || 0)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="font-medium">{form.watch("isActive") ? "Active" : "Inactive"}</span>
+            <div className="bg-muted/30 flex items-center justify-between rounded-md border p-3">
+              <span className="text-muted-foreground font-medium">Valid Days:</span>
+              <span className="font-semibold">{form.watch("validDays") || 0} days</span>
+            </div>
+            <div className="bg-muted/30 flex items-center justify-between rounded-md border p-3">
+              <span className="text-muted-foreground font-medium">Status:</span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  form.watch("isActive")
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                }`}
+              >
+                {form.watch("isActive") ? "Active" : "Inactive"}
+              </span>
             </div>
           </div>
         </div>
 
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Items ({productItems.length})</h4>
-          <div className="space-y-3">
-            {productItems.length === 0 ? (
-              <div className="text-muted-foreground text-sm">
-                <p>No items configured yet.</p>
-                <p className="mt-2">Go to the Items tab to add items to this product.</p>
+        {/* Items & Quota Pools Section */}
+        <div className="space-y-6">
+          {/* Items */}
+          <div className="bg-card rounded-lg border p-5 shadow-sm">
+            <h4 className="mb-4 flex items-center gap-2 text-base font-semibold">
+              <div className="bg-primary/10 text-primary rounded-md p-1.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                  />
+                </svg>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {productItems.map((productItem) => {
-                  const item = items.find((i) => i.id === productItem.itemId);
-                  if (!item) return null;
+              Items
+              <span className="bg-primary/10 text-primary ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                {productItems.length}
+              </span>
+            </h4>
+            <div className="space-y-2">
+              {productItems.length === 0 ? (
+                <div className="text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed p-6 text-center text-sm">
+                  <div className="bg-muted/50 mx-auto mb-2 h-12 w-12 rounded-full p-3">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-muted-foreground h-full w-full"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                    </svg>
+                  </div>
+                  <p className="font-medium">No items configured yet</p>
+                  <p className="mt-1 text-xs">Go to the Items tab to add items to this product</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {productItems.map((productItem) => {
+                    const item = items.find((i) => i.id === productItem.itemId);
+                    if (!item) return null;
 
-                  return (
-                    <div key={productItem.itemId} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="flex items-center gap-3">
-                        {item.color && (
-                          <div
-                            className="h-4 w-4 flex-shrink-0 rounded-full border"
-                            style={{ backgroundColor: item.color }}
-                          />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-muted-foreground text-sm">
-                            {productItem.quotaType === "INDIVIDUAL" && productItem.quotaValue && (
-                              <span>Individual quota: {productItem.quotaValue}</span>
-                            )}
-                            {productItem.quotaType === "SHARED" && productItem.quotaPoolId && (
-                              <span>Shared quota pool</span>
-                            )}
-                            {productItem.quotaType === "FREE" && <span>Free item</span>}
+                    return (
+                      <div
+                        key={productItem.itemId}
+                        className="bg-muted/20 hover:bg-muted/40 flex items-center justify-between rounded-lg border p-3 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {item.color && (
+                            <div
+                              className="h-4 w-4 flex-shrink-0 rounded-full border-2 shadow-sm"
+                              style={{ backgroundColor: item.color }}
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {productItem.quotaType === "INDIVIDUAL" && productItem.quotaValue && (
+                                <span>Individual quota: {productItem.quotaValue}</span>
+                              )}
+                              {productItem.quotaType === "SHARED" && productItem.quotaPoolId && (
+                                <span>Shared quota pool</span>
+                              )}
+                              {productItem.quotaType === "FREE" && <span>Free item</span>}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              productItem.isActive
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                            }`}
+                          >
+                            {productItem.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${
-                            productItem.isActive
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-                          }`}
-                        >
-                          {productItem.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {quotaPoolsWithUsage.length > 0 && (
-              <div className="mt-4 border-t pt-4">
-                <h5 className="mb-2 text-sm font-medium">Quota Pools ({quotaPoolsWithUsage.length})</h5>
-                <div className="space-y-2">
-                  {quotaPoolsWithUsage.map((pool) => (
-                    <div key={pool.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="flex-1">
-                        <div className="font-medium">{pool.name}</div>
-                        {pool.description && <div className="text-muted-foreground text-sm">{pool.description}</div>}
-                        <div className="text-muted-foreground text-sm">Total Quota: {pool.totalQuota}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs font-medium ${
-                            pool.isActive
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-                          }`}
-                        >
-                          {pool.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+
+          {/* Quota Pools */}
+          {quotaPoolsWithUsage.length > 0 && (
+            <div className="bg-card rounded-lg border p-5 shadow-sm">
+              <h5 className="mb-4 flex items-center gap-2 text-base font-semibold">
+                <div className="bg-primary/10 text-primary rounded-md p-1.5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  </svg>
+                </div>
+                Quota Pools
+                <span className="bg-primary/10 text-primary ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                  {quotaPoolsWithUsage.length}
+                </span>
+              </h5>
+              <div className="space-y-2">
+                {quotaPoolsWithUsage.map((pool) => (
+                  <div
+                    key={pool.id}
+                    className="bg-muted/20 hover:bg-muted/40 flex items-center justify-between rounded-lg border p-3 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{pool.name}</div>
+                      {pool.description && <div className="text-muted-foreground text-xs">{pool.description}</div>}
+                      <div className="text-muted-foreground mt-1 text-xs">Total Quota: {pool.totalQuota}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          pool.isActive
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                        }`}
+                      >
+                        {pool.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

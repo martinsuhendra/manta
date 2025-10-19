@@ -25,7 +25,7 @@ export function ItemsTable() {
   const { data: items = [], isLoading } = useQuery<Item[]>({
     queryKey: ["admin-items"],
     queryFn: async () => {
-      const response = await fetch("/api/admin/items?includeSchedules=true");
+      const response = await fetch("/api/admin/items?includeSchedules=true&includeTeachers=true");
       if (!response.ok) throw new Error("Failed to fetch items");
       return response.json();
     },

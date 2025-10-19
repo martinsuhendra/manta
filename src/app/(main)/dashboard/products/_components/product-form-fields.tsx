@@ -4,6 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
@@ -123,9 +124,15 @@ export function ProductFormFields({
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price (Rp)</FormLabel>
+                <FormLabel>Price (IDR)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="99.99" {...field} />
+                  <CurrencyInput
+                    placeholder="Enter price in IDR"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

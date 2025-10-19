@@ -5,7 +5,7 @@ import * as React from "react";
 import Image from "next/image";
 
 import { format } from "date-fns";
-import { Calendar, Clock, Users, User, Palette, Package } from "lucide-react";
+import { Calendar, Clock, Users, User, Palette, Package, DollarSign, Percent } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/drawer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatCurrency, formatPrice } from "@/lib/utils";
 
 import { DAY_OF_WEEK_LABELS, Item } from "./schema";
 
@@ -35,6 +36,8 @@ type ExtendedItem = Item & {
     classSessions: number;
   };
   teacherItems?: Array<{
+    id: string;
+    teacherProfitPercent: number;
     teacher: {
       id: string;
       name: string | null;
@@ -94,6 +97,16 @@ function ItemBasicInfo({ item }: { item: Item }) {
         </div>
       </div>
 
+      {item.price !== undefined && item.price !== null && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <DollarSign className="h-4 w-4" />
+            Price
+          </div>
+          <p className="text-lg font-semibold">{formatPrice(Number(item.price))}</p>
+        </div>
+      )}
+
       {item.color && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -114,7 +127,7 @@ function ItemStatistics({ extendedItem }: { extendedItem: ExtendedItem }) {
   return (
     <div className="space-y-2">
       <span className="mb-3 text-sm font-medium">Statistics</span>
-      <div className="mt-1 grid grid-cols-3 gap-3">
+      <div className="mt-1 grid grid-cols-2 gap-3">
         <div className="rounded-lg border p-3 text-center">
           <div className="text-lg font-bold">{extendedItem._count?.teacherItems || 0}</div>
           <div className="text-muted-foreground text-xs">Teachers</div>
@@ -122,10 +135,6 @@ function ItemStatistics({ extendedItem }: { extendedItem: ExtendedItem }) {
         <div className="rounded-lg border p-3 text-center">
           <div className="text-lg font-bold">{extendedItem._count?.schedules || 0}</div>
           <div className="text-muted-foreground text-xs">Schedules</div>
-        </div>
-        <div className="rounded-lg border p-3 text-center">
-          <div className="text-lg font-bold">{extendedItem._count?.classSessions || 0}</div>
-          <div className="text-muted-foreground text-xs">Sessions</div>
         </div>
       </div>
     </div>
@@ -141,15 +150,37 @@ function ItemTeachers({ extendedItem }: { extendedItem: ExtendedItem }) {
     <div className="space-y-2">
       <span className="text-sm font-medium">Assigned Teachers</span>
       <div className="space-y-2">
-        {extendedItem.teacherItems.map((teacherItem) => (
-          <div key={teacherItem.id} className="flex items-center gap-2 rounded border p-2">
-            <User className="h-4 w-4" />
-            <div>
-              <div className="font-medium">{teacherItem.teacher.name || "No Name"}</div>
-              <div className="text-muted-foreground text-sm">{teacherItem.teacher.email}</div>
+        {extendedItem.teacherItems.map((teacherItem) => {
+          const teacherProfit = teacherItem.teacherProfitPercent || 60;
+          const ownerProfit = 100 - teacherProfit;
+
+          return (
+            <div key={teacherItem.id} className="space-y-2 rounded border p-3">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <div className="flex-1">
+                  <div className="font-medium">{teacherItem.teacher.name || "No Name"}</div>
+                  <div className="text-muted-foreground text-sm">{teacherItem.teacher.email}</div>
+                </div>
+              </div>
+              <div className="bg-muted/50 flex items-center justify-between rounded p-2 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <Percent className="h-3.5 w-3.5" />
+                  <span className="font-medium">Profit Split:</span>
+                </div>
+                <div className="flex gap-3 text-xs">
+                  <span>
+                    Teacher: <span className="font-semibold">{teacherProfit}%</span>
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Owner: <span className="font-semibold">{ownerProfit}%</span>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

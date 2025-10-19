@@ -23,7 +23,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const teacherItems = await prisma.teacherItem.findMany({
       where: { itemId: id },
-      include: {
+      select: {
+        id: true,
+        teacherId: true,
+        itemId: true,
+        teacherProfitPercent: true,
+        isActive: true,
+        createdAt: true,
         teacher: {
           select: {
             id: true,
@@ -99,7 +105,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const teacherItem = await prisma.teacherItem.create({
       data: validatedData,
-      include: {
+      select: {
+        id: true,
+        teacherId: true,
+        itemId: true,
+        teacherProfitPercent: true,
+        isActive: true,
+        createdAt: true,
         teacher: {
           select: {
             id: true,

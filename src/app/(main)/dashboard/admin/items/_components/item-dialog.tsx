@@ -41,6 +41,7 @@ function getTabErrors(errors: Record<string, unknown>): TabErrors {
     errors.description ||
     errors.duration ||
     errors.capacity ||
+    errors.price ||
     errors.color ||
     errors.image ||
     errors.isActive
@@ -64,6 +65,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       description: "",
       duration: 60,
       capacity: 10,
+      price: 0,
       color: "#3B82F6",
       image: "",
       isActive: true,
@@ -133,6 +135,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           description: item.description || "",
           duration: item.duration,
           capacity: item.capacity,
+          price: item.price ?? 0,
           color: item.color || "#3B82F6",
           image: item.image || "",
           isActive: item.isActive,
@@ -144,6 +147,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           description: "",
           duration: 60,
           capacity: 10,
+          price: 0,
           color: "#3B82F6",
           image: "",
           isActive: true,

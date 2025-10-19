@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { UseFormReturn } from "react-hook-form";
 
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
@@ -117,6 +118,26 @@ export function ItemDialogBasicTab({ form }: ItemDialogBasicTabProps) {
           )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="price"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Price (IDR)</FormLabel>
+            <FormControl>
+              <CurrencyInput
+                placeholder="Enter price in IDR"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                name={field.name}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <FormField
         control={form.control}

@@ -40,7 +40,13 @@ export async function GET(request: NextRequest) {
       include: {
         teacherItems: includeTeachers
           ? {
-              include: {
+              select: {
+                id: true,
+                teacherId: true,
+                itemId: true,
+                teacherProfitPercent: true,
+                isActive: true,
+                createdAt: true,
                 teacher: {
                   select: {
                     id: true,

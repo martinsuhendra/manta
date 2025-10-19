@@ -25,6 +25,7 @@ export const teacherItemSchema = z.object({
   id: z.string(),
   teacherId: z.string(),
   itemId: z.string(),
+  teacherProfitPercent: z.number().optional().default(60),
   isActive: z.boolean(),
   createdAt: z.string(),
   teacher: z.object({
@@ -47,6 +48,7 @@ export const itemSchema = z.object({
   description: z.string().nullable(),
   duration: z.number(),
   capacity: z.number(),
+  price: z.number().optional().default(0),
   isActive: z.boolean(),
   image: z.string().nullable(),
   color: z.string().nullable(),
@@ -70,6 +72,7 @@ export const createItemSchema = z.object({
   description: z.string().optional(),
   duration: z.number().min(1, "Duration must be at least 1 minute"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
+  price: z.number().min(0, "Price must be at least 0").default(0),
   isActive: z.boolean().default(true),
   image: z.string().optional(),
   color: z.string().optional(),
@@ -127,6 +130,7 @@ export const updateItemSchema = z.object({
   description: z.string().optional(),
   duration: z.number().min(1, "Duration must be at least 1 minute").optional(),
   capacity: z.number().min(1, "Capacity must be at least 1").optional(),
+  price: z.number().min(0, "Price must be at least 0").optional(),
   isActive: z.boolean().optional(),
   image: z.string().optional(),
   color: z.string().optional(),
@@ -147,6 +151,7 @@ export type CreateItemScheduleForm = z.infer<typeof createItemScheduleSchema>;
 export const createTeacherItemSchema = z.object({
   teacherId: z.string().min(1, "Teacher is required"),
   itemId: z.string().min(1, "Item is required"),
+  teacherProfitPercent: z.number().min(0).max(100, "Percentage must be between 0 and 100").default(60),
   isActive: z.boolean().default(true),
 });
 
