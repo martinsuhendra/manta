@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-Studio Pilates is a modern admin dashboard template built with Next.js 15, TypeScript, and Shadcn UI. It's designed as a starter template for SaaS applications, admin panels, and internal tools with multiple dashboard variants, customizable themes, and authentication layouts.
+Manta is a modern admin dashboard template built with Next.js 15, TypeScript, and Shadcn UI. It's designed as a starter template for SaaS applications, admin panels, and internal tools with multiple dashboard variants, customizable themes, and authentication layouts.
 
 ## Development Commands
 

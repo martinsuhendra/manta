@@ -17,7 +17,7 @@ export function createMultipleActiveMembershipsTemplate(
   supportEmail: string = "info@forcerasolution.com",
 ) {
   return {
-    subject: "⚠️ Important Notice: Multiple Active Memberships - Bodhi Studio Pilates",
+    subject: "⚠️ Important Notice: Multiple Active Memberships - Manta",
     html: `<p>Multiple membership notice for ${customerName ?? "customer"} (${activeMembershipsCount} active). Contact: ${supportEmail}</p>`,
     text: `Multiple membership notice for ${customerName ?? "customer"} (${activeMembershipsCount} active). Contact: ${supportEmail}`,
   };

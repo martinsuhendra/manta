@@ -23,7 +23,7 @@ export function createContactFormTemplate(
     <body>
       <div class="email-container">
         <div class="header">
-          <h1 class="logo">Bodhi Studio Pilates</h1>
+          <h1 class="logo">Manta</h1>
         </div>
         <div class="content">
           <h2>📩 New Message from Contact Form</h2>
@@ -52,7 +52,7 @@ export function createContactFormTemplate(
           
           <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0;">
             <p style="margin: 0; color: #92400e; font-size: 14px;">
-              <strong>Note:</strong> This message was sent through the Bodhi Studio Pilates website contact form. 
+              <strong>Note:</strong> This message was sent through the Manta website contact form. 
               Please respond within 1-2 business days as per customer service commitment.
             </p>
           </div>
@@ -62,7 +62,7 @@ export function createContactFormTemplate(
           </p>
         </div>
         <div class="footer">
-          <p>&copy; 2025 Bodhi Studio Pilates. All rights reserved.</p>
+          <p>&copy; 2025 Manta. All rights reserved.</p>
           <p>This email was automatically sent from the contact form system.</p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function createContactFormTemplate(
   `;
 
   const text = `
-    📩 NEW MESSAGE FROM CONTACT FORM - Bodhi Studio Pilates
+    📩 NEW MESSAGE FROM CONTACT FORM - Manta
     
     SENDER INFORMATION:
     Name: ${escapedName}
@@ -84,11 +84,11 @@ export function createContactFormTemplate(
     ---
     Received at: ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} ET
     
-    Note: This message was sent through the Bodhi Studio Pilates website contact form. 
+    Note: This message was sent through the Manta website contact form. 
     Please respond within 1-2 business days as per customer service commitment.
     
     ---
-    © 2025 Bodhi Studio Pilates. All rights reserved.
+    © 2025 Manta. All rights reserved.
     This email was automatically sent from the contact form system.
   `;
 

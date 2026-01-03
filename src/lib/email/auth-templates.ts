@@ -10,11 +10,11 @@ export function createEmailVerificationTemplate(verificationUrl: string): EmailT
     <body>
       <div class="email-container">
         <div class="header">
-          <h1 class="logo">Bodhi Studio Pilates</h1>
+          <h1 class="logo">Manta</h1>
         </div>
         <div class="content">
           <h2>Verify Your Email Address</h2>
-          <p>Welcome to Bodhi Studio Pilates! Please verify your email address to complete your registration.</p>
+          <p>Welcome to Manta! Please verify your email address to complete your registration.</p>
                     
           <p>Click the button below to verify your email address:</p>
           <a href="${verificationUrl}" class="button">Verify Email Address</a>
@@ -24,7 +24,7 @@ export function createEmailVerificationTemplate(verificationUrl: string): EmailT
           <p>This verification link will expire in 24 hours for security reasons.</p>
         </div>
         <div class="footer">
-          <p>&copy; 2025 Bodhi Studio Pilates. All rights reserved.</p>
+          <p>&copy; 2025 Manta. All rights reserved.</p>
           <p>This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
@@ -33,7 +33,7 @@ export function createEmailVerificationTemplate(verificationUrl: string): EmailT
   `;
 
   const text = `
-    Welcome to Bodhi Studio Pilates!
+    Welcome to Manta!
     
     Please verify your email address to complete your registration.
         
@@ -45,7 +45,7 @@ export function createEmailVerificationTemplate(verificationUrl: string): EmailT
   `;
 
   return {
-    subject: "Verify Your Email Address - Bodhi Studio Pilates",
+    subject: "Verify Your Email Address - Manta",
     html,
     text,
   };
@@ -61,7 +61,7 @@ export function createPasswordResetTemplate(resetUrl: string): EmailTemplate {
     <body>
       <div class="email-container">
         <div class="header">
-          <h1 class="logo">Bodhi Studio Pilates</h1>
+          <h1 class="logo">Manta</h1>
         </div>
         <div class="content">
           <h2>Password Reset Request</h2>
@@ -73,7 +73,7 @@ export function createPasswordResetTemplate(resetUrl: string): EmailTemplate {
           <p>This reset link will expire in 1 hour for security reasons.</p>
         </div>
         <div class="footer">
-          <p>&copy; 2025 Bodhi Studio Pilates. All rights reserved.</p>
+          <p>&copy; 2025 Manta. All rights reserved.</p>
           <p>This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export function createPasswordResetTemplate(resetUrl: string): EmailTemplate {
   `;
 
   const text = `
-    Password Reset - Bodhi Studio Pilates
+    Password Reset - Manta
     
     We received a request to reset your password.
     
@@ -94,7 +94,7 @@ export function createPasswordResetTemplate(resetUrl: string): EmailTemplate {
   `;
 
   return {
-    subject: "Password Reset Request - Bodhi Studio Pilates",
+    subject: "Password Reset Request - Manta",
     html,
     text,
   };
@@ -110,10 +110,10 @@ export function createWelcomeTemplate(name: string, dashboardUrl?: string): Emai
     <body>
       <div class="email-container">
         <div class="header">
-          <h1 class="logo">Bodhi Studio Pilates</h1>
+          <h1 class="logo">Manta</h1>
         </div>
         <div class="content">
-          <h2>Welcome to Bodhi Studio Pilates, ${name}!</h2>
+          <h2>Welcome to Manta, ${name}!</h2>
           <p>Your email has been successfully verified. Welcome to the future of receipt scanning and expense management!</p>
           
           <p>Here's what you can do now:</p>
@@ -129,7 +129,7 @@ export function createWelcomeTemplate(name: string, dashboardUrl?: string): Emai
           <p>If you have any questions, don't hesitate to contact our support team.</p>
         </div>
         <div class="footer">
-          <p>&copy; 2025 Bodhi Studio Pilates. All rights reserved.</p>
+          <p>&copy; 2025 Manta. All rights reserved.</p>
           <p>This is an automated email. Please do not reply to this message.</p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function createWelcomeTemplate(name: string, dashboardUrl?: string): Emai
   `;
 
   const text = `
-    Welcome to Bodhi Studio Pilates, ${name}!
+    Welcome to Manta, ${name}!
     
     Your email has been successfully verified. Welcome to the future of receipt scanning and expense management!
     
@@ -154,7 +154,7 @@ export function createWelcomeTemplate(name: string, dashboardUrl?: string): Emai
   `;
 
   return {
-    subject: "Welcome to Bodhi Studio Pilates! 🎉",
+    subject: "Welcome to Manta! 🎉",
     html,
     text,
   };

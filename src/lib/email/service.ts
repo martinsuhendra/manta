@@ -31,7 +31,7 @@ export class EmailService {
   async sendEmail(to: string, template: EmailTemplate): Promise<boolean> {
     try {
       await this.transporter.sendMail({
-        from: `"Bodhi Studio Pilates" <${process.env.EMAIL_FROM ?? process.env.EMAIL_USER}>`,
+        from: `"Manta" <${process.env.EMAIL_FROM ?? process.env.EMAIL_USER}>`,
         to,
         subject: template.subject,
         text: template.text,
