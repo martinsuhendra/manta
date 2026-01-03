@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard/home", nextUrl));
+    return NextResponse.redirect(new URL("/shop", nextUrl));
   }
 
   // Redirect unauthenticated users to sign-in page

@@ -99,13 +99,6 @@ export const sidebarItems: NavGroup[] = [
         comingSoon: false,
         requiredRoles: [USER_ROLES.SUPERADMIN],
       },
-      {
-        title: "My Memberships",
-        url: "/dashboard/memberships",
-        icon: CreditCard,
-        comingSoon: false,
-        requiredRoles: [USER_ROLES.MEMBER],
-      },
     ],
   },
 ];

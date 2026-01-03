@@ -81,7 +81,7 @@ export function RegisterForm() {
         toast.success("Account created successfully!", {
           description: "Welcome! You have been automatically signed in.",
         });
-        router.push("/dashboard/home");
+        router.push("/shop");
         router.refresh();
       }
     } catch {

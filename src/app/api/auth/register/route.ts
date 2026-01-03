@@ -10,12 +10,13 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1).optional(),
+  phoneNo: z.string().min(1, { message: "Phone number is required" }),
 });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name } = registerSchema.parse(body);
+    const { email, password, name, phoneNo } = registerSchema.parse(body);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         name: name ?? email.split("@")[0],
+        phoneNo: phoneNo,
         role: DEFAULT_USER_ROLE,
       },
     });

@@ -50,8 +50,8 @@ export function LoginForm() {
         });
       } else if (result?.ok) {
         toast.success("Successfully signed in!");
-        // Always redirect to dashboard/home after successful login
-        router.push("/dashboard/home");
+        // Always redirect to shop after successful login
+        router.push("/shop");
         router.refresh();
       }
     } catch {
