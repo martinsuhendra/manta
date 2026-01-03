@@ -69,7 +69,7 @@ export function RoleFilter({ selectedRole, onRoleChange }: RoleFilterProps) {
                         : "opacity-50 [&_svg]:invisible",
                     )}
                   >
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4 text-white" />
                   </div>
                   <span>{role.label}</span>
                 </CommandItem>
