@@ -11,6 +11,7 @@ const createMembershipSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
   productId: z.string().uuid("Invalid product ID"),
   status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).default("ACTIVE"),
+  joinDate: z.string().optional(),
 });
 
 export async function GET() {
@@ -97,8 +98,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Calculate expiration date
-    const expiredAt = new Date();
+    // Calculate expiration date from start date (joinDate) or current date
+    const startDate = validatedData.joinDate ? new Date(validatedData.joinDate) : new Date();
+    const expiredAt = new Date(startDate);
     expiredAt.setDate(expiredAt.getDate() + product.validDays);
 
     const membership = await prisma.membership.create({
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
         userId: validatedData.userId,
         productId: validatedData.productId,
         status: validatedData.status,
+        joinDate: validatedData.joinDate ? new Date(validatedData.joinDate) : undefined,
         expiredAt,
       },
       include: {

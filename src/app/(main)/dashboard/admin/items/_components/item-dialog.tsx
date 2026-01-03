@@ -158,10 +158,22 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   }, [open, isEditMode, item, form]);
 
   const onSubmit = async (data: CreateItemForm) => {
+    // Ensure all numeric fields are converted to numbers
+    const transformedData: CreateItemForm = {
+      ...data,
+      duration: Number(data.duration),
+      capacity: Number(data.capacity),
+      price: Number(data.price),
+      schedules: data.schedules?.map((schedule) => ({
+        ...schedule,
+        dayOfWeek: Number(schedule.dayOfWeek),
+      })),
+    };
+
     if (isEditMode) {
-      await updateItemMutation.mutateAsync(data);
+      await updateItemMutation.mutateAsync(transformedData);
     } else {
-      await createItemMutation.mutateAsync(data);
+      await createItemMutation.mutateAsync(transformedData);
     }
   };
 

@@ -90,9 +90,7 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
           <UsersSearch value={searchValue} onChange={setSearchValue} placeholder="Search by name, email, or phone..." />
           <RoleFilter selectedRole={selectedRole} onRoleChange={setSelectedRole} />
         </div>
-        <div className="text-muted-foreground text-sm">
-          {table.getFilteredRowModel().rows.length} of {data.length} user(s)
-        </div>
+        <div className="text-muted-foreground text-sm">{data.length} user(s)</div>
       </div>
 
       <DataTable table={table} columns={columns} />
