@@ -20,6 +20,7 @@ import { User } from "./schema";
 
 // Define the actions interface for the columns
 interface UserActions {
+  onRowClick: (user: User) => void;
   onViewProfile: (user: User) => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
@@ -38,7 +39,12 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
       </div>
     ),
     cell: ({ row }) => (
-      <div className="flex items-center justify-center">
+      <div
+        className="flex items-center justify-center"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -133,16 +139,39 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
               variant="ghost"
               className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
               size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
               <EllipsisVertical />
               <span className="sr-only">Open menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={() => actions.onViewProfile(user)}>View Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEditUser(user)}>Edit User</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onViewProfile(user);
+              }}
+            >
+              View Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onEditUser(user);
+              }}
+            >
+              Edit User
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => actions.onDeleteUser(user)}>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onDeleteUser(user);
+              }}
+            >
               Delete User
             </DropdownMenuItem>
           </DropdownMenuContent>

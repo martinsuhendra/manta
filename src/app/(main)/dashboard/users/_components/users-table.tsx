@@ -2,20 +2,22 @@
 
 import * as React from "react";
 
+import { Plus } from "lucide-react";
+
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
-import { AddUserDialog } from "./add-user-dialog";
 import { createUserColumns } from "./columns";
-import { DeleteUserDialog } from "./delete-user-dialog";
-import { EditUserDialog } from "./edit-user-dialog";
 import { RoleFilter } from "./role-filter";
 import { User } from "./schema";
+import { UserDetailDrawer } from "./user-detail-drawer";
 import { UsersSearch } from "./users-search";
 import { UsersTableSkeleton } from "./users-table-skeleton";
-import { ViewProfileDialog } from "./view-profile-dialog";
+
+type DrawerMode = "view" | "edit" | "add" | null;
 
 interface UsersTableProps {
   data: User[];
@@ -25,9 +27,8 @@ interface UsersTableProps {
 export function UsersTable({ data, isLoading }: UsersTableProps) {
   const [selectedRole, setSelectedRole] = React.useState("all");
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-  const [viewProfileOpen, setViewProfileOpen] = React.useState(false);
-  const [editUserOpen, setEditUserOpen] = React.useState(false);
-  const [deleteUserOpen, setDeleteUserOpen] = React.useState(false);
+  const [drawerMode, setDrawerMode] = React.useState<DrawerMode>(null);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
 
   // Filter data based on selected role
@@ -41,21 +42,36 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
   // Actions for the table columns
   const actions = React.useMemo(
     () => ({
+      onRowClick: (user: User) => {
+        setSelectedUser(user);
+        setDrawerMode("view");
+        setDrawerOpen(true);
+      },
       onViewProfile: (user: User) => {
         setSelectedUser(user);
-        setViewProfileOpen(true);
+        setDrawerMode("view");
+        setDrawerOpen(true);
       },
       onEditUser: (user: User) => {
         setSelectedUser(user);
-        setEditUserOpen(true);
+        setDrawerMode("edit");
+        setDrawerOpen(true);
       },
       onDeleteUser: (user: User) => {
+        // Open drawer in view mode, then user can click delete button
         setSelectedUser(user);
-        setDeleteUserOpen(true);
+        setDrawerMode("view");
+        setDrawerOpen(true);
       },
     }),
     [],
   );
+
+  const handleAddClick = () => {
+    setSelectedUser(null);
+    setDrawerMode("add");
+    setDrawerOpen(true);
+  };
 
   const columns = React.useMemo(() => createUserColumns(actions), [actions]);
 
@@ -81,7 +97,10 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
         </div>
         <div className="flex items-center gap-2">
           <DataTableViewOptions table={table} />
-          <AddUserDialog />
+          <Button onClick={handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
         </div>
       </div>
 
@@ -93,14 +112,17 @@ export function UsersTable({ data, isLoading }: UsersTableProps) {
         <div className="text-muted-foreground text-sm">{data.length} user(s)</div>
       </div>
 
-      <DataTable table={table} columns={columns} />
+      <DataTable table={table} columns={columns} onRowClick={actions.onRowClick} />
 
       <DataTablePagination table={table} />
 
-      {/* Dialogs */}
-      <ViewProfileDialog user={selectedUser} open={viewProfileOpen} onOpenChange={setViewProfileOpen} />
-      <EditUserDialog user={selectedUser} open={editUserOpen} onOpenChange={setEditUserOpen} />
-      <DeleteUserDialog user={selectedUser} open={deleteUserOpen} onOpenChange={setDeleteUserOpen} />
+      <UserDetailDrawer
+        user={selectedUser}
+        mode={drawerMode}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onModeChange={setDrawerMode}
+      />
     </div>
   );
 }

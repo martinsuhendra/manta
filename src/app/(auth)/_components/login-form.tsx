@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { USER_ROLES } from "@/lib/types";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -50,8 +51,11 @@ export function LoginForm() {
         });
       } else if (result?.ok) {
         toast.success("Successfully signed in!");
-        // Always redirect to shop after successful login
-        router.push("/shop");
+        // Wait a bit for session to be available, then get it to check user role
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const session = await getSession();
+        const redirectPath = session?.user?.role === USER_ROLES.SUPERADMIN ? "/dashboard/home" : "/shop";
+        router.push(redirectPath);
         router.refresh();
       }
     } catch {

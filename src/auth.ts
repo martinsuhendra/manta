@@ -56,7 +56,7 @@ export const authOptions = {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // If url is on the same origin, allow it
       else if (new URL(url).origin === baseUrl) return url;
-      // Otherwise redirect to shop
+      // Otherwise redirect to shop (role-based redirect handled in login form)
       return `${baseUrl}/shop`;
     },
     async jwt({ token, user, trigger }: { token: JWT; user?: User; trigger?: "update" | "signIn" | "signUp" }) {

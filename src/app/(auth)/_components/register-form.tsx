@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { USER_ROLES } from "@/lib/types";
 
 const FormSchema = z
   .object({
@@ -81,7 +82,11 @@ export function RegisterForm() {
         toast.success("Account created successfully!", {
           description: "Welcome! You have been automatically signed in.",
         });
-        router.push("/shop");
+        // Wait a bit for session to be available, then get it to check user role
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const session = await getSession();
+        const redirectPath = session?.user?.role === USER_ROLES.SUPERADMIN ? "/dashboard/home" : "/shop";
+        router.push(redirectPath);
         router.refresh();
       }
     } catch {

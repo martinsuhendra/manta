@@ -1,11 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+import { getToken } from "next-auth/jwt";
+
+export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
 
-  // Check if user is authenticated by looking for session token
-  const token =
-    request.cookies.get("next-auth.session-token") ?? request.cookies.get("__Secure-next-auth.session-token");
+  // Get the JWT token to check authentication and role
+  const token = await getToken({ req: request });
+
   const isLoggedIn = !!token;
 
   // Check if the user is trying to access a protected route
@@ -16,7 +18,8 @@ export function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL("/shop", nextUrl));
+    const redirectPath = token?.role === "SUPERADMIN" ? "/dashboard/home" : "/shop";
+    return NextResponse.redirect(new URL(redirectPath, nextUrl));
   }
 
   // Redirect unauthenticated users to sign-in page

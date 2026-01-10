@@ -17,7 +17,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Membership } from "./schema";
 
 interface ActionsType {
-  onView: (membership: Membership) => void;
+  onRowClick: (membership: Membership) => void;
   onEdit: (membership: Membership) => void;
   onDelete: (membership: Membership) => void;
 }
@@ -109,21 +109,43 @@ export const createMembershipColumns = (actions: ActionsType): ColumnDef<Members
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => actions.onView(membership)}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onRowClick(membership);
+              }}
+            >
               <Eye className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEdit(membership)}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onEdit(membership);
+              }}
+            >
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onDelete(membership)} className="text-destructive">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.onDelete(membership);
+              }}
+              className="text-destructive"
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>

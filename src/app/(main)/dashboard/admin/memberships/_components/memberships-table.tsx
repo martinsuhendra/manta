@@ -2,20 +2,22 @@
 
 import * as React from "react";
 
+import { Plus } from "lucide-react";
+
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
-import { AddMembershipDialog } from "./add-membership-dialog";
 import { createMembershipColumns } from "./columns";
-import { DeleteMembershipDialog } from "./delete-membership-dialog";
-import { EditMembershipDialog } from "./edit-membership-dialog";
+import { MembershipDetailDrawer } from "./membership-detail-drawer";
 import { MembershipsSearch } from "./memberships-search";
 import { MembershipsTableSkeleton } from "./memberships-table-skeleton";
 import { Membership } from "./schema";
 import { StatusFilter } from "./status-filter";
-import { ViewMembershipDialog } from "./view-membership-dialog";
+
+type DrawerMode = "view" | "edit" | "add" | null;
 
 interface MembershipsTableProps {
   data: Membership[];
@@ -25,9 +27,8 @@ interface MembershipsTableProps {
 export function MembershipsTable({ data, isLoading }: MembershipsTableProps) {
   const [selectedStatus, setSelectedStatus] = React.useState("all");
   const [selectedMembership, setSelectedMembership] = React.useState<Membership | null>(null);
-  const [viewMembershipOpen, setViewMembershipOpen] = React.useState(false);
-  const [editMembershipOpen, setEditMembershipOpen] = React.useState(false);
-  const [deleteMembershipOpen, setDeleteMembershipOpen] = React.useState(false);
+  const [drawerMode, setDrawerMode] = React.useState<DrawerMode>(null);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   // Filter data based on selected status
   const filteredData = React.useMemo(() => {
@@ -40,21 +41,31 @@ export function MembershipsTable({ data, isLoading }: MembershipsTableProps) {
   // Actions for the table columns
   const actions = React.useMemo(
     () => ({
-      onView: (membership: Membership) => {
+      onRowClick: (membership: Membership) => {
         setSelectedMembership(membership);
-        setViewMembershipOpen(true);
+        setDrawerMode("view");
+        setDrawerOpen(true);
       },
       onEdit: (membership: Membership) => {
         setSelectedMembership(membership);
-        setEditMembershipOpen(true);
+        setDrawerMode("edit");
+        setDrawerOpen(true);
       },
       onDelete: (membership: Membership) => {
+        // Open drawer in view mode, then user can click delete button
         setSelectedMembership(membership);
-        setDeleteMembershipOpen(true);
+        setDrawerMode("view");
+        setDrawerOpen(true);
       },
     }),
     [],
   );
+
+  const handleAddClick = () => {
+    setSelectedMembership(null);
+    setDrawerMode("add");
+    setDrawerOpen(true);
+  };
 
   const columns = React.useMemo(() => createMembershipColumns(actions), [actions]);
 
@@ -76,30 +87,27 @@ export function MembershipsTable({ data, isLoading }: MembershipsTableProps) {
         </div>
         <div className="flex items-center gap-2">
           <DataTableViewOptions table={tableInstance} />
-          <AddMembershipDialog />
+          <Button onClick={handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Membership
+          </Button>
         </div>
       </div>
 
-      {isLoading ? <MembershipsTableSkeleton /> : <DataTable table={tableInstance} columns={columns} />}
+      {isLoading ? (
+        <MembershipsTableSkeleton />
+      ) : (
+        <DataTable table={tableInstance} columns={columns} onRowClick={actions.onRowClick} />
+      )}
 
       <DataTablePagination table={tableInstance} />
 
-      <ViewMembershipDialog
+      <MembershipDetailDrawer
         membership={selectedMembership}
-        open={viewMembershipOpen}
-        onOpenChange={setViewMembershipOpen}
-      />
-
-      <EditMembershipDialog
-        membership={selectedMembership}
-        open={editMembershipOpen}
-        onOpenChange={setEditMembershipOpen}
-      />
-
-      <DeleteMembershipDialog
-        membership={selectedMembership}
-        open={deleteMembershipOpen}
-        onOpenChange={setDeleteMembershipOpen}
+        mode={drawerMode}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onModeChange={setDrawerMode}
       />
     </div>
   );
