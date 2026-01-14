@@ -41,7 +41,6 @@ function getTabErrors(errors: Record<string, unknown>): TabErrors {
     errors.description ||
     errors.duration ||
     errors.capacity ||
-    errors.price ||
     errors.color ||
     errors.image ||
     errors.isActive
@@ -65,7 +64,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       description: "",
       duration: 60,
       capacity: 10,
-      price: 0,
       color: "#3B82F6",
       image: "",
       isActive: true,
@@ -135,7 +133,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           description: item.description || "",
           duration: item.duration,
           capacity: item.capacity,
-          price: item.price ?? 0,
           color: item.color || "#3B82F6",
           image: item.image || "",
           isActive: item.isActive,
@@ -147,7 +144,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           description: "",
           duration: 60,
           capacity: 10,
-          price: 0,
           color: "#3B82F6",
           image: "",
           isActive: true,
@@ -163,7 +159,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       ...data,
       duration: Number(data.duration),
       capacity: Number(data.capacity),
-      price: Number(data.price),
       schedules: data.schedules?.map((schedule) => ({
         ...schedule,
         dayOfWeek: Number(schedule.dayOfWeek),
@@ -182,7 +177,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-full max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-[90vw] lg:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Item" : "Create New Item"}</DialogTitle>
           <DialogDescription>

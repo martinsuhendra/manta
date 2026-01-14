@@ -116,7 +116,7 @@ export function MembershipDetailDrawer({
   React.useEffect(() => {
     if (mode === "edit" && membership && open) {
       form.reset({
-        status: membership.status as "ACTIVE" | "EXPIRED" | "SUSPENDED",
+        status: membership.status as "ACTIVE" | "EXPIRED" | "SUSPENDED" | "PENDING",
         expiredAt: format(new Date(membership.expiredAt), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
       });
     } else if (mode === "add" && open) {
@@ -228,11 +228,13 @@ export function MembershipDetailDrawer({
   const statusVariant =
     membership?.status === "ACTIVE"
       ? "default"
-      : membership?.status === "EXPIRED"
-        ? "destructive"
-        : membership?.status === "SUSPENDED"
-          ? "secondary"
-          : "outline";
+      : membership?.status === "PENDING"
+        ? "warning"
+        : membership?.status === "EXPIRED"
+          ? "destructive"
+          : membership?.status === "SUSPENDED"
+            ? "secondary"
+            : "outline";
 
   const getTitle = () => {
     if (mode === "add") return "Add New Membership";
@@ -477,6 +479,7 @@ export function MembershipDetailDrawer({
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="ACTIVE">Active</SelectItem>
+                            <SelectItem value="PENDING">Pending</SelectItem>
                             <SelectItem value="EXPIRED">Expired</SelectItem>
                             <SelectItem value="SUSPENDED">Suspended</SelectItem>
                           </SelectContent>

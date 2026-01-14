@@ -10,7 +10,7 @@ import { USER_ROLES } from "@/lib/types";
 const createMembershipSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
   productId: z.string().uuid("Invalid product ID"),
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).default("ACTIVE"),
+  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).default("ACTIVE"),
   joinDate: z.string().optional(),
 });
 

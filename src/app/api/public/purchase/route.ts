@@ -64,13 +64,14 @@ export async function POST(request: NextRequest) {
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + product.validDays);
 
-    // Create membership
+    // Create membership with PENDING status until payment is confirmed
     const membership = await prisma.membership.create({
       data: {
         userId: user.id,
         productId: validatedData.productId,
         expiredAt,
         transactionId: transaction.id,
+        status: "PENDING", // Set to PENDING until payment is confirmed
       },
       include: {
         product: {

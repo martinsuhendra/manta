@@ -101,12 +101,35 @@ export async function POST(request: NextRequest) {
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + product.validDays);
 
+    // Determine membership status based on transaction
+    let membershipStatus = "ACTIVE"; // Default for memberships without transaction (manually created)
+    if (validatedData.transactionId) {
+      // Check transaction status
+      const transaction = await prisma.transaction.findUnique({
+        where: { id: validatedData.transactionId },
+      });
+      // If transaction exists, set membership status based on transaction status
+      if (transaction) {
+        if (transaction.status === "COMPLETED") {
+          membershipStatus = "ACTIVE";
+        } else if (["PENDING", "PROCESSING"].includes(transaction.status)) {
+          membershipStatus = "PENDING";
+        } else {
+          membershipStatus = "SUSPENDED";
+        }
+      } else {
+        // Transaction ID provided but not found - default to pending for safety
+        membershipStatus = "PENDING";
+      }
+    }
+
     const membership = await prisma.membership.create({
       data: {
         userId: session.user.id,
         productId: validatedData.productId,
         expiredAt,
         transactionId: validatedData.transactionId,
+        status: membershipStatus,
       },
       include: {
         product: true,

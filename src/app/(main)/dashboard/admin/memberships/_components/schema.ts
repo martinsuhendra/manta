@@ -28,14 +28,14 @@ export type Membership = z.infer<typeof membershipSchema>;
 export const createMembershipSchema = z.object({
   userId: z.string().min(1, "User is required"),
   productId: z.string().min(1, "Product is required"),
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).default("ACTIVE"),
+  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).default("ACTIVE"),
   joinDate: z.string().optional(),
 });
 
 export type CreateMembershipForm = z.infer<typeof createMembershipSchema>;
 
 export const updateMembershipSchema = z.object({
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).optional(),
+  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).optional(),
   expiredAt: z.string().optional(),
 });
 

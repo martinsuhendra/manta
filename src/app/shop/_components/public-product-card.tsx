@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ExternalLink, Loader2, Package } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -53,6 +54,7 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isPurchasing, setIsPurchasing] = React.useState(false);
+  const { data: session } = useSession();
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -61,6 +63,21 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
       customerName: "",
     },
   });
+
+  // Auto-fill form when dialog opens and user is signed in
+  React.useEffect(() => {
+    if (isDialogOpen && session?.user) {
+      form.reset({
+        customerName: session.user.name || "",
+        customerEmail: session.user.email || "",
+      });
+    } else if (isDialogOpen && !session?.user) {
+      form.reset({
+        customerEmail: "",
+        customerName: "",
+      });
+    }
+  }, [isDialogOpen, session, form]);
 
   const handlePurchase = async (data: PurchaseFormValues) => {
     setIsPurchasing(true);
@@ -185,7 +202,7 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input placeholder="John Doe" disabled={!!session?.user} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -198,7 +215,7 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} />
+                        <Input type="email" placeholder="john@example.com" disabled={!!session?.user} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

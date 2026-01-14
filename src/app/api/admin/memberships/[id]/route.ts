@@ -8,7 +8,7 @@ import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
 const updateMembershipSchema = z.object({
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED"]).optional(),
+  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).optional(),
   remainingQuota: z.number().min(0).optional(),
   expiredAt: z.string().datetime().optional(),
 });

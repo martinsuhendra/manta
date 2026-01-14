@@ -16,6 +16,7 @@ export function StatusFilter({ value, onChange }: StatusFilterProps) {
       <SelectContent>
         <SelectItem value="all">All Status</SelectItem>
         <SelectItem value="ACTIVE">Active</SelectItem>
+        <SelectItem value="PENDING">Pending</SelectItem>
         <SelectItem value="EXPIRED">Expired</SelectItem>
         <SelectItem value="SUSPENDED">Suspended</SelectItem>
       </SelectContent>

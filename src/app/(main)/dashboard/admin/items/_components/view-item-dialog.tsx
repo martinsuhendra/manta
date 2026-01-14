@@ -5,7 +5,7 @@ import * as React from "react";
 import Image from "next/image";
 
 import { format } from "date-fns";
-import { Calendar, Clock, Users, User, Palette, Package, DollarSign, Percent } from "lucide-react";
+import { Calendar, Clock, Users, User, Palette, Package, Percent } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/drawer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatCurrency, formatPrice } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 import { DAY_OF_WEEK_LABELS, Item } from "./schema";
 
@@ -96,16 +96,6 @@ function ItemBasicInfo({ item }: { item: Item }) {
           <p className="text-lg font-semibold">{item.capacity} participants</p>
         </div>
       </div>
-
-      {item.price !== undefined && item.price !== null && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <DollarSign className="h-4 w-4" />
-            Price
-          </div>
-          <p className="text-lg font-semibold">{formatPrice(Number(item.price))}</p>
-        </div>
-      )}
 
       {item.color && (
         <div className="space-y-2">
