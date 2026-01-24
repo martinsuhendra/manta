@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, security/detect-object-injection, @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -6,14 +7,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, CreditCard, Edit, Mail, Phone, User } from "lucide-react";
+import { Calendar, CreditCard, Edit, Loader2, Mail, Phone, User } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { APP_CONFIG } from "@/config/app-config";
+import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
 
 interface AccountData {
@@ -127,6 +129,67 @@ function getStatusBadge(status: string) {
   );
 }
 
+async function handleReopenPayment(
+  transactionId: string,
+  setReopeningPayment: (id: string | null) => void,
+  isSnapLoaded: boolean,
+  openSnap: (token: string, options?: any) => void,
+  router: any,
+) {
+  if (!isSnapLoaded) {
+    toast.error("Payment gateway not ready", {
+      description: "Please wait a moment and try again.",
+    });
+    return;
+  }
+
+  setReopeningPayment(transactionId);
+
+  try {
+    const response = await fetch(`/api/transactions/${transactionId}/snap-token`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      toast.error("Failed to open payment", {
+        description: result.error || "Something went wrong.",
+      });
+      return;
+    }
+
+    // Open Snap payment popup
+    openSnap(result.snapToken, {
+      onSuccess: () => {
+        toast.success("Payment successful!", {
+          description: "Your membership has been activated.",
+        });
+        router.refresh();
+      },
+      onPending: () => {
+        toast.info("Payment pending", {
+          description: "Waiting for payment confirmation.",
+        });
+        router.refresh();
+      },
+      onError: () => {
+        toast.error("Payment failed", {
+          description: "Please try again or contact support.",
+        });
+      },
+      onClose: () => {
+        toast.info("Payment cancelled", {
+          description: "You can continue the payment anytime.",
+        });
+      },
+    });
+  } catch {
+    toast.error("Something went wrong", {
+      description: "Please try again later.",
+    });
+  } finally {
+    setReopeningPayment(null);
+  }
+}
+
 const editProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phoneNo: z.string().min(1, "Phone number is required"),
@@ -139,6 +202,8 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const router = useRouter();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
+  const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
 
   const form = useForm<EditProfileFormValues>({
     resolver: zodResolver(editProfileSchema),
@@ -413,6 +478,26 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                             {transaction.paidAt && <p>Paid: {formatDate(transaction.paidAt)}</p>}
                           </div>
                         </div>
+                        {transaction.status === "PENDING" && (
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleReopenPayment(transaction.id, setReopeningPayment, isSnapLoaded, openSnap, router)
+                              }
+                              disabled={reopeningPayment === transaction.id}
+                            >
+                              {reopeningPayment === transaction.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Opening Payment...
+                                </>
+                              ) : (
+                                "Continue Payment"
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

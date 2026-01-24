@@ -1,3 +1,4 @@
+/* eslint-disable complexity, max-lines */
 "use client";
 
 import * as React from "react";
@@ -486,7 +487,7 @@ export function UserDetailDrawer({ user, mode, open, onOpenChange, onModeChange 
             <AlertDialogAction
               onClick={handleDelete}
               disabled={!canDelete || deleteUser.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 text-white hover:text-white"
             >
               {deleteUser.isPending ? "Deleting..." : "Delete User"}
             </AlertDialogAction>

@@ -1,8 +1,6 @@
 import { Metadata } from "next";
-import Link from "next/link";
 
 import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
 

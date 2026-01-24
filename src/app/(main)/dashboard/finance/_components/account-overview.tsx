@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatPrice, cn } from "@/lib/utils";
 
 function ChipSVG() {
   return (
@@ -115,11 +115,11 @@ export function AccountOverview() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Spending Limit</span>
-                  <span className="font-medium tabular-nums">$62,000.00</span>
+                  <span className="font-medium tabular-nums">{formatPrice(62000000)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Available Balance</span>
-                  <span className="font-medium tabular-nums">$13,100.06</span>
+                  <span className="font-medium tabular-nums">{formatPrice(13100060)}</span>
                 </div>
               </div>
 

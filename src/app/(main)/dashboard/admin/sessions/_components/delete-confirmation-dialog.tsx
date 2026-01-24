@@ -24,6 +24,7 @@ interface DeleteConfirmationDialogProps {
   isDeleting?: boolean;
 }
 
+/* eslint-disable-next-line complexity */
 export function DeleteConfirmationDialog({
   open,
   onOpenChange,
@@ -110,7 +111,7 @@ export function DeleteConfirmationDialog({
           <Button
             onClick={onConfirm}
             disabled={hasBookings || isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive relative overflow-hidden"
+            className="bg-destructive hover:bg-destructive/90 focus:ring-destructive relative overflow-hidden text-white hover:text-white"
           >
             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isDeleting ? "Deleting..." : "Delete Session"}

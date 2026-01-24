@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatPrice } from "@/lib/utils";
 
 import { Membership } from "./schema";
 
@@ -45,7 +46,7 @@ export const createMembershipColumns = (actions: ActionsType): ColumnDef<Members
         <div className="flex flex-col">
           <span className="font-medium">{membership.product.name}</span>
           <span className="text-muted-foreground text-sm">
-            ${membership.product.price} • {membership.product.validDays} days
+            {formatPrice(membership.product.price)} • {membership.product.validDays} days
           </span>
         </div>
       );

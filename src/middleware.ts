@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthPage) {
-    const redirectPath = token?.role === "SUPERADMIN" ? "/dashboard/home" : "/shop";
+    const redirectPath = token.role === "SUPERADMIN" ? "/dashboard/home" : "/shop";
     return NextResponse.redirect(new URL(redirectPath, nextUrl));
   }
 

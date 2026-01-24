@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/drawer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatCurrency } from "@/lib/utils";
 
 import { DAY_OF_WEEK_LABELS, Item } from "./schema";
 

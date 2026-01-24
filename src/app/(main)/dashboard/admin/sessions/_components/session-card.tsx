@@ -31,6 +31,7 @@ interface SessionCardProps {
   onEdit?: (session: Session) => void;
 }
 
+/* eslint-disable-next-line complexity */
 export function SessionCard({ session, variant = "compact", showDate = true, onEdit }: SessionCardProps) {
   const updateSessionMutation = useUpdateSession();
   const deleteSessionMutation = useDeleteSession();

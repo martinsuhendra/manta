@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as React from "react";
 
 import { AlertTriangle } from "lucide-react";

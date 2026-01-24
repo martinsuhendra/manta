@@ -1,5 +1,71 @@
 import { EmailTemplate, baseStyles } from "./base";
 
+export interface PaymentSuccessTemplateParams {
+  userName?: string;
+  productName: string;
+  accountUrl: string;
+}
+
+export function createPaymentSuccessTemplate(params: PaymentSuccessTemplateParams): EmailTemplate {
+  const { userName, productName, accountUrl } = params;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      ${baseStyles}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1 class="logo">Manta</h1>
+        </div>
+        <div class="content">
+          <h2>✅ Payment Successful!</h2>
+          <p>Hi${userName ? ` ${userName}` : ""},</p>
+          
+          <div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="color: #15803d; font-weight: 600; margin: 0;">Your payment for <strong>${productName}</strong> has been successfully processed</p>
+          </div>
+          
+          <p>Your membership is now active and ready to use!</p>
+          
+          <a href="${accountUrl}" class="button">View My Account</a>
+          
+          <p>Thank you for your purchase. If you have any questions, please don't hesitate to contact our support team.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; 2025 Manta. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    ✅ Payment Successful!
+    
+    Hi${userName ? ` ${userName}` : ""},
+    
+    Your payment for ${productName} has been successfully processed.
+    
+    Your membership is now active and ready to use!
+    
+    View your account: ${accountUrl}
+    
+    Thank you for your purchase.
+    
+    ---
+    © 2025 Manta. All rights reserved.
+  `;
+
+  return {
+    subject: "Payment Successful - Membership Activated",
+    html,
+    text,
+  };
+}
+
 export function createPaymentSuccessPasswordResetTemplate(resetUrl: string, customerName?: string): EmailTemplate {
   const html = `
     <!DOCTYPE html>

@@ -16,7 +16,9 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 
 export const DEFAULT_USER_ROLE: UserRole = USER_ROLES.MEMBER;
 
-export function getRoleVariant(role: string) {
+export type RoleBadgeVariant = "destructive" | "default" | "secondary" | "outline";
+
+export function getRoleVariant(role: string): RoleBadgeVariant {
   switch (role) {
     case USER_ROLES.SUPERADMIN:
       return "destructive";

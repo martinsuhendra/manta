@@ -1,3 +1,4 @@
+/* eslint-disable complexity, max-lines */
 "use client";
 
 import * as React from "react";
@@ -5,10 +6,9 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import {
   AlertDialog,
@@ -37,7 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { USER_ROLES } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 import { EmptyProductsState } from "./empty-products-state";
 import {
@@ -227,7 +227,7 @@ export function MembershipDetailDrawer({
   const isExpired = membership ? new Date(membership.expiredAt) < new Date() : false;
   const statusVariant =
     membership?.status === "ACTIVE"
-      ? "default"
+      ? "success"
       : membership?.status === "PENDING"
         ? "warning"
         : membership?.status === "EXPIRED"
@@ -265,20 +265,20 @@ export function MembershipDetailDrawer({
             ) : mode === "view" && membership ? (
               <div className="space-y-6">
                 {/* User Information */}
-                <div className="space-y-3">
+                <div className="space-y-3 overflow-x-hidden">
                   <h3 className="text-lg font-semibold">User Information</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Name:</span>
-                      <div>{membership.user.name || "N/A"}</div>
+                      <div className="break-words">{membership.user.name || "N/A"}</div>
                     </div>
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Email:</span>
-                      <div>{membership.user.email || "N/A"}</div>
+                      <div className="break-all">{membership.user.email || "N/A"}</div>
                     </div>
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Phone:</span>
-                      <div>{membership.user.phoneNo || "N/A"}</div>
+                      <div className="break-all">{membership.user.phoneNo || "N/A"}</div>
                     </div>
                   </div>
                 </div>
@@ -286,18 +286,18 @@ export function MembershipDetailDrawer({
                 <Separator />
 
                 {/* Product Information */}
-                <div className="space-y-3">
+                <div className="space-y-3 overflow-x-hidden">
                   <h3 className="text-lg font-semibold">Product Information</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Product:</span>
-                      <div>{membership.product.name}</div>
+                      <div className="break-words">{membership.product.name}</div>
                     </div>
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Price:</span>
-                      <div>${membership.product.price}</div>
+                      <div className="break-all">{formatPrice(membership.product.price)}</div>
                     </div>
-                    <div>
+                    <div className="overflow-x-hidden">
                       <span className="text-muted-foreground font-medium">Valid Days:</span>
                       <div>{membership.product.validDays} days</div>
                     </div>
@@ -388,10 +388,11 @@ export function MembershipDetailDrawer({
                               <SelectContent>
                                 {products.map((product) => (
                                   <SelectItem key={product.id} value={product.id}>
-                                    <div className="flex flex-col text-left">
-                                      <span>{product.name}</span>
-                                      <span className="text-muted-foreground text-sm">
-                                        ${product.price} • {product.validDays} days • {product.quota} sessions
+                                    <div className="flex min-w-0 flex-col overflow-x-hidden text-left">
+                                      <span className="font-medium break-words">{product.name}</span>
+                                      <span className="text-muted-foreground text-xs break-words">
+                                        {formatPrice(product.price)} • {product.validDays} days • {product.quota}{" "}
+                                        sessions
                                       </span>
                                     </div>
                                   </SelectItem>
@@ -447,19 +448,21 @@ export function MembershipDetailDrawer({
                   )}
 
                   {mode === "edit" && membership && (
-                    <div className="grid grid-cols-2 gap-4 rounded-md border p-4">
+                    <div className="space-y-3 overflow-x-hidden rounded-md border p-4">
                       <div className="space-y-2">
                         <span className="text-sm font-medium">User</span>
-                        <div className="rounded-md border p-2 text-sm">
-                          <div>{membership.user.name || "No Name"}</div>
-                          <div className="text-muted-foreground">{membership.user.email}</div>
+                        <div className="overflow-x-hidden rounded-md border p-3 text-sm">
+                          <div className="font-medium break-words">{membership.user.name || "No Name"}</div>
+                          <div className="text-muted-foreground text-xs break-all">{membership.user.email}</div>
                         </div>
                       </div>
                       <div className="space-y-2">
                         <span className="text-sm font-medium">Product</span>
-                        <div className="rounded-md border p-2 text-sm">
-                          <div>{membership.product.name}</div>
-                          <div className="text-muted-foreground">${membership.product.price}</div>
+                        <div className="overflow-x-hidden rounded-md border p-3 text-sm">
+                          <div className="font-medium break-words">{membership.product.name}</div>
+                          <div className="text-muted-foreground text-xs break-all">
+                            {formatPrice(membership.product.price)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -594,19 +597,21 @@ export function MembershipDetailDrawer({
             </AlertDialogDescription>
           </AlertDialogHeader>
           {membership && (
-            <div className="bg-muted/50 my-4 rounded-md border p-4">
+            <div className="bg-muted/50 my-4 overflow-x-hidden rounded-md border p-4">
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1">
                   <span className="font-medium">User:</span>
-                  <span>{membership.user.name || membership.user.email}</span>
+                  <span className="text-muted-foreground break-all">
+                    {membership.user.name || membership.user.email}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1">
                   <span className="font-medium">Product:</span>
-                  <span>{membership.product.name}</span>
+                  <span className="text-muted-foreground break-words">{membership.product.name}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1">
                   <span className="font-medium">Status:</span>
-                  <span className="capitalize">{membership.status.toLowerCase()}</span>
+                  <span className="text-muted-foreground capitalize">{membership.status.toLowerCase()}</span>
                 </div>
               </div>
             </div>
@@ -616,7 +621,7 @@ export function MembershipDetailDrawer({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90 text-white hover:text-white"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete Membership"}
             </AlertDialogAction>

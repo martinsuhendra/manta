@@ -2,6 +2,7 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatPrice } from "@/lib/utils";
 
 export function SectionCards() {
   return (
@@ -9,7 +10,9 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">$1,250.00</CardTitle>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {formatPrice(1250)}
+          </CardTitle>
           <CardAction>
             <StatusBadge variant="outline">
               <TrendingUp />

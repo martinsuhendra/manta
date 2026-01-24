@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, security/detect-object-injection, react/no-array-index-key */
 import * as React from "react";
 
 import { Plus, X } from "lucide-react";

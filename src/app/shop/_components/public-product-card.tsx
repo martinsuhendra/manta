@@ -3,9 +3,10 @@
 import * as React from "react";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ExternalLink, Loader2, Package } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -24,7 +25,10 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
+
+import { SignUpDialog } from "./sign-up-dialog";
 
 interface PublicProduct {
   id: string;
@@ -55,6 +59,8 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isPurchasing, setIsPurchasing] = React.useState(false);
   const { data: session } = useSession();
+  const router = useRouter();
+  const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -103,18 +109,47 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         return;
       }
 
-      toast.success("Membership purchased successfully!", {
-        description: "Your membership has been created. Redirecting to payment...",
-      });
+      // Check if Snap is loaded
+      if (!isSnapLoaded) {
+        toast.error("Payment gateway not ready", {
+          description: "Please wait a moment and try again.",
+        });
+        return;
+      }
 
+      // Close dialog and open Snap payment
       setIsDialogOpen(false);
       form.reset();
 
-      // If there's a payment URL, redirect to it
-      if (result.paymentUrl) {
-        window.open(result.paymentUrl, "_blank", "noopener,noreferrer");
+      // Open Snap payment popup
+      if (result.snapToken) {
+        openSnap(result.snapToken, {
+          onSuccess: () => {
+            toast.success("Payment successful!", {
+              description: "Your membership has been activated.",
+            });
+            router.push("/shop/my-account");
+          },
+          onPending: () => {
+            toast.info("Payment pending", {
+              description: "Waiting for payment confirmation. You can check the status in My Account.",
+            });
+            router.push("/shop/my-account");
+          },
+          onError: () => {
+            toast.error("Payment failed", {
+              description: "Please try again or contact support.",
+            });
+          },
+          onClose: () => {
+            // User closed the popup
+            toast.info("Payment cancelled", {
+              description: "You can continue the payment from My Account.",
+            });
+          },
+        });
       }
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong", {
         description: "Please try again later.",
       });
@@ -144,7 +179,7 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
           <div className="text-muted-foreground text-sm">{product.validDays} days validity</div>
         </div>
 
-        {product.features && product.features.length > 0 && (
+        {product.features.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Features:</h4>
             <ul className="text-muted-foreground space-y-1 text-sm">
@@ -179,76 +214,94 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
+        {!session ? (
+          <SignUpDialog>
             <Button className="w-full" variant="default">
               Purchase Now
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Purchase {product.name}</DialogTitle>
-              <DialogDescription>
-                Enter your information to complete your membership purchase. You&apos;ll be redirected to complete
-                payment.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="customerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" disabled={!!session?.user} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="customerEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" disabled={!!session?.user} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="text-lg font-bold">{formatPrice(product.price)}</span>
-                  </div>
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    Valid for {product.validDays} days from purchase date
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isPurchasing}>
-                    {isPurchasing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      "Continue to Payment"
+          </SignUpDialog>
+        ) : (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full" variant="default">
+                Purchase Now
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Purchase {product.name}</DialogTitle>
+                <DialogDescription>
+                  Enter your information to complete your membership purchase. You&apos;ll be redirected to complete
+                  payment.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" disabled={!!session.user} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  />
+                  <FormField
+                    control={form.control}
+                    name="customerEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="john@example.com" disabled={!!session.user} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="bg-muted rounded-lg p-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="text-lg font-bold">{formatPrice(product.price)}</span>
+                    </div>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      Valid for {product.validDays} days from purchase date
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={isPurchasing}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isPurchasing || !isSnapLoaded}>
+                      {isPurchasing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : !isSnapLoaded ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading Payment...
+                        </>
+                      ) : (
+                        "Continue to Payment"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardFooter>
     </Card>
   );

@@ -72,7 +72,7 @@ export function DeleteProductDialog({ product, open, onOpenChange }: DeleteProdu
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteProduct.isPending || hasPurchases}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive hover:bg-destructive/90 text-white hover:text-white"
           >
             {deleteProduct.isPending ? "Deleting..." : "Delete Product"}
           </AlertDialogAction>

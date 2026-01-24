@@ -5,7 +5,11 @@ export type { EmailTemplate, brandColors, baseStyles } from "./base";
 export { createEmailVerificationTemplate, createPasswordResetTemplate, createWelcomeTemplate } from "./auth-templates";
 
 // Payment-related templates
-export { createPaymentSuccessPasswordResetTemplate } from "./payment-templates";
+export {
+  createPaymentSuccessPasswordResetTemplate,
+  createPaymentSuccessTemplate,
+  type PaymentSuccessTemplateParams,
+} from "./payment-templates";
 
 // General templates
 export { createContactFormTemplate } from "./general-templates";

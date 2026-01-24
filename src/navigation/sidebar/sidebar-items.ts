@@ -4,7 +4,6 @@ import {
   ChartBar,
   Banknote,
   Package,
-  CreditCard,
   UserCheck,
   Calendar,
   type LucideIcon,

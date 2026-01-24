@@ -159,7 +159,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       ...data,
       duration: Number(data.duration),
       capacity: Number(data.capacity),
-      schedules: data.schedules?.map((schedule) => ({
+      schedules: data.schedules.map((schedule) => ({
         ...schedule,
         dayOfWeek: Number(schedule.dayOfWeek),
       })),

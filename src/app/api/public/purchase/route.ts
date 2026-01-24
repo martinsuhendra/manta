@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/generated/prisma";
+import { createSnapTransaction, MEMBERSHIP_STATUS, TRANSACTION_STATUS, type TransactionMetadata } from "@/lib/midtrans";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
 
 const purchaseSchema = z.object({
@@ -51,8 +52,9 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         productId: validatedData.productId,
         amount: product.price,
-        currency: "USD",
-        status: "PENDING",
+        currency: "IDR", // Midtrans requires IDR
+        status: TRANSACTION_STATUS.PENDING,
+        paymentProvider: "midtrans",
         metadata: {
           customerEmail: validatedData.customerEmail,
           customerName: validatedData.customerName || user.name,
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
         productId: validatedData.productId,
         expiredAt,
         transactionId: transaction.id,
-        status: "PENDING", // Set to PENDING until payment is confirmed
+        status: MEMBERSHIP_STATUS.PENDING,
       },
       include: {
         product: {
@@ -86,9 +88,53 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Create Midtrans Snap token
+    let snapToken: string | null = null;
+    try {
+      const snapResponse = await createSnapTransaction({
+        transactionId: transaction.id,
+        amount: Number(product.price),
+        customerName: validatedData.customerName || user.name || "Customer",
+        customerEmail: validatedData.customerEmail,
+        customerPhone: user.phoneNo || undefined,
+        productId: validatedData.productId,
+        productName: product.name,
+      });
+
+      snapToken = snapResponse.token;
+
+      // Store snap token in transaction metadata
+      const updatedMetadata: TransactionMetadata = {
+        ...(transaction.metadata as TransactionMetadata),
+        snapToken: snapResponse.token,
+        snapTokenCreatedAt: new Date().toISOString(),
+      };
+
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { metadata: JSON.parse(JSON.stringify(updatedMetadata)) },
+      });
+    } catch (error) {
+      console.error("Failed to create Snap token:", error);
+      // Return error but don't fail the entire request
+      // Transaction and membership are created, user can retry later
+      return NextResponse.json(
+        {
+          error: "Failed to initialize payment gateway",
+          details: error instanceof Error ? error.message : "Unknown error",
+          transaction: {
+            id: transaction.id,
+            status: transaction.status,
+          },
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,
+        snapToken,
         transaction: {
           id: transaction.id,
           status: transaction.status,
@@ -101,7 +147,6 @@ export async function POST(request: NextRequest) {
           expiredAt: membership.expiredAt,
           product: membership.product,
         },
-        paymentUrl: product.paymentUrl,
       },
       { status: 201 },
     );

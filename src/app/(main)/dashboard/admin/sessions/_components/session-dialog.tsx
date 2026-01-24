@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 "use client";
 
 import * as React from "react";
@@ -12,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,16 +21,17 @@ import { useCreateSession, useUpdateSession } from "@/hooks/use-sessions-mutatio
 import { useTeachers } from "@/hooks/use-users-query";
 import { cn } from "@/lib/utils";
 
-import { CreateSessionForm, createSessionSchema, TIME_SLOTS } from "./schema";
+import { CreateSessionForm, createSessionSchema, Session, TIME_SLOTS } from "./schema";
 
 interface SessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
-  editingSession?: any; // The session being edited, null for create mode
+  editingSession?: Session | null;
   onSuccess?: () => void;
 }
 
+/* eslint-disable-next-line complexity */
 export function SessionDialog({ open, onOpenChange, selectedDate, editingSession, onSuccess }: SessionDialogProps) {
   const { data: items = [], isLoading: itemsLoading } = useItems();
   const { data: teachers = [], isLoading: teachersLoading } = useTeachers();

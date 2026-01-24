@@ -89,7 +89,7 @@ export function DeleteItemDialog({ item, open, onOpenChange }: DeleteItemDialogP
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive hover:bg-destructive/90 text-white hover:text-white"
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete Item"}
           </AlertDialogAction>

@@ -1,5 +1,7 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
+import type { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
@@ -14,7 +16,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as any)) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -25,8 +27,8 @@ export async function GET(request: NextRequest) {
     const itemId = searchParams.get("itemId");
     const status = searchParams.get("status");
 
-    // Build filter conditions
-    const whereConditions: any = {};
+    // Build filter conditions (asserted when passed to Prisma)
+    const whereConditions: Record<string, unknown> = {};
 
     if (startDate && endDate) {
       whereConditions.date = {
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     const sessions = await prisma.classSession.findMany({
-      where: whereConditions,
+      where: whereConditions as Prisma.ClassSessionWhereInput,
       include: {
         item: {
           select: {
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as any)) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

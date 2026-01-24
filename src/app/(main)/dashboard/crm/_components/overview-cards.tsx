@@ -6,6 +6,7 @@ import { Area, AreaChart, Line, LineChart, Bar, BarChart, XAxis } from "recharts
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { formatPrice } from "@/lib/utils";
 
 import {
   leadsChartData,
@@ -91,7 +92,7 @@ export function OverviewCards() {
             <CardTitle>Revenue</CardTitle>
             <CardDescription>Last 6 Months</CardDescription>
           </div>
-          <p className="text-2xl font-medium tabular-nums">$56,050</p>
+          <p className="text-2xl font-medium tabular-nums">{formatPrice(56050000)}</p>
           <div className="w-fit rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-500">+22.2%</div>
         </CardContent>
       </Card>

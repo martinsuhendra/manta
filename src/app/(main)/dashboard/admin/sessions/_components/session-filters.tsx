@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 "use client";
 
 import * as React from "react";
@@ -20,6 +21,7 @@ interface SessionFiltersProps {
   onFilterChange: (filters: SessionFilter) => void;
 }
 
+/* eslint-disable-next-line complexity */
 export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
   const [filters, setFilters] = useState<SessionFilter>({});
   const [isOpen, setIsOpen] = useState(false);

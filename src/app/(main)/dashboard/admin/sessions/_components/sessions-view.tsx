@@ -8,7 +8,7 @@ import { Plus, Calendar as CalendarIcon, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { SessionFilter } from "./schema";
+import { Session, SessionFilter } from "./schema";
 import { SessionCalendar } from "./session-calendar";
 import { SessionDialog } from "./session-dialog";
 import { SessionFilters } from "./session-filters";
@@ -18,7 +18,7 @@ export function SessionsView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [filters, setFilters] = useState<SessionFilter>({});
-  const [editingSession, setEditingSession] = useState<any | null>(null);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState("calendar");
 
   const handleCreateSession = () => {
@@ -32,7 +32,8 @@ export function SessionsView() {
     setEditingSession(null);
   };
 
-  const handleDateSelect = (date: Date, hasSessions?: boolean, sessions?: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- session list not needed for date selection
+  const handleDateSelect = (date: Date, hasSessions?: boolean, sessions?: unknown[]) => {
     setSelectedDate(date);
     if (!hasSessions) {
       setIsDialogOpen(true);
@@ -43,7 +44,7 @@ export function SessionsView() {
     setFilters(newFilters);
   };
 
-  const handleEditSession = (session: any) => {
+  const handleEditSession = (session: Session) => {
     console.log("Editing session:", session);
     setEditingSession(session);
     // Set the selected date to the session's date

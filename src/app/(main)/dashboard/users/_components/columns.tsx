@@ -82,7 +82,7 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
       const role = row.original.role;
 
       return (
-        <StatusBadge variant={getRoleVariant(role) as any}>
+        <StatusBadge variant={getRoleVariant(role)}>
           {USER_ROLE_LABELS[role as keyof typeof USER_ROLE_LABELS] || role}
         </StatusBadge>
       );

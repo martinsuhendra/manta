@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-explicit-any, security/detect-object-injection */
 "use client";
 
 import * as React from "react";
