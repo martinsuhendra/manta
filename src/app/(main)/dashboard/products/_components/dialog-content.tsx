@@ -1,12 +1,12 @@
 /* eslint-disable max-lines */
 import * as React from "react";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
+import { Stepper } from "@/components/ui/stepper";
 import { formatPrice } from "@/lib/utils";
 
 import { Item } from "../../admin/items/_components/schema";
@@ -16,12 +16,11 @@ import { ProductPreview } from "./product-card";
 import { ProductFormFields } from "./product-form-fields";
 import { ProductItemsTab } from "./product-items-tab";
 import { Product, QuotaPool, CreateProductItemForm } from "./schema";
-import { TabTriggerWithErrors } from "./tab-trigger-with-errors";
 
 interface DialogContentProps {
   isEdit: boolean;
-  currentTab: string;
-  setCurrentTab: (tab: string) => void;
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
   hasAttemptedSubmit: boolean;
   hasBasicErrors: () => boolean;
   form: UseFormReturn<FormData>;
@@ -35,12 +34,155 @@ interface DialogContentProps {
   setQuotaPools: React.Dispatch<React.SetStateAction<QuotaPool[]>>;
   existingProductItemsWithUsage: CreateProductItemForm[];
   items: Item[];
+  isSuccess?: boolean;
+}
+
+const STEPS = [
+  { id: "basic", label: "Basic Info", description: "Product details" },
+  { id: "items", label: "Items", description: "Configure items" },
+  { id: "review", label: "Review", description: "Review & submit" },
+  { id: "success", label: "Success", description: "Completed" },
+];
+
+function SuccessStep({ isEdit, onOpenChange }: { isEdit: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <DialogContent className="flex h-[90vh] max-h-[90vh] w-[95vw] !max-w-[1200px] flex-col overflow-hidden">
+      <DialogHeader>
+        <DialogTitle>{isEdit ? "Product Updated" : "Product Created"}</DialogTitle>
+        <DialogDescription>
+          {isEdit ? "Your product has been successfully updated." : "Your product has been successfully created."}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-12">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+          <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
+        </div>
+        <h3 className="mb-2 text-2xl font-semibold">
+          {isEdit ? "Product Updated Successfully!" : "Product Created Successfully!"}
+        </h3>
+        <p className="text-muted-foreground mb-8 max-w-md text-center text-sm">
+          {isEdit
+            ? "Your product has been updated with all the configured settings and items."
+            : "Your product has been created with all the configured settings and items."}
+        </p>
+      </div>
+
+      <DialogFooter>
+        <Button onClick={() => onOpenChange(false)} className="min-w-[120px]">
+          Close
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+function StepContent({
+  currentStep,
+  form,
+  mutation,
+  isEdit,
+  onSubmit,
+  onOpenChange,
+  product,
+  productItems,
+  setProductItems,
+  quotaPoolsWithUsage,
+  setQuotaPools,
+  existingProductItemsWithUsage,
+  items,
+  hasAttemptedSubmit,
+  hasBasicErrors,
+  setCurrentStep,
+}: {
+  currentStep: number;
+  form: UseFormReturn<FormData>;
+  mutation: { isPending: boolean };
+  isEdit: boolean;
+  onSubmit: () => void;
+  onOpenChange: (open: boolean) => void;
+  product?: Product | null;
+  productItems: CreateProductItemForm[];
+  setProductItems: React.Dispatch<React.SetStateAction<CreateProductItemForm[]>>;
+  quotaPoolsWithUsage: QuotaPool[];
+  setQuotaPools: React.Dispatch<React.SetStateAction<QuotaPool[]>>;
+  existingProductItemsWithUsage: CreateProductItemForm[];
+  items: Item[];
+  hasAttemptedSubmit: boolean;
+  hasBasicErrors: () => boolean;
+  setCurrentStep: (step: number) => void;
+}) {
+  if (currentStep === 1) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+          <div className="pr-2 pb-4">
+            <ProductFormFields
+              form={form}
+              mutation={mutation}
+              isEdit={isEdit}
+              onSubmit={onSubmit}
+              onCancel={() => onOpenChange(false)}
+              hideButtons={true}
+            />
+          </div>
+          <div className="flex flex-col">
+            <ProductPreview
+              name={form.watch("name")}
+              description={form.watch("description")}
+              price={form.watch("price") || 0}
+              validDays={form.watch("validDays") || 30}
+              image={form.watch("image")}
+              whatIsIncluded={form.watch("whatIsIncluded")}
+              isActive={form.watch("isActive")}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentStep === 2) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="pr-2 pb-4">
+          <ProductItemsTab
+            productId={product?.id}
+            productItems={productItems}
+            setProductItems={setProductItems}
+            quotaPools={quotaPoolsWithUsage}
+            setQuotaPools={setQuotaPools}
+            existingProductItems={existingProductItemsWithUsage}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentStep === 3) {
+    return (
+      <div className="flex-1 overflow-y-auto pr-2 pb-4">
+        <ReviewTab
+          form={form}
+          productItems={productItems}
+          quotaPoolsWithUsage={quotaPoolsWithUsage}
+          items={items}
+          isEdit={isEdit}
+          hasAttemptedSubmit={hasAttemptedSubmit}
+          hasBasicErrors={hasBasicErrors}
+          setCurrentStep={setCurrentStep}
+        />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export function ProductDialogContent({
   isEdit,
-  currentTab,
-  setCurrentTab,
+  currentStep,
+  setCurrentStep,
   hasAttemptedSubmit,
   hasBasicErrors,
   form,
@@ -54,7 +196,46 @@ export function ProductDialogContent({
   setQuotaPools,
   existingProductItemsWithUsage,
   items,
+  isSuccess = false,
 }: DialogContentProps) {
+  const completedSteps = React.useMemo(() => {
+    const steps: number[] = [];
+    if (currentStep > 1) steps.push(1);
+    if (currentStep > 2) steps.push(2);
+    if (currentStep > 3) steps.push(3);
+    if (isSuccess) steps.push(4);
+    return steps;
+  }, [currentStep, isSuccess]);
+
+  const handleNext = async () => {
+    if (currentStep === 1) {
+      const isValid = await form.trigger();
+      if (!isValid) return;
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      await onSubmit();
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceed = React.useMemo(() => {
+    if (currentStep === 1) {
+      return form.formState.isValid;
+    }
+    return true;
+  }, [currentStep, form.formState.isValid]);
+
+  if (isSuccess) {
+    return <SuccessStep isEdit={isEdit} onOpenChange={onOpenChange} />;
+  }
+
   return (
     <DialogContent className="flex h-[90vh] max-h-[90vh] w-[95vw] !max-w-[1200px] flex-col overflow-hidden">
       <DialogHeader>
@@ -66,78 +247,36 @@ export function ProductDialogContent({
         </DialogDescription>
       </DialogHeader>
 
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex min-h-0 flex-1 flex-col">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabTriggerWithErrors value="basic" hasError={hasAttemptedSubmit && hasBasicErrors()}>
-            Basic Info
-          </TabTriggerWithErrors>
-          <TabTriggerWithErrors value="items" hasError={false}>
-            Items
-          </TabTriggerWithErrors>
-          <TabTriggerWithErrors value="review" hasError={false}>
-            Review
-          </TabTriggerWithErrors>
-        </TabsList>
+      <div className="mb-6">
+        <Stepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
+      </div>
 
-        <TabsContent value="basic" className="mt-6 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-            <div className="pr-2 pb-4">
-              <ProductFormFields
-                form={form}
-                mutation={mutation}
-                isEdit={isEdit}
-                onSubmit={onSubmit}
-                onCancel={() => onOpenChange(false)}
-                hideButtons={true}
-              />
-            </div>
-            <div className="flex flex-col">
-              <ProductPreview
-                name={form.watch("name")}
-                description={form.watch("description")}
-                price={form.watch("price") || 0}
-                validDays={form.watch("validDays") || 30}
-                image={form.watch("image")}
-                paymentUrl={form.watch("paymentUrl")}
-                whatIsIncluded={form.watch("whatIsIncluded")}
-                isActive={form.watch("isActive")}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="items" className="mt-6 flex-1 overflow-y-auto">
-          <div className="pr-2 pb-4">
-            <ProductItemsTab
-              productId={product?.id}
-              productItems={productItems}
-              setProductItems={setProductItems}
-              quotaPools={quotaPoolsWithUsage}
-              setQuotaPools={setQuotaPools}
-              existingProductItems={existingProductItemsWithUsage}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="review" className="mt-6 flex-1 overflow-y-auto pr-2 pb-4">
-          <ReviewTab
-            form={form}
-            productItems={productItems}
-            quotaPoolsWithUsage={quotaPoolsWithUsage}
-            items={items}
-            isEdit={isEdit}
-            hasAttemptedSubmit={hasAttemptedSubmit}
-            hasBasicErrors={hasBasicErrors}
-            setCurrentTab={setCurrentTab}
-          />
-        </TabsContent>
-      </Tabs>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <StepContent
+          currentStep={currentStep}
+          form={form}
+          mutation={mutation}
+          isEdit={isEdit}
+          onSubmit={onSubmit}
+          onOpenChange={onOpenChange}
+          product={product}
+          productItems={productItems}
+          setProductItems={setProductItems}
+          quotaPoolsWithUsage={quotaPoolsWithUsage}
+          setQuotaPools={setQuotaPools}
+          existingProductItemsWithUsage={existingProductItemsWithUsage}
+          items={items}
+          hasAttemptedSubmit={hasAttemptedSubmit}
+          hasBasicErrors={hasBasicErrors}
+          setCurrentStep={setCurrentStep}
+        />
+      </div>
 
       <DialogFooter className="flex flex-shrink-0 flex-col gap-3">
-        {hasAttemptedSubmit && !form.formState.isValid && (
+        {currentStep === 1 && hasAttemptedSubmit && !form.formState.isValid && (
           <div className="text-destructive flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4" />
-            <span>Please fix the errors above before submitting.</span>
+            <span>Please fix the errors above before continuing.</span>
           </div>
         )}
 
@@ -145,18 +284,34 @@ export function ProductDialogContent({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
             Cancel
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={mutation.isPending} className="min-w-[120px]">
-            {mutation.isPending ? (
-              <div className="flex items-center gap-2">
-                <div className="border-background h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                {isEdit ? "Updating..." : "Creating..."}
-              </div>
-            ) : isEdit ? (
-              "Update Product"
-            ) : (
-              "Create Product"
-            )}
-          </Button>
+          {currentStep > 1 && (
+            <Button type="button" variant="outline" onClick={handlePrevious} disabled={mutation.isPending}>
+              Previous
+            </Button>
+          )}
+          {currentStep < 3 ? (
+            <Button
+              type="button"
+              onClick={handleNext}
+              disabled={mutation.isPending || !canProceed}
+              className="min-w-[120px]"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button type="button" onClick={onSubmit} disabled={mutation.isPending} className="min-w-[120px]">
+              {mutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="border-background h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+                  {isEdit ? "Updating..." : "Creating..."}
+                </div>
+              ) : isEdit ? (
+                "Update Product"
+              ) : (
+                "Create Product"
+              )}
+            </Button>
+          )}
         </div>
       </DialogFooter>
     </DialogContent>
@@ -171,7 +326,7 @@ interface ReviewTabProps {
   isEdit: boolean;
   hasAttemptedSubmit: boolean;
   hasBasicErrors: () => boolean;
-  setCurrentTab: (tab: string) => void;
+  setCurrentStep: (step: number) => void;
 }
 
 function ReviewTab({
@@ -182,7 +337,7 @@ function ReviewTab({
   isEdit,
   hasAttemptedSubmit,
   hasBasicErrors,
-  setCurrentTab,
+  setCurrentStep,
 }: ReviewTabProps) {
   return (
     <div className="space-y-6">
@@ -202,8 +357,8 @@ function ReviewTab({
               {hasBasicErrors() && (
                 <li>
                   •{" "}
-                  <button type="button" onClick={() => setCurrentTab("basic")} className="underline hover:no-underline">
-                    Fix errors in Basic Info tab
+                  <button type="button" onClick={() => setCurrentStep(1)} className="underline hover:no-underline">
+                    Fix errors in Basic Info step
                   </button>
                 </li>
               )}

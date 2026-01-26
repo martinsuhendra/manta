@@ -17,6 +17,7 @@ interface SubmissionParams {
   };
   onOpenChange: (open: boolean) => void;
   resetForm: () => void;
+  showSuccessStep?: boolean; // If true, don't close dialog, let parent handle success
 }
 
 export async function handleProductSubmission({
@@ -29,24 +30,35 @@ export async function handleProductSubmission({
   updateProduct,
   onOpenChange,
   resetForm,
+  showSuccessStep = false,
 }: SubmissionParams) {
   try {
     if (isEdit && product) {
       await updateProduct.mutateAsync({ id: product.id, data });
+      toast.success("Product updated successfully");
     } else {
       const createdProduct = await createProduct.mutateAsync(data);
       await createQuotaPoolsAndItems(createdProduct, quotaPools, productItems);
       toast.success("Product created successfully");
     }
 
-    onOpenChange(false);
-    if (!isEdit) {
-      resetForm();
+    // Only close dialog if not showing success step
+    if (!showSuccessStep) {
+      onOpenChange(false);
+      if (!isEdit) {
+        resetForm();
+      }
+    } else {
+      // Reset form but keep dialog open for success step
+      if (!isEdit) {
+        resetForm();
+      }
     }
   } catch (error) {
     console.error(`Failed to ${isEdit ? "update" : "create"} product:`, error);
     const errorMessage = error instanceof Error ? error.message : `Failed to ${isEdit ? "update" : "create"} product`;
     toast.error(errorMessage);
+    throw error; // Re-throw so caller knows submission failed
   }
 }
 

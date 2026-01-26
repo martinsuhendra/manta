@@ -38,8 +38,9 @@ export function ProductFormTabbedDialog({
   const { open, onOpenChange } = useDialogState({ open: controlledOpen, onOpenChange: controlledOnOpenChange });
   const { isEdit, mutation, createProduct, updateProduct } = useProductMutation(mode);
 
-  const [currentTab, setCurrentTab] = React.useState("basic");
+  const [currentStep, setCurrentStep] = React.useState(1);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
+  const [isSuccess, setIsSuccess] = React.useState(false);
   const [productItems, setProductItems] = React.useState<CreateProductItemForm[]>([]);
   const [quotaPools, setQuotaPools] = React.useState<QuotaPool[]>([]);
 
@@ -60,9 +61,18 @@ export function ProductFormTabbedDialog({
     existingQuotaPools,
     setProductItems,
     setQuotaPools,
-    setCurrentTab,
+    setCurrentTab: () => {}, // No longer needed, but keeping for compatibility
     setHasAttemptedSubmit,
   });
+
+  // Reset step and success state when dialog opens/closes
+  React.useEffect(() => {
+    if (open) {
+      setCurrentStep(1);
+      setIsSuccess(false);
+      setHasAttemptedSubmit(false);
+    }
+  }, [open]);
 
   const { existingProductItemsWithUsage, quotaPoolsWithUsage } = useProductComputed({
     isEdit,
@@ -77,30 +87,38 @@ export function ProductFormTabbedDialog({
     const isValid = await form.trigger();
     if (!isValid) {
       if (hasBasicErrors()) {
-        setCurrentTab("basic");
-        toast.error("Please fix the errors in the Basic Info tab.");
+        setCurrentStep(1);
+        toast.error("Please fix the errors in the Basic Info step.");
       }
       return;
     }
 
-    await handleProductSubmission({
-      data,
-      isEdit,
-      product,
-      productItems,
-      quotaPools,
-      createProduct,
-      updateProduct,
-      onOpenChange,
-      resetForm: () => form.reset(),
-    });
+    try {
+      await handleProductSubmission({
+        data,
+        isEdit,
+        product,
+        productItems,
+        quotaPools,
+        createProduct,
+        updateProduct,
+        onOpenChange, // Keep original handler for error cases
+        resetForm: () => form.reset(),
+        showSuccessStep: true, // Don't close dialog, show success step instead
+      });
+      // Show success step after successful submission
+      setIsSuccess(true);
+      setCurrentStep(4);
+    } catch {
+      // Error is already handled in handleProductSubmission
+    }
   };
 
   const dialogContent = (
     <ProductDialogContent
       isEdit={isEdit}
-      currentTab={currentTab}
-      setCurrentTab={setCurrentTab}
+      currentStep={currentStep}
+      setCurrentStep={setCurrentStep}
       hasAttemptedSubmit={hasAttemptedSubmit}
       hasBasicErrors={hasBasicErrors}
       form={form}
@@ -114,6 +132,7 @@ export function ProductFormTabbedDialog({
       setQuotaPools={setQuotaPools}
       existingProductItemsWithUsage={existingProductItemsWithUsage}
       items={items}
+      isSuccess={isSuccess}
     />
   );
 

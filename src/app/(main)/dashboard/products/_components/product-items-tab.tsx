@@ -3,19 +3,15 @@
 import * as React from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Item } from "../../admin/items/_components/schema";
 
-import { ItemSelector } from "./item-selector";
-import { QuotaPoolEditor } from "./quota-pool-editor";
-import { QuotaPoolView } from "./quota-pool-view";
+import { AddItemModal } from "./add-item-modal";
+import { QuotaPoolSection } from "./quota-pool-section";
 import { QuotaType, CreateQuotaPoolForm, CreateProductItemForm, QuotaPool } from "./schema";
 import { SelectedItemsList } from "./selected-items-list";
 
@@ -28,7 +24,6 @@ interface ProductItemsTabProps {
   existingProductItems?: Array<CreateProductItemForm & { hasUsage?: boolean }>;
 }
 
-// Mock data for now - will be replaced with actual API calls
 const useItems = () => {
   return useQuery<Item[]>({
     queryKey: ["items"],
@@ -40,184 +35,6 @@ const useItems = () => {
   });
 };
 
-// Removed useQuotaPools hook - now using data passed from parent component
-
-function QuotaPoolManager({
-  quotaPools,
-  onPoolCreate,
-  onPoolUpdate,
-  onPoolDelete,
-}: {
-  quotaPools: QuotaPool[];
-  onPoolCreate: (pool: CreateQuotaPoolForm) => void;
-  onPoolUpdate: (id: string, pool: Partial<CreateQuotaPoolForm>) => void;
-  onPoolDelete: (id: string) => void;
-}) {
-  const [isCreating, setIsCreating] = React.useState(false);
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [newPool, setNewPool] = React.useState<CreateQuotaPoolForm>({
-    name: "",
-    description: "",
-    totalQuota: 10,
-    isActive: true,
-  });
-  const [editingPool, setEditingPool] = React.useState<CreateQuotaPoolForm>({
-    name: "",
-    description: "",
-    totalQuota: 10,
-    isActive: true,
-  });
-
-  const handleCreate = () => {
-    if (newPool.name.trim()) {
-      onPoolCreate(newPool);
-      setNewPool({
-        name: "",
-        description: "",
-        totalQuota: 10,
-        isActive: true,
-      });
-      setIsCreating(false);
-    }
-  };
-
-  const handleEdit = (pool: QuotaPool) => {
-    setEditingId(pool.id);
-    setEditingPool({
-      name: pool.name,
-      description: pool.description || "",
-      totalQuota: pool.totalQuota,
-      isActive: pool.isActive,
-    });
-  };
-
-  const handleSaveEdit = () => {
-    if (editingId && editingPool.name.trim()) {
-      onPoolUpdate(editingId, editingPool);
-      setEditingId(null);
-      setEditingPool({
-        name: "",
-        description: "",
-        totalQuota: 10,
-        isActive: true,
-      });
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditingPool({
-      name: "",
-      description: "",
-      totalQuota: 10,
-      isActive: true,
-    });
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Quota Pools
-          </CardTitle>
-          <Button type="button" size="sm" variant="outline" onClick={() => setIsCreating(true)} disabled={isCreating}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Pool
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {isCreating && (
-            <div className="bg-muted/50 rounded-lg border p-4">
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="pool-name" className="mb-2">
-                    Pool Name
-                  </Label>
-                  <Input
-                    id="pool-name"
-                    placeholder="e.g., Group Classes"
-                    value={newPool.name}
-                    onChange={(e) => setNewPool((prev) => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pool-description" className="mb-2">
-                    Description (optional)
-                  </Label>
-                  <Input
-                    id="pool-description"
-                    placeholder="e.g., Shared quota for all group classes"
-                    value={newPool.description}
-                    onChange={(e) => setNewPool((prev) => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pool-quota" className="mb-2">
-                    Total Quota
-                  </Label>
-                  <Input
-                    id="pool-quota"
-                    type="number"
-                    min="1"
-                    value={newPool.totalQuota}
-                    onChange={(e) => setNewPool((prev) => ({ ...prev, totalQuota: parseInt(e.target.value) || 1 }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" onClick={handleCreate}>
-                      Create Pool
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => setIsCreating(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {quotaPools.map((pool) => {
-            const hasUsage = Boolean(
-              (pool as QuotaPool & { _count?: { membershipQuotaUsage: number } })._count?.membershipQuotaUsage,
-            );
-
-            return (
-              <div key={pool.id} className="rounded-lg border p-4">
-                {editingId === pool.id ? (
-                  <QuotaPoolEditor
-                    pool={pool}
-                    editingPool={editingPool}
-                    setEditingPool={setEditingPool}
-                    hasUsage={hasUsage}
-                    onSave={handleSaveEdit}
-                    onCancel={handleCancelEdit}
-                  />
-                ) : (
-                  <QuotaPoolView
-                    pool={pool}
-                    hasUsage={hasUsage}
-                    onEdit={() => handleEdit(pool)}
-                    onDelete={() => onPoolDelete(pool.id)}
-                  />
-                )}
-              </div>
-            );
-          })}
-
-          {quotaPools.length === 0 && !isCreating && (
-            <div className="text-muted-foreground py-8 text-center">No quota pools created yet</div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function ProductItemsTab({
   productId,
   productItems,
@@ -227,12 +44,14 @@ export function ProductItemsTab({
   existingProductItems = [],
 }: ProductItemsTabProps) {
   const { data: items = [], isLoading: itemsLoading } = useItems();
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = React.useState(false);
 
-  const handleItemAdd = (item: Item) => {
+  const handleItemAdd = (item: Item, quotaType: QuotaType, quotaValue?: number, quotaPoolId?: string) => {
     const newProductItem: CreateProductItemForm = {
       itemId: item.id,
-      quotaType: "INDIVIDUAL",
-      quotaValue: 1,
+      quotaType,
+      quotaValue,
+      quotaPoolId,
       isActive: true,
       order: productItems.length,
     };
@@ -252,7 +71,7 @@ export function ProductItemsTab({
       id: `temp-${Date.now()}`,
       productId: productId || "",
       ...pool,
-      description: pool.description || null, // Keep as null for the QuotaPool type
+      description: pool.description || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -291,43 +110,63 @@ export function ProductItemsTab({
   }
 
   return (
-    <Tabs defaultValue="items" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="items">Items & Quotas</TabsTrigger>
-        <TabsTrigger value="pools">Quota Pools</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="items" className="mt-6">
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-          <ItemSelector selectedItems={selectedItemIds} onItemAdd={handleItemAdd} availableItems={items} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Selected Items ({productItems.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SelectedItemsList
-                productItems={productItems}
-                availableItems={items}
-                quotaPools={quotaPools}
-                onItemUpdate={handleItemUpdate}
-                onItemRemove={handleItemRemove}
-                existingProductItems={existingProductItems}
-              />
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      {/* Add Item Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Configure Items</h3>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Add items to this product and configure how quota will be allocated for each item.
+          </p>
         </div>
-      </TabsContent>
+        <Button onClick={() => setIsAddItemModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Item
+        </Button>
+      </div>
 
-      <TabsContent value="pools" className="mt-6">
-        <div className="max-w-4xl">
-          <QuotaPoolManager
+      {/* Selected Items */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Selected Items ({productItems.length})</CardTitle>
+          <CardDescription>
+            Items added to this product, grouped by quota type. Click edit to configure quota settings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SelectedItemsList
+            productItems={productItems}
+            availableItems={items}
             quotaPools={quotaPools}
-            onPoolCreate={handlePoolCreate}
-            onPoolUpdate={handlePoolUpdate}
-            onPoolDelete={handlePoolDelete}
+            onItemUpdate={handleItemUpdate}
+            onItemRemove={handleItemRemove}
+            existingProductItems={existingProductItems}
           />
-        </div>
-      </TabsContent>
-    </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Quota Pools Section */}
+      <div className="bg-card rounded-lg border p-6">
+        <QuotaPoolSection
+          quotaPools={quotaPools}
+          productItems={productItems}
+          availableItems={items}
+          onPoolCreate={handlePoolCreate}
+          onPoolUpdate={handlePoolUpdate}
+          onPoolDelete={handlePoolDelete}
+        />
+      </div>
+
+      {/* Add Item Modal */}
+      <AddItemModal
+        open={isAddItemModalOpen}
+        onOpenChange={setIsAddItemModalOpen}
+        availableItems={items}
+        selectedItemIds={selectedItemIds}
+        quotaPools={quotaPools}
+        onItemAdd={handleItemAdd}
+        onPoolCreate={handlePoolCreate}
+      />
+    </div>
   );
 }

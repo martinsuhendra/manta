@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Calendar, Clock, Banknote, Package, ExternalLink, Settings } from "lucide-react";
+import { Calendar, Clock, Banknote, Package, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,22 +132,6 @@ function BasicInfoTab({ product }: { product: Product }) {
             className="text-muted-foreground prose prose-sm max-w-none text-sm [&_li]:ml-0 [&_ol]:ml-3 [&_ol]:list-decimal [&_ul]:ml-3 [&_ul]:list-disc"
             dangerouslySetInnerHTML={{ __html: product.whatIsIncluded }}
           />
-        </div>
-      )}
-
-      {/* Payment URL */}
-      {product.paymentUrl && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Payment URL</h4>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => window.open(product.paymentUrl!, "_blank")}
-          >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Open Payment Link
-          </Button>
         </div>
       )}
 

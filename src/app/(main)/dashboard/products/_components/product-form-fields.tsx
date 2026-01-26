@@ -104,19 +104,6 @@ export function ProductFormFields({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="paymentUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Payment URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://payment-link.com/product" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="grid grid-cols-2 gap-4">
           <FormField

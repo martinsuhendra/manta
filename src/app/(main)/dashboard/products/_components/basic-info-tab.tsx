@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Calendar, Clock, Banknote, ExternalLink, Settings } from "lucide-react";
+import { Calendar, Clock, Banknote, Settings } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -57,22 +57,6 @@ export function BasicInfoTab({ product }: BasicInfoTabProps) {
                 {new Date(product.createdAt).toLocaleDateString()}
               </p>
             </div>
-            {product.paymentUrl && (
-              <div>
-                <label className="text-muted-foreground text-sm font-medium">Payment URL</label>
-                <p className="mt-1">
-                  <a
-                    href={product.paymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    View Payment Page
-                  </a>
-                </p>
-              </div>
-            )}
           </div>
 
           {product.description && (

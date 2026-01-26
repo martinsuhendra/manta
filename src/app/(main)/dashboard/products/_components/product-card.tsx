@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { format } from "date-fns";
-import { Calendar, ExternalLink, MoreVertical } from "lucide-react";
+import { Calendar, MoreVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -112,23 +112,6 @@ function ProductCardFooter({ data, isPreview }: { data: ProductData; isPreview: 
         {isPreview ? "Today" : format(new Date(data.createdAt), "MMM dd, yyyy")}
       </div>
       <div className="flex items-center gap-2">
-        {data.paymentUrl && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={isPreview}
-            onClick={(e) => {
-              e.preventDefault();
-              if (!isPreview && data.paymentUrl) {
-                window.open(data.paymentUrl, "_blank");
-              }
-            }}
-          >
-            <ExternalLink className="mr-1 h-3 w-3" />
-            Payment
-          </Button>
-        )}
         <StatusBadge variant={data.isActive ? "success" : "secondary"} className="shrink-0">
           {data.isActive ? "Active" : "Inactive"}
         </StatusBadge>
@@ -203,7 +186,6 @@ export function ProductPreview({
   price,
   validDays,
   image,
-  paymentUrl,
   whatIsIncluded,
   isActive,
 }: {
@@ -212,7 +194,6 @@ export function ProductPreview({
   price: number;
   validDays: number;
   image?: string;
-  paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;
 }) {
@@ -225,7 +206,6 @@ export function ProductPreview({
         price={price}
         validDays={validDays}
         image={image}
-        paymentUrl={paymentUrl}
         whatIsIncluded={whatIsIncluded}
         isActive={isActive}
         isPreview

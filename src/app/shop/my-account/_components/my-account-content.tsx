@@ -1,4 +1,4 @@
-/* eslint-disable max-lines, security/detect-object-injection, @typescript-eslint/no-explicit-any */
+/* eslint-disable max-lines, security/detect-object-injection, @typescript-eslint/no-explicit-any, complexity */
 "use client";
 
 import { useState } from "react";
@@ -27,6 +27,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { APP_CONFIG } from "@/config/app-config";
+import { useMemberCancelBooking } from "@/hooks/use-member-sessions";
 import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
 
@@ -92,6 +93,21 @@ interface AccountData {
       id: string;
       name: string;
       price: number;
+    };
+  }>;
+  upcomingBookings: Array<{
+    id: string;
+    classSession: {
+      id: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      item: { id: string; name: string };
+      teacher: { id: string; name: string | null; email: string | null } | null;
+    };
+    membership: {
+      id: string;
+      product: { id: string; name: string };
     };
   }>;
 }
@@ -204,6 +220,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
+  const cancelBookingMutation = useMemberCancelBooking();
 
   const form = useForm<EditProfileFormValues>({
     resolver: zodResolver(editProfileSchema),
@@ -271,6 +288,13 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                 Back to Shop
               </Button>
             </Link>
+            {accountData.user.role === "MEMBER" && (
+              <Link href="/shop/book">
+                <Button variant="ghost" size="sm">
+                  Book a class
+                </Button>
+              </Link>
+            )}
             {session && (
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 Sign Out
@@ -449,6 +473,67 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
             </CardContent>
           </Card>
         </div>
+
+        {/* My Bookings */}
+        {accountData.user.role === "MEMBER" && (
+          <Card className="mt-6">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <CardTitle>My bookings</CardTitle>
+                  <CardDescription>Upcoming classes you&apos;re booked for</CardDescription>
+                </div>
+                <Link href="/shop/book">
+                  <Button variant="outline" size="sm">
+                    Book a class
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {accountData.upcomingBookings.length === 0 ? (
+                <div className="text-muted-foreground py-8 text-center">
+                  <p className="mb-4">No upcoming bookings</p>
+                  <Link href="/shop/book">
+                    <Button size="sm">Book a class</Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {accountData.upcomingBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 last:border-0 last:pb-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{booking.classSession.item.name}</p>
+                        <p className="text-muted-foreground text-sm">
+                          {formatDate(booking.classSession.date)} · {booking.classSession.startTime}
+                          {booking.classSession.endTime ? ` – ${booking.classSession.endTime}` : ""}
+                          {booking.classSession.teacher?.name && <> · {booking.classSession.teacher.name}</>}
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-xs">{booking.membership.product.name}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          cancelBookingMutation.mutate(booking.id, {
+                            onSuccess: () => router.refresh(),
+                          })
+                        }
+                        disabled={cancelBookingMutation.isPending}
+                      >
+                        {cancelBookingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Cancel
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Purchase History */}
         {accountData.purchaseHistory.length > 0 && (

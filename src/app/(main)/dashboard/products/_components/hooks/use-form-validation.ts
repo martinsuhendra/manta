@@ -30,7 +30,7 @@ export const DEFAULT_FORM_VALUES: FormData = {
 export function useFormValidation(form: UseFormReturn<FormData>) {
   const hasBasicErrors = () => {
     const errors = form.formState.errors;
-    return !!(errors.name || errors.price || errors.validDays || errors.paymentUrl);
+    return !!(errors.name || errors.price || errors.validDays);
   };
 
   return { hasBasicErrors };

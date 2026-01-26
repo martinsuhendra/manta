@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
 import { UseFormReturn } from "react-hook-form";
 
@@ -30,6 +30,9 @@ export function useFormEffects({
   setCurrentTab,
   setHasAttemptedSubmit,
 }: UseFormEffectsParams) {
+  const prevOpenRef = useRef(open);
+  const prevProductIdRef = useRef(product?.id);
+
   const resetFormState = useCallback(() => {
     setCurrentTab("basic");
     setHasAttemptedSubmit(false);
@@ -39,26 +42,34 @@ export function useFormEffects({
     }
   }, [isEdit, setCurrentTab, setHasAttemptedSubmit, setProductItems, setQuotaPools]);
 
+  // Reset form when dialog opens or when switching between edit/add modes
   useEffect(() => {
-    if (isEdit && product) {
-      form.reset({
-        name: product.name,
-        description: product.description || "",
-        price: product.price,
-        validDays: product.validDays,
-        features: product.features,
-        image: product.image || "",
-        paymentUrl: product.paymentUrl || "",
-        whatIsIncluded: product.whatIsIncluded || "",
-        isActive: product.isActive,
-      });
-    } else if (!isEdit) {
-      form.reset(DEFAULT_FORM_VALUES);
-    }
-    if (open) {
+    // Only reset when dialog opens (transition from closed to open)
+    const isOpening = !prevOpenRef.current && open;
+    const productChanged = prevProductIdRef.current !== product?.id;
+
+    if (isOpening || productChanged) {
+      if (isEdit && product) {
+        form.reset({
+          name: product.name,
+          description: product.description || "",
+          price: product.price,
+          validDays: product.validDays,
+          features: product.features,
+          image: product.image || "",
+          paymentUrl: product.paymentUrl || "",
+          whatIsIncluded: product.whatIsIncluded || "",
+          isActive: product.isActive,
+        });
+      } else if (!isEdit) {
+        form.reset(DEFAULT_FORM_VALUES);
+      }
       resetFormState();
     }
-  }, [product, form, isEdit, open, resetFormState]);
+
+    prevOpenRef.current = open;
+    prevProductIdRef.current = product?.id;
+  }, [open, isEdit, product, form, resetFormState]);
 
   useEffect(() => {
     if (isEdit && existingProductItems.length > 0) {

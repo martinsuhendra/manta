@@ -29,6 +29,13 @@ export function ShopHeader({ session }: ShopHeaderProps) {
         <nav className="flex items-center gap-4">
           {session ? (
             <>
+              {session.user.role === "MEMBER" && (
+                <Link href="/shop/book">
+                  <Button variant="ghost" size="sm">
+                    Book a class
+                  </Button>
+                </Link>
+              )}
               <Link href="/shop/my-account">
                 <Button variant="ghost" size="sm">
                   My Account

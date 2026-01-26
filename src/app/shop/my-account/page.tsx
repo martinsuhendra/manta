@@ -20,7 +20,10 @@ async function getAccountData() {
       redirect("/shop");
     }
 
-    // Get user with memberships and transactions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get user with memberships, transactions, and upcoming bookings
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -67,6 +70,43 @@ async function getAccountData() {
           },
           orderBy: {
             createdAt: "desc",
+          },
+        },
+        bookings: {
+          where: {
+            status: { not: "CANCELLED" },
+            classSession: {
+              date: { gte: today },
+              status: "SCHEDULED",
+            },
+          },
+          include: {
+            classSession: {
+              select: {
+                id: true,
+                date: true,
+                startTime: true,
+                endTime: true,
+                item: {
+                  select: { id: true, name: true },
+                },
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            membership: {
+              select: {
+                id: true,
+                product: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
           },
         },
       },
@@ -149,6 +189,23 @@ async function getAccountData() {
           price: Number(t.product.price),
         },
       })),
+      upcomingBookings: [...user.bookings]
+        .sort((a, b) => a.classSession.date.getTime() - b.classSession.date.getTime())
+        .map((b) => ({
+          id: b.id,
+          classSession: {
+            id: b.classSession.id,
+            date: b.classSession.date.toISOString().split("T")[0],
+            startTime: b.classSession.startTime,
+            endTime: b.classSession.endTime,
+            item: b.classSession.item,
+            teacher: b.classSession.teacher,
+          },
+          membership: {
+            id: b.membership.id,
+            product: b.membership.product,
+          },
+        })),
     };
   } catch (error) {
     console.error("Failed to fetch account data:", error);
