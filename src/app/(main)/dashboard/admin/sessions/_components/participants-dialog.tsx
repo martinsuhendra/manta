@@ -36,7 +36,7 @@ interface ParticipantsDialogProps {
 
 interface Booking {
   id: string;
-  status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+  status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW" | "WAITLISTED";
   user: {
     id: string;
     name: string | null;

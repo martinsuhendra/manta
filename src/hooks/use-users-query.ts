@@ -13,6 +13,8 @@ export interface User {
   updatedAt: string;
   _count: {
     memberships: number;
+    transactions: number;
+    bookings: number;
   };
 }
 

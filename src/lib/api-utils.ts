@@ -42,7 +42,7 @@ export async function requireAdmin() {
     select: { role: true },
   });
 
-  if (!user || ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(user.role)) {
+  if (!user || ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(user.role as "ADMIN" | "SUPERADMIN")) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
   }
 

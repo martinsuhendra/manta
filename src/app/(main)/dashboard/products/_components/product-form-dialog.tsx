@@ -178,7 +178,6 @@ export function ProductFormDialog({
               price={form.watch("price") || 0}
               validDays={form.watch("validDays") || 30}
               image={form.watch("image")}
-              paymentUrl={form.watch("paymentUrl")}
               whatIsIncluded={form.watch("whatIsIncluded")}
               isActive={form.watch("isActive")}
             />

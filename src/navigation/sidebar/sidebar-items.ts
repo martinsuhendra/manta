@@ -64,8 +64,8 @@ export const sidebarItems: NavGroup[] = [
     label: "Pages",
     items: [
       {
-        title: "Users",
-        url: "/dashboard/users",
+        title: "Members",
+        url: "/dashboard/members",
         icon: Users,
         comingSoon: false,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
@@ -90,13 +90,6 @@ export const sidebarItems: NavGroup[] = [
         icon: Calendar,
         comingSoon: false,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
-      },
-      {
-        title: "Memberships",
-        url: "/dashboard/admin/memberships",
-        icon: UserCheck,
-        comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN],
       },
     ],
   },

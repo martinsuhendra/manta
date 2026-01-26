@@ -43,7 +43,7 @@ export function useUpdateSession() {
       });
 
       // Update the individual session query if it exists
-      queryClient.setQueryData({ queryKey: ["sessions", sessionId] }, updatedSession);
+      queryClient.setQueryData(["sessions", sessionId], updatedSession);
 
       // Invalidate all sessions queries to ensure fresh data from server
       // This ensures any computed fields or related data are also updated

@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             memberships: true,
+            transactions: true,
+            bookings: true,
           },
         },
       },
