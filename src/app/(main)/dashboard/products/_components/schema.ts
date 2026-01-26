@@ -76,6 +76,7 @@ export const productSchema = z.object({
   updatedAt: z.string(),
   _count: z.object({
     memberships: z.number(),
+    transactions: z.number(),
     productItems: z.number().optional(),
     quotaPools: z.number().optional(),
   }),

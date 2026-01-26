@@ -2,12 +2,14 @@ import Image from "next/image";
 
 import { Package } from "lucide-react";
 
-interface ProductData {
-  name: string;
-  image?: string | null;
+interface ProductCardImageProps {
+  data: {
+    name: string;
+    image?: string | null;
+  };
 }
 
-export function ProductCardImage({ data }: { data: ProductData }) {
+export function ProductCardImage({ data }: ProductCardImageProps) {
   return (
     <div className="bg-muted relative mb-4 aspect-video overflow-hidden rounded-lg border">
       {data.image ? (

@@ -2,12 +2,10 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-interface ProductData {
-  whatIsIncluded?: string | null;
-}
-
 interface ProductCardIncludesProps {
-  data: ProductData;
+  data: {
+    whatIsIncluded?: string | null;
+  };
   isPreview: boolean;
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;

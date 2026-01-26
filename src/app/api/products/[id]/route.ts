@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
-import { authOptions } from "@/auth";
+import { handleApiError, requireAuth, requireSuperAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
-import { USER_ROLES } from "@/lib/types";
 
 const updateProductSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
@@ -23,17 +21,14 @@ const updateProductSchema = z.object({
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { error } = await requireAuth();
+    if (error) return error;
 
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
         _count: {
-          select: { memberships: true },
+          select: { memberships: true, transactions: true },
         },
       },
     });
@@ -44,28 +39,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error("Failed to fetch membership product:", error);
-    return NextResponse.json({ error: "Failed to fetch membership product" }, { status: 500 });
+    return handleApiError(error, "Failed to fetch membership product");
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== USER_ROLES.SUPERADMIN) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const { error } = await requireSuperAdmin();
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = updateProductSchema.parse(body);
@@ -77,39 +59,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(product);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
-    }
-
-    console.error("Failed to update membership product:", error);
-    return NextResponse.json({ error: "Failed to update membership product" }, { status: 500 });
+    return handleApiError(error, "Failed to update membership product");
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const { error } = await requireSuperAdmin();
+    if (error) return error;
 
-    if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== USER_ROLES.SUPERADMIN) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const existingMemberships = await prisma.membership.findFirst({
+    const existingTransactions = await prisma.transaction.findFirst({
       where: { productId: id },
     });
 
-    if (existingMemberships) {
-      return NextResponse.json({ error: "Cannot delete membership product with active memberships" }, { status: 400 });
+    if (existingTransactions) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete product with existing transactions. Please deactivate the product instead.",
+        },
+        { status: 400 },
+      );
     }
 
     await prisma.product.delete({
@@ -118,7 +88,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     return NextResponse.json({ message: "Membership product deleted successfully" });
   } catch (error) {
-    console.error("Failed to delete membership product:", error);
-    return NextResponse.json({ error: "Failed to delete membership product" }, { status: 500 });
+    return handleApiError(error, "Failed to delete membership product");
   }
 }

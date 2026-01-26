@@ -2,12 +2,14 @@ import { Banknote, Clock } from "lucide-react";
 
 import { formatPrice } from "@/lib/utils";
 
-interface ProductData {
-  price: number;
-  validDays: number;
+interface ProductCardStatsProps {
+  data: {
+    price: number;
+    validDays: number;
+  };
 }
 
-export function ProductCardStats({ data }: { data: ProductData }) {
+export function ProductCardStats({ data }: ProductCardStatsProps) {
   return (
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2">

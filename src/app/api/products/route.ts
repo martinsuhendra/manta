@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
-import { authOptions } from "@/auth";
+import { handleApiError, requireAuth, requireSuperAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
-import { USER_ROLES } from "@/lib/types";
 
 const createProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -21,50 +19,28 @@ const createProductSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { error } = await requireAuth();
+    if (error) return error;
 
     const products = await prisma.product.findMany({
       orderBy: { position: "asc" },
       include: {
         _count: {
-          select: { memberships: true },
+          select: { memberships: true, transactions: true },
         },
       },
     });
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error("Failed to fetch membership products:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to fetch membership products",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    );
+    return handleApiError(error, "Failed to fetch membership products");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== USER_ROLES.SUPERADMIN) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const { error } = await requireSuperAdmin();
+    if (error) return error;
 
     const body = await request.json();
     const validatedData = createProductSchema.parse(body);
@@ -75,18 +51,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error("Validation error:", error.errors);
-      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
-    }
-
-    console.error("Failed to create membership product:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to create membership product",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    );
+    return handleApiError(error, "Failed to create membership product");
   }
 }

@@ -21,18 +21,12 @@ import { ProductCardIncludes } from "./product-card-includes";
 import { ProductCardStats } from "./product-card-stats";
 import { Product } from "./schema";
 
-interface ProductData {
-  name: string;
-  description?: string | null;
-  price: number;
-  validDays: number;
-  image?: string | null;
-  paymentUrl?: string | null;
-  whatIsIncluded?: string | null;
-  isActive: boolean;
-  createdAt: string;
+type ProductData = Pick<
+  Product,
+  "name" | "description" | "price" | "validDays" | "image" | "paymentUrl" | "whatIsIncluded" | "isActive" | "createdAt"
+> & {
   _count: { memberships: number };
-}
+};
 
 function ProductCardHeader({
   data,
@@ -112,7 +106,7 @@ function ProductCardFooter({ data, isPreview }: { data: ProductData; isPreview: 
         {isPreview ? "Today" : format(new Date(data.createdAt), "MMM dd, yyyy")}
       </div>
       <div className="flex items-center gap-2">
-        <StatusBadge variant={data.isActive ? "success" : "secondary"} className="shrink-0">
+        <StatusBadge variant={data.isActive ? "success" : "destructive"} className="shrink-0">
           {data.isActive ? "Active" : "Inactive"}
         </StatusBadge>
       </div>
@@ -136,24 +130,22 @@ interface ProductCardProps {
 }
 const DEFAULT_PRODUCT_DATA: ProductData = {
   name: "Product Name",
-  description: "",
+  description: null,
   price: 0,
   validDays: 30,
-  image: "",
-  paymentUrl: "",
-  whatIsIncluded: "",
+  image: null,
+  paymentUrl: null,
+  whatIsIncluded: null,
   isActive: true,
   createdAt: new Date().toISOString(),
   _count: { memberships: 0 },
 };
+
 function createProductData(props: ProductCardProps): ProductData {
   if (props.product) return props.product;
-  const overrides = Object.fromEntries(
-    Object.entries(props).filter(
-      ([key, value]) => key !== "product" && key !== "isPreview" && !key.startsWith("on") && value !== undefined,
-    ),
-  );
-  return { ...DEFAULT_PRODUCT_DATA, ...overrides };
+
+  const { product, isPreview, onViewProduct, onEditProduct, onDeleteProduct, ...overrides } = props;
+  return { ...DEFAULT_PRODUCT_DATA, ...overrides } as ProductData;
 }
 export function ProductCard(props: ProductCardProps) {
   const { product, isPreview = false, onViewProduct, onEditProduct, onDeleteProduct } = props;

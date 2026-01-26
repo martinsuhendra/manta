@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 "use client";
 
 import * as React from "react";
@@ -47,6 +46,13 @@ const QUOTA_TYPE_INFO: Record<QuotaType, { icon: React.ReactNode; title: string;
   },
 };
 
+const DEFAULT_POOL_FORM: CreateQuotaPoolForm = {
+  name: "",
+  description: "",
+  totalQuota: 10,
+  isActive: true,
+};
+
 export function AddItemModal({
   open,
   onOpenChange,
@@ -61,14 +67,7 @@ export function AddItemModal({
   const [selectedQuotaValue, setSelectedQuotaValue] = React.useState<string>("1");
   const [selectedQuotaPoolId, setSelectedQuotaPoolId] = React.useState<string>("");
   const [searchQuery, setSearchQuery] = React.useState("");
-
-  // New pool form state
-  const [newPool, setNewPool] = React.useState<CreateQuotaPoolForm>({
-    name: "",
-    description: "",
-    totalQuota: 10,
-    isActive: true,
-  });
+  const [newPool, setNewPool] = React.useState<CreateQuotaPoolForm>(DEFAULT_POOL_FORM);
 
   const filteredItems = availableItems.filter(
     (item) =>
@@ -80,11 +79,7 @@ export function AddItemModal({
   const handleQuotaTypeSelect = (type: QuotaType) => {
     setSelectedQuotaType(type);
     if (type === "SHARED") {
-      if (quotaPools.length === 0) {
-        setStep("create-pool");
-      } else {
-        setStep("select-pool");
-      }
+      setStep(quotaPools.length === 0 ? "create-pool" : "select-pool");
     } else {
       setStep("select-item");
     }
@@ -93,14 +88,7 @@ export function AddItemModal({
   const handlePoolCreate = () => {
     if (newPool.name.trim() && onPoolCreate) {
       onPoolCreate(newPool);
-      // Reset pool form
-      setNewPool({
-        name: "",
-        description: "",
-        totalQuota: 10,
-        isActive: true,
-      });
-      // Move to select pool step - the newly created pool will be available
+      setNewPool(DEFAULT_POOL_FORM);
       setStep("select-pool");
     }
   };
@@ -117,14 +105,8 @@ export function AddItemModal({
   const handleItemSelect = (item: Item) => {
     if (!selectedQuotaType) return;
 
-    let quotaValue: number | undefined;
-    let quotaPoolId: string | undefined;
-
-    if (selectedQuotaType === "INDIVIDUAL") {
-      quotaValue = parseInt(selectedQuotaValue) || 1;
-    } else if (selectedQuotaType === "SHARED") {
-      quotaPoolId = selectedQuotaPoolId || undefined;
-    }
+    const quotaValue = selectedQuotaType === "INDIVIDUAL" ? parseInt(selectedQuotaValue) || 1 : undefined;
+    const quotaPoolId = selectedQuotaType === "SHARED" ? selectedQuotaPoolId || undefined : undefined;
 
     onItemAdd(item, selectedQuotaType, quotaValue, quotaPoolId);
     handleClose();
@@ -136,62 +118,42 @@ export function AddItemModal({
     setSelectedQuotaValue("1");
     setSelectedQuotaPoolId("");
     setSearchQuery("");
-    setNewPool({
-      name: "",
-      description: "",
-      totalQuota: 10,
-      isActive: true,
-    });
+    setNewPool(DEFAULT_POOL_FORM);
     onOpenChange(false);
   };
 
   const handleBack = () => {
     if (step === "select-item") {
-      if (selectedQuotaType === "SHARED") {
-        if (quotaPools.length === 0) {
-          setStep("create-pool");
-        } else {
-          setStep("select-pool");
-        }
-      } else {
-        setStep("quota-type");
-      }
-    } else if (step === "select-pool") {
-      setStep("quota-type");
-    } else if (step === "create-pool") {
+      setStep(
+        selectedQuotaType === "SHARED" ? (quotaPools.length === 0 ? "create-pool" : "select-pool") : "quota-type",
+      );
+    } else if (step === "select-pool" || step === "create-pool") {
       setStep("quota-type");
     }
   };
 
-  const getStepTitle = () => {
-    switch (step) {
-      case "quota-type":
-        return "Select Quota Type";
-      case "create-pool":
-        return "Create Quota Pool";
-      case "select-pool":
-        return "Select Quota Pool";
-      case "select-item":
-        return "Select Item";
-      default:
-        return "Add Item";
-    }
+  const stepConfig: Record<ModalStep, { title: string; description: string }> = {
+    "quota-type": {
+      title: "Select Quota Type",
+      description: "Choose how quota will be allocated for this item",
+    },
+    "create-pool": {
+      title: "Create Quota Pool",
+      description: "Create a shared quota pool that multiple items can use",
+    },
+    "select-pool": {
+      title: "Select Quota Pool",
+      description: "Select which quota pool this item will use",
+    },
+    "select-item": {
+      title: "Select Item",
+      description: `Select an item to add with ${
+        selectedQuotaType === "INDIVIDUAL" ? "individual" : selectedQuotaType === "SHARED" ? "shared pool" : "free"
+      } quota`,
+    },
   };
 
-  const getStepDescription = () => {
-    switch (step) {
-      case "quota-type":
-        return "Choose how quota will be allocated for this item";
-      case "create-pool":
-        return "Create a shared quota pool that multiple items can use";
-      case "select-pool":
-        return "Select which quota pool this item will use";
-      case "select-item":
-        return `Select an item to add with ${selectedQuotaType === "INDIVIDUAL" ? "individual" : selectedQuotaType === "SHARED" ? "shared pool" : "free"} quota`;
-      default:
-        return "";
-    }
-  };
+  const currentStep = stepConfig[step];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -204,8 +166,8 @@ export function AddItemModal({
               </Button>
             )}
             <div className="flex-1">
-              <DialogTitle>{getStepTitle()}</DialogTitle>
-              <DialogDescription>{getStepDescription()}</DialogDescription>
+              <DialogTitle>{currentStep.title}</DialogTitle>
+              <DialogDescription>{currentStep.description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
