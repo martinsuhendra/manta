@@ -330,6 +330,7 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+  WAITLISTED
 }
 
 enum QuotaType {

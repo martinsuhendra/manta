@@ -33,35 +33,28 @@ export function useUpdateSession() {
   return useMutation({
     mutationFn: async ({ sessionId, data }: { sessionId: string; data: UpdateSessionForm }) => {
       const response = await axios.put(`/api/admin/sessions/${sessionId}`, data);
-      return response.data;
+      return { sessionId, updatedSession: response.data };
     },
-    onMutate: async ({ sessionId, data }) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: ["sessions"] });
-
-      // Get all existing sessions queries to update them
-      const previousQueriesData = queryClient.getQueriesData({ queryKey: ["sessions"] });
-
-      // Update all sessions queries optimistically
+    onSuccess: ({ sessionId, updatedSession }) => {
+      // Update all sessions list queries with the updated session data
       queryClient.setQueriesData({ queryKey: ["sessions"] }, (old: any) => {
-        if (!old) return old;
-
-        return old.map((session: any) => (session.id === sessionId ? { ...session, ...data } : session));
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((session: any) => (session.id === sessionId ? updatedSession : session));
       });
 
-      // Return a context object with the snapshotted values
-      return { previousQueriesData };
-    },
-    onSuccess: () => {
+      // Update the individual session query if it exists
+      queryClient.setQueryData({ queryKey: ["sessions", sessionId] }, updatedSession);
+
+      // Invalidate all sessions queries to ensure fresh data from server
+      // This ensures any computed fields or related data are also updated
+      queryClient.invalidateQueries({
+        queryKey: ["sessions"],
+        exact: false, // Invalidate all queries that start with ["sessions"]
+      });
+
       toast.success("Session updated successfully");
     },
-    onError: (error: any, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousQueriesData) {
-        context.previousQueriesData.forEach(([queryKey, data]: [any, any]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
+    onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to update session";
       toast.error(message);
       throw error;

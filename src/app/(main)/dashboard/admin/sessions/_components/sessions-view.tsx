@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useState } from "react";
 
-import { Plus, Calendar as CalendarIcon, List } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, List, Layers } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { BulkSessionDialog } from "./bulk-session-dialog";
 import { Session, SessionFilter } from "./schema";
 import { SessionCalendar } from "./session-calendar";
 import { SessionDialog } from "./session-dialog";
@@ -16,6 +17,7 @@ import { SessionList } from "./session-list";
 
 export function SessionsView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [filters, setFilters] = useState<SessionFilter>({});
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -55,12 +57,18 @@ export function SessionsView() {
   return (
     <div className="space-y-6">
       {/* Header actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         {activeTab === "list" && <SessionFilters onFilterChange={handleFilterChange} />}
-        <Button onClick={handleCreateSession} className={activeTab === "calendar" ? "ml-auto" : ""}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Session
-        </Button>
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)}>
+            <Layers className="mr-2 h-4 w-4" />
+            Bulk Create
+          </Button>
+          <Button onClick={handleCreateSession}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Session
+          </Button>
+        </div>
       </div>
 
       {/* Tabs for different views */}
@@ -100,6 +108,16 @@ export function SessionsView() {
         selectedDate={selectedDate}
         editingSession={editingSession}
         onSuccess={handleDialogClose}
+      />
+
+      {/* Bulk Create Dialog */}
+      <BulkSessionDialog
+        open={isBulkDialogOpen}
+        onOpenChange={setIsBulkDialogOpen}
+        onSuccess={() => {
+          // Refresh the view after bulk creation
+          window.location.reload();
+        }}
       />
     </div>
   );

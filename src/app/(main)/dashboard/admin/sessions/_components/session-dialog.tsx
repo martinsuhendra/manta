@@ -21,6 +21,7 @@ import { useCreateSession, useUpdateSession } from "@/hooks/use-sessions-mutatio
 import { useTeachers } from "@/hooks/use-users-query";
 import { cn } from "@/lib/utils";
 
+import { EditSessionConfirmationDialog } from "./edit-session-confirmation-dialog";
 import { CreateSessionForm, createSessionSchema, Session, TIME_SLOTS } from "./schema";
 
 interface SessionDialogProps {
@@ -37,6 +38,8 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
   const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
   const createSessionMutation = useCreateSession();
   const updateSessionMutation = useUpdateSession();
+  const [showEditConfirmation, setShowEditConfirmation] = React.useState(false);
+  const [pendingFormData, setPendingFormData] = React.useState<CreateSessionForm | null>(null);
 
   const isEditMode = !!editingSession;
 
@@ -109,19 +112,15 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
     };
 
     if (isEditMode && editingSession) {
-      // Update existing session
-      updateSessionMutation.mutate(
-        {
-          sessionId: editingSession.id,
-          data: submitData,
-        },
-        {
-          onSuccess: () => {
-            form.reset();
-            onSuccess?.();
-          },
-        },
-      );
+      // Check if session has participants - show confirmation
+      const hasParticipants = (editingSession._count?.bookings || 0) > 0;
+      if (hasParticipants) {
+        setPendingFormData(submitData);
+        setShowEditConfirmation(true);
+      } else {
+        // No participants, update directly
+        handleUpdateSession(submitData);
+      }
     } else {
       // Create new session
       createSessionMutation.mutate(submitData, {
@@ -130,6 +129,31 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
           onSuccess?.();
         },
       });
+    }
+  };
+
+  const handleUpdateSession = (data: CreateSessionForm) => {
+    if (!editingSession) return;
+
+    updateSessionMutation.mutate(
+      {
+        sessionId: editingSession.id,
+        data,
+      },
+      {
+        onSuccess: () => {
+          form.reset();
+          setShowEditConfirmation(false);
+          setPendingFormData(null);
+          onSuccess?.();
+        },
+      },
+    );
+  };
+
+  const handleEditConfirm = () => {
+    if (pendingFormData) {
+      handleUpdateSession(pendingFormData);
     }
   };
 
@@ -316,6 +340,15 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
             </div>
           </form>
         </Form>
+
+        {/* Edit Confirmation Dialog */}
+        <EditSessionConfirmationDialog
+          open={showEditConfirmation}
+          onOpenChange={setShowEditConfirmation}
+          onConfirm={handleEditConfirm}
+          isUpdating={updateSessionMutation.isPending}
+          participantCount={editingSession?._count?.bookings || 0}
+        />
       </DialogContent>
     </Dialog>
   );

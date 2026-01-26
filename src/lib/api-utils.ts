@@ -33,6 +33,22 @@ export async function requireSuperAdmin() {
   return { error: null, user };
 }
 
+export async function requireAdmin() {
+  const { error, session } = await requireAuth();
+  if (error) return { error, user: null };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (!user || ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(user.role)) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
+  }
+
+  return { error: null, user };
+}
+
 export function handleApiError(error: unknown, defaultMessage: string) {
   if (error instanceof z.ZodError) {
     return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });

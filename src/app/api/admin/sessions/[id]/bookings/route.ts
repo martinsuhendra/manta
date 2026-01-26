@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { emailService } from "@/lib/email/service";
+import { createSessionJoinedTemplate, createSessionWaitlistedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -162,6 +164,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       where: { id: sessionId },
       include: {
         item: true,
+        teacher: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
         _count: {
           select: {
             bookings: {
@@ -180,10 +188,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    // Check capacity
-    if (classSession._count.bookings >= classSession.item.capacity) {
-      return NextResponse.json({ error: "Session is at full capacity" }, { status: 400 });
-    }
+    // Check confirmed bookings count (not including waitlisted)
+    const confirmedBookingsCount = await prisma.booking.count({
+      where: {
+        classSessionId: sessionId,
+        status: "CONFIRMED",
+      },
+    });
+
+    const isAtCapacity = confirmedBookingsCount >= classSession.item.capacity;
 
     // Check if user exists and has MEMBER role
     const user = await prisma.user.findUnique({
@@ -278,13 +291,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Create booking and update quota usage in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Determine booking status based on capacity
+      const bookingStatus = isAtCapacity ? "WAITLISTED" : "CONFIRMED";
+
       // Create booking
       const booking = await tx.booking.create({
         data: {
           userId,
           classSessionId: sessionId,
           membershipId,
-          status: "CONFIRMED",
+          status: bookingStatus,
         },
         include: {
           user: {
@@ -308,49 +324,83 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       });
 
-      // Update quota usage if not FREE
-      if (productItem.quotaType === "INDIVIDUAL") {
-        await tx.membershipQuotaUsage.upsert({
-          where: {
-            membershipId_productItemId: {
+      // Only update quota usage if confirmed (not waitlisted)
+      if (bookingStatus === "CONFIRMED") {
+        if (productItem.quotaType === "INDIVIDUAL") {
+          await tx.membershipQuotaUsage.upsert({
+            where: {
+              membershipId_productItemId: {
+                membershipId,
+                productItemId: productItem.id,
+              },
+            },
+            create: {
               membershipId,
               productItemId: productItem.id,
+              usedCount: 1,
             },
-          },
-          create: {
-            membershipId,
-            productItemId: productItem.id,
-            usedCount: 1,
-          },
-          update: {
-            usedCount: {
-              increment: 1,
+            update: {
+              usedCount: {
+                increment: 1,
+              },
             },
-          },
-        });
-      } else if (productItem.quotaType === "SHARED") {
-        await tx.membershipQuotaUsage.upsert({
-          where: {
-            membershipId_quotaPoolId: {
+          });
+        } else if (productItem.quotaType === "SHARED") {
+          await tx.membershipQuotaUsage.upsert({
+            where: {
+              membershipId_quotaPoolId: {
+                membershipId,
+                quotaPoolId: productItem.quotaPoolId!,
+              },
+            },
+            create: {
               membershipId,
-              quotaPoolId: productItem.quotaPoolId!,
+              quotaPoolId: productItem.quotaPoolId,
+              usedCount: 1,
             },
-          },
-          create: {
-            membershipId,
-            quotaPoolId: productItem.quotaPoolId,
-            usedCount: 1,
-          },
-          update: {
-            usedCount: {
-              increment: 1,
+            update: {
+              usedCount: {
+                increment: 1,
+              },
             },
-          },
-        });
+          });
+        }
       }
 
       return booking;
     });
+
+    // Send email notification to the newly added participant
+    if (result.user.email) {
+      try {
+        const sessionInfo = {
+          itemName: classSession.item.name,
+          date: classSession.date.toISOString(),
+          startTime: classSession.startTime,
+          endTime: classSession.endTime,
+          teacher: classSession.teacher
+            ? {
+                name: classSession.teacher.name,
+                email: classSession.teacher.email,
+              }
+            : null,
+          notes: classSession.notes,
+        };
+
+        if (result.status === "WAITLISTED") {
+          // Send waitlist confirmation email
+          const emailTemplate = createSessionWaitlistedTemplate(sessionInfo, result.user.name || result.user.email);
+          await emailService.sendEmail(result.user.email, emailTemplate);
+        } else {
+          // Send regular joined email
+          const emailTemplate = createSessionJoinedTemplate(sessionInfo, result.user.name || result.user.email);
+          await emailService.sendEmail(result.user.email, emailTemplate);
+        }
+      } catch (emailError) {
+        console.error("Failed to send session email:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

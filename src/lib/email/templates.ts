@@ -14,6 +14,14 @@ export {
 // General templates
 export { createContactFormTemplate } from "./general-templates";
 
+// Session templates
+export {
+  createSessionJoinedTemplate,
+  createSessionUpdatedTemplate,
+  createSessionCancelledTemplate,
+  createSessionWaitlistedTemplate,
+} from "./session-templates";
+
 // Legacy template that might still be in use - simplified version
 export function createMultipleActiveMembershipsTemplate(
   customerName?: string,

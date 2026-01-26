@@ -102,6 +102,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
 
   const bookings = sessionWithBookings?.bookings || [];
   const confirmedBookings = bookings.filter((b) => b.status === "CONFIRMED");
+  const waitlistedBookings = bookings.filter((b) => b.status === "WAITLISTED");
 
   return (
     <>
@@ -135,7 +136,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
           </div>
 
           {/* Participants List */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -148,42 +149,88 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
                 <AlertDescription>No participants have been added to this session yet.</AlertDescription>
               </Alert>
             ) : (
-              <ScrollArea className="max-h-[400px]">
-                <div className="space-y-2">
-                  {bookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="border-muted hover:bg-muted/30 flex items-center justify-between rounded-lg border p-3 transition-colors"
-                    >
-                      <div className="flex flex-1 items-center gap-3">
-                        {/* Avatar */}
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-
-                        {/* User Info */}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{booking.user.name || "No Name"}</p>
-                          <p className="text-muted-foreground truncate text-xs">{booking.user.email}</p>
-                        </div>
+              <>
+                {/* Confirmed Participants */}
+                {confirmedBookings.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">Confirmed Participants ({confirmedBookings.length})</h4>
+                    <ScrollArea className="max-h-[300px]">
+                      <div className="space-y-2">
+                        {confirmedBookings.map((booking) => (
+                          <div
+                            key={booking.id}
+                            className="border-muted hover:bg-muted/30 flex items-center justify-between rounded-lg border p-3 transition-colors"
+                          >
+                            <div className="flex flex-1 items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-primary/10 text-primary">
+                                  <User className="h-4 w-4" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">{booking.user.name || "No Name"}</p>
+                                <p className="text-muted-foreground truncate text-xs">{booking.user.email}</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveClick(booking)}
+                              disabled={removeParticipantMutation.isPending}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0 p-0"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
+                    </ScrollArea>
+                  </div>
+                )}
 
-                      {/* Remove Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveClick(booking)}
-                        disabled={removeParticipantMutation.isPending}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0 p-0"
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                {/* Waitlisted Participants */}
+                {waitlistedBookings.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">Waitlisted ({waitlistedBookings.length})</h4>
+                    <ScrollArea className="max-h-[300px]">
+                      <div className="space-y-2">
+                        {waitlistedBookings.map((booking, index) => (
+                          <div
+                            key={booking.id}
+                            className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50/50 p-3 transition-colors hover:bg-amber-50"
+                          >
+                            <div className="flex flex-1 items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-amber-100 text-amber-700">
+                                  <User className="h-4 w-4" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate text-sm font-medium">{booking.user.name || "No Name"}</p>
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                    #{index + 1} in queue
+                                  </span>
+                                </div>
+                                <p className="text-muted-foreground truncate text-xs">{booking.user.email}</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveClick(booking)}
+                              disabled={removeParticipantMutation.isPending}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0 p-0"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </DialogContent>
@@ -196,8 +243,10 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
             <AlertDialogTitle>Remove Participant?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to remove{" "}
-              <strong>{bookingToRemove?.user.name || bookingToRemove?.user.email}</strong> from this session? Their
-              quota will be restored.
+              <strong>{bookingToRemove?.user.name || bookingToRemove?.user.email}</strong> from this session?
+              {bookingToRemove?.status === "CONFIRMED" && " Their quota will be restored."}
+              {bookingToRemove?.status === "WAITLISTED" &&
+                " If there's space, the next waitlisted member will be automatically confirmed."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

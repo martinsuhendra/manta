@@ -1,29 +1,38 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { NextRequest, NextResponse } from "next/server";
 
-import { getServerSession } from "next-auth";
-
-import { authOptions } from "@/auth";
+import { requireAdmin } from "@/lib/api-utils";
+import { emailService } from "@/lib/email/service";
+import { createSessionJoinedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
-import { USER_ROLES } from "@/lib/types";
+
+import { restoreQuota, checkQuotaAvailability, deductQuota } from "./quota-helpers";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string; bookingId: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.SUPERADMIN) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     const { id: sessionId, bookingId } = await params;
 
-    // Validate session exists
+    // Validate session exists with item and teacher info
     const classSession = await prisma.classSession.findUnique({
       where: { id: sessionId },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            capacity: true,
+          },
+        },
+        teacher: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     if (!classSession) {
@@ -34,6 +43,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         membership: {
           include: {
             product: {
@@ -49,6 +65,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
                 },
               },
             },
+            quotaUsage: true,
           },
         },
       },
@@ -64,72 +81,154 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const productItem = booking.membership.product.productItems[0];
+    const wasConfirmed = booking.status === "CONFIRMED";
 
-    // Delete booking and restore quota in a transaction
-    await prisma.$transaction(async (tx) => {
+    // Delete booking, restore quota, and auto-confirm waitlisted member in a transaction
+    const result = await prisma.$transaction(async (tx) => {
       // Delete the booking
       await tx.booking.delete({
         where: { id: bookingId },
       });
 
-      // Restore quota based on type
-      if (productItem?.quotaType === "INDIVIDUAL") {
-        // Decrement usage for individual quota
-        const quotaUsage = await tx.membershipQuotaUsage.findUnique({
+      // Only restore quota if booking was CONFIRMED (not WAITLISTED)
+      if (wasConfirmed && productItem) {
+        await restoreQuota({
+          tx,
+          booking: { membershipId: booking.membershipId },
+          productItem: {
+            id: productItem.id,
+            quotaType: productItem.quotaType,
+            quotaPoolId: productItem.quotaPoolId,
+          },
+        });
+      }
+
+      // Check if there's a waitlisted member to auto-confirm
+      const confirmedCount = await tx.booking.count({
+        where: {
+          classSessionId: sessionId,
+          status: "CONFIRMED",
+        },
+      });
+
+      // If there's space and a waitlisted member, confirm the first one
+      if (confirmedCount < classSession.item.capacity) {
+        const firstWaitlisted = await tx.booking.findFirst({
           where: {
-            membershipId_productItemId: {
-              membershipId: booking.membershipId,
-              productItemId: productItem.id,
+            classSessionId: sessionId,
+            status: "WAITLISTED",
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
+            membership: {
+              include: {
+                product: {
+                  include: {
+                    productItems: {
+                      where: {
+                        itemId: classSession.itemId,
+                        isActive: true,
+                      },
+                      include: {
+                        quotaPool: true,
+                      },
+                    },
+                  },
+                },
+                quotaUsage: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc", // First come, first served
           },
         });
 
-        if (quotaUsage && quotaUsage.usedCount > 0) {
-          await tx.membershipQuotaUsage.update({
-            where: {
-              membershipId_productItemId: {
-                membershipId: booking.membershipId,
-                productItemId: productItem.id,
-              },
-            },
-            data: {
-              usedCount: {
-                decrement: 1,
-              },
-            },
-          });
-        }
-      } else if (productItem?.quotaType === "SHARED" && productItem.quotaPoolId) {
-        // Decrement usage for shared quota pool
-        const quotaUsage = await tx.membershipQuotaUsage.findUnique({
-          where: {
-            membershipId_quotaPoolId: {
-              membershipId: booking.membershipId,
-              quotaPoolId: productItem.quotaPoolId,
-            },
-          },
-        });
+        if (firstWaitlisted) {
+          const waitlistedProductItem = firstWaitlisted.membership.product.productItems[0];
 
-        if (quotaUsage && quotaUsage.usedCount > 0) {
-          await tx.membershipQuotaUsage.update({
-            where: {
-              membershipId_quotaPoolId: {
-                membershipId: booking.membershipId,
-                quotaPoolId: productItem.quotaPoolId,
-              },
+          if (!waitlistedProductItem) {
+            return { waitlistedConfirmed: null };
+          }
+
+          // Check quota availability before confirming
+          const hasQuota = checkQuotaAvailability({
+            productItem: {
+              id: waitlistedProductItem.id,
+              quotaType: waitlistedProductItem.quotaType,
+              quotaValue: waitlistedProductItem.quotaValue,
+              quotaPoolId: waitlistedProductItem.quotaPoolId,
+              quotaPool: waitlistedProductItem.quotaPool,
             },
-            data: {
-              usedCount: {
-                decrement: 1,
-              },
-            },
+            quotaUsage: firstWaitlisted.membership.quotaUsage,
           });
+
+          // Only confirm if quota is available
+          if (hasQuota) {
+            // Update booking status to CONFIRMED
+            await tx.booking.update({
+              where: { id: firstWaitlisted.id },
+              data: { status: "CONFIRMED" },
+            });
+
+            // Deduct quota for the newly confirmed member
+            await deductQuota({
+              tx,
+              membershipId: firstWaitlisted.membershipId,
+              productItem: {
+                id: waitlistedProductItem.id,
+                quotaType: waitlistedProductItem.quotaType,
+                quotaPoolId: waitlistedProductItem.quotaPoolId,
+              },
+            });
+
+            return { waitlistedConfirmed: firstWaitlisted };
+          }
         }
       }
-      // FREE quota type doesn't need any updates
+
+      return { waitlistedConfirmed: null };
     });
 
-    return NextResponse.json({ success: true, message: "Participant removed successfully" });
+    // Send email to newly confirmed waitlisted member
+    if (result.waitlistedConfirmed?.user.email) {
+      try {
+        const sessionInfo = {
+          itemName: classSession.item.name,
+          date: classSession.date.toISOString(),
+          startTime: classSession.startTime,
+          endTime: classSession.endTime,
+          teacher: classSession.teacher
+            ? {
+                name: classSession.teacher.name,
+                email: classSession.teacher.email,
+              }
+            : null,
+          notes: classSession.notes,
+        };
+
+        const emailTemplate = createSessionJoinedTemplate(
+          sessionInfo,
+          result.waitlistedConfirmed.user.name || result.waitlistedConfirmed.user.email,
+        );
+        await emailService.sendEmail(result.waitlistedConfirmed.user.email, emailTemplate);
+      } catch (emailError) {
+        console.error("Failed to send waitlist confirmation email:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Participant removed successfully",
+      waitlistedConfirmed: result.waitlistedConfirmed ? true : false,
+    });
   } catch (error) {
     console.error("Error removing participant:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

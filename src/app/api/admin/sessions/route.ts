@@ -31,17 +31,47 @@ export async function GET(request: NextRequest) {
     const whereConditions: Record<string, unknown> = {};
 
     if (startDate && endDate) {
-      whereConditions.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      // Enforce maximum 30-day range
+      const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 30) {
+        // If range exceeds 30 days, limit to 30 days from start
+        const maxEnd = new Date(start);
+        maxEnd.setDate(maxEnd.getDate() + 30);
+        whereConditions.date = {
+          gte: start,
+          lte: maxEnd,
+        };
+      } else {
+        whereConditions.date = {
+          gte: start,
+          lte: end,
+        };
+      }
     } else if (startDate) {
+      const start = new Date(startDate);
+      // If only start date provided, default to 30 days from start
+      const defaultEnd = new Date(start);
+      defaultEnd.setDate(defaultEnd.getDate() + 30);
       whereConditions.date = {
-        gte: new Date(startDate),
+        gte: start,
+        lte: defaultEnd,
       };
     } else if (endDate) {
       whereConditions.date = {
         lte: new Date(endDate),
+      };
+    } else {
+      // Default: show next 30 days from today if no date filter
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const defaultEnd = new Date(today);
+      defaultEnd.setDate(defaultEnd.getDate() + 30);
+      whereConditions.date = {
+        gte: today,
+        lte: defaultEnd,
       };
     }
 

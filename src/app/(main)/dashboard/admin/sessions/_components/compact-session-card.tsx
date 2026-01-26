@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 
-import { Clock, User, Users as UsersIcon, Edit2, Trash2, UserPlus } from "lucide-react";
+import { Clock, User, Users as UsersIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { useDeleteSession } from "@/hooks/use-sessions-mutation";
+import { useDeleteSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
+import { CancelSessionDialog } from "./cancel-session-dialog";
+import { CompactSessionCardActions } from "./compact-session-card-actions";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
@@ -28,8 +29,11 @@ interface CompactSessionCardProps {
 
 export function CompactSessionCard({ session, onSessionSelect, onEdit }: CompactSessionCardProps) {
   const deleteSessionMutation = useDeleteSession();
+  const updateSessionMutation = useUpdateSession();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [sessionToCancel, setSessionToCancel] = useState<Session | null>(null);
   const [showAddParticipantDialog, setShowAddParticipantDialog] = useState(false);
   const [showParticipantsDialog, setShowParticipantsDialog] = useState(false);
 
@@ -48,6 +52,31 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
       },
     });
   };
+
+  const handleStatusUpdate = (sessionId: string, newStatus: "SCHEDULED" | "CANCELLED" | "COMPLETED") => {
+    updateSessionMutation.mutate({ sessionId, data: { status: newStatus } });
+  };
+
+  const handleCancelClick = (session: Session) => {
+    setSessionToCancel(session);
+    setShowCancelDialog(true);
+  };
+
+  const handleCancelConfirm = () => {
+    if (!sessionToCancel) return;
+
+    updateSessionMutation.mutate(
+      { sessionId: sessionToCancel.id, data: { status: "CANCELLED" } },
+      {
+        onSuccess: () => {
+          setShowCancelDialog(false);
+          setSessionToCancel(null);
+        },
+      },
+    );
+  };
+
+  const hasParticipants = (session._count?.bookings || 0) > 0;
   return (
     <div
       className="bg-card cursor-pointer rounded-lg border border-l-4 transition-all duration-200 hover:shadow-lg"
@@ -120,54 +149,16 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowParticipantsDialog(true);
-                }}
-              >
-                <UsersIcon className="mr-1 h-3 w-3" />
-                View
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddParticipantDialog(true);
-                }}
-              >
-                <UserPlus className="mr-1 h-3 w-3" />
-                Add
-              </Button>
-              {onEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(session);
-                  }}
-                >
-                  <Edit2 className="mr-1 h-3 w-3" />
-                  Edit
-                </Button>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(session);
-                }}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Delete
-              </Button>
-            </div>
+            <CompactSessionCardActions
+              session={session}
+              hasParticipants={hasParticipants}
+              onEdit={onEdit}
+              onAddParticipant={() => setShowAddParticipantDialog(true)}
+              onViewParticipants={() => setShowParticipantsDialog(true)}
+              onStatusUpdate={handleStatusUpdate}
+              onCancelClick={handleCancelClick}
+              onDeleteClick={handleDeleteClick}
+            />
           </div>
         </div>
       </div>
@@ -183,6 +174,13 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
         session={sessionToDelete}
         onConfirm={handleDeleteConfirm}
         isDeleting={deleteSessionMutation.isPending}
+      />
+      <CancelSessionDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        session={sessionToCancel}
+        onConfirm={handleCancelConfirm}
+        isCancelling={updateSessionMutation.isPending}
       />
     </div>
   );

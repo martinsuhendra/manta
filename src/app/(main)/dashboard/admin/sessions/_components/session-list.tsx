@@ -1,143 +1,157 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition, security/detect-object-injection, react/no-array-index-key */
+/* eslint-disable react/no-array-index-key */
 "use client";
 
 import * as React from "react";
+import { useState, useMemo } from "react";
 
-import { format, parseISO } from "date-fns";
-import { Calendar } from "lucide-react";
+import { format, addDays, startOfDay, subDays } from "date-fns";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useSessions } from "@/hooks/use-sessions-query";
 
 import { SessionFilter, Session } from "./schema";
-import { SessionCard } from "./session-card";
+import { createSessionColumns } from "./session-columns";
 
 interface SessionListProps {
   filters: SessionFilter;
   onEditSession?: (session: Session) => void;
 }
 
-export function SessionList({ filters, onEditSession }: SessionListProps) {
-  const { data: sessions = [], isLoading, refetch } = useSessions(filters);
+const DAYS_PER_PAGE = 30;
 
-  const handleEdit = (session: Session) => {
-    onEditSession?.(session);
+export function SessionList({ filters, onEditSession }: SessionListProps) {
+  const [currentStartDate, setCurrentStartDate] = useState(() => startOfDay(new Date()));
+
+  // Calculate date range for current page (30 days from start date)
+  const dateRange = useMemo(() => {
+    const start = startOfDay(currentStartDate);
+    const end = startOfDay(addDays(start, DAYS_PER_PAGE - 1));
+    return { start, end };
+  }, [currentStartDate]);
+
+  // Merge date range with existing filters
+  const filtersWithDateRange = useMemo<SessionFilter>(() => {
+    return {
+      ...filters,
+      startDate: dateRange.start.toISOString().split("T")[0],
+      endDate: dateRange.end.toISOString().split("T")[0],
+    };
+  }, [filters, dateRange]);
+
+  const { data: sessions = [], isLoading, refetch } = useSessions(filtersWithDateRange);
+
+  const handlePreviousPage = () => {
+    setCurrentStartDate((prev) => subDays(prev, DAYS_PER_PAGE));
   };
 
-  // Group sessions by date
-  const sessionsByDate = React.useMemo(() => {
-    const grouped: Record<string, Session[]> = {};
+  const handleNextPage = () => {
+    setCurrentStartDate((prev) => addDays(prev, DAYS_PER_PAGE));
+  };
 
-    sessions.forEach((session) => {
-      const dateKey = session.date.includes("T") ? session.date.split("T")[0] : session.date;
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(session);
-    });
+  const handleToday = () => {
+    setCurrentStartDate(startOfDay(new Date()));
+  };
 
-    // Sort each group by start time
-    Object.keys(grouped).forEach((dateKey) => {
-      grouped[dateKey].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
+  // Actions for the table columns
+  const actions = React.useMemo(
+    () => ({
+      onEditSession: (session: Session) => {
+        onEditSession?.(session);
+      },
+    }),
+    [onEditSession],
+  );
 
-    return grouped;
-  }, [sessions]);
+  const columns = React.useMemo(() => createSessionColumns(actions), [actions]);
 
-  // Sort dates
-  const sortedDates = Object.keys(sessionsByDate).sort();
+  const table = useDataTableInstance({
+    data: sessions,
+    columns,
+    getRowId: (row) => row.id,
+    defaultPageSize: 50,
+  });
+
+  // Format date range for display
+  const formattedDateRange = React.useMemo(() => {
+    try {
+      const startFormatted = format(dateRange.start, "MMM d, yyyy");
+      const endFormatted = format(dateRange.end, "MMM d, yyyy");
+      return `${startFormatted} - ${endFormatted}`;
+    } catch {
+      return "";
+    }
+  }, [dateRange]);
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        {Array.from({ length: 3 }).map((_, groupIndex) => (
-          <div key={groupIndex} className="space-y-4">
-            <Skeleton className="h-6 w-32" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, cardIndex) => (
-                <Card key={cardIndex}>
-                  <CardHeader className="pb-3">
-                    <Skeleton className="h-4 w-1/3" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Skeleton className="h-3 w-full" />
-                      <Skeleton className="h-3 w-2/3" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-hidden rounded-lg border">
+              <div className="space-y-3 p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (sessions.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Calendar className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-medium">No sessions found</h3>
-          <p className="text-muted-foreground mb-4">
-            {Object.keys(filters).length > 0
-              ? "No sessions match your current filters."
-              : "There are no sessions to display."}
-          </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            Refresh
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasSessions = sessions.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          Showing {sessions.length} session{sessions.length !== 1 ? "s" : ""} across {sortedDates.length} date
-          {sortedDates.length !== 1 ? "s" : ""}
-        </p>
+    <div className="space-y-4">
+      {hasSessions ? (
+        <DataTable table={table} columns={columns} />
+      ) : (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Calendar className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-medium">No sessions found</h3>
+            <p className="text-muted-foreground mb-4">
+              {Object.keys(filters).length > 0
+                ? "No sessions match your current filters."
+                : "There are no sessions to display for this date range."}
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>
+              Refresh
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Custom Date Range Pagination - Always visible */}
+      <div className="flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground text-sm">
+          <span className="font-medium">{formattedDateRange}</span>
+          <span className="ml-2">
+            {hasSessions
+              ? `Showing ${table.getFilteredRowModel().rows.length} session${table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}`
+              : "No sessions in this date range"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading}>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Previous</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleToday} disabled={isLoading}>
+            Today
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading}>
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-
-      {sortedDates.map((dateKey) => {
-        const dateSessions = sessionsByDate[dateKey];
-        let formattedDate: string;
-
-        try {
-          formattedDate = format(parseISO(dateKey), "EEEE, MMMM d, yyyy");
-        } catch {
-          formattedDate = dateKey;
-        }
-
-        return (
-          <div key={dateKey} className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">{formattedDate}</h3>
-              <span className="bg-muted text-muted-foreground rounded-full px-2 py-1 text-xs font-medium">
-                {dateSessions.length} session{dateSessions.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-              {dateSessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  variant="compact"
-                  showDate={false}
-                  onEdit={handleEdit}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
