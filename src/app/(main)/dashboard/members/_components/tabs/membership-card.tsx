@@ -26,7 +26,7 @@ export function MembershipCard({ memberName, productName, expiredAt }: Membershi
   return (
     <div className="bg-primary relative aspect-8/5 w-full max-w-sm overflow-hidden rounded-xl p-8 perspective-distant">
       <div className="absolute top-4 left-4">
-        <Package className="fill-primary-foreground text-primary-foreground size-6" />
+        <Package className="text-primary-foreground size-6" />
       </div>
       <div className="absolute top-1/2 w-full -translate-y-1/2">
         <div className="flex flex-col gap-2 px-4">

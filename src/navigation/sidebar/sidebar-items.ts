@@ -64,7 +64,7 @@ export const sidebarItems: NavGroup[] = [
     label: "Pages",
     items: [
       {
-        title: "Members",
+        title: "Users & Membership",
         url: "/dashboard/members",
         icon: Users,
         comingSoon: false,

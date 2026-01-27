@@ -107,6 +107,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
   const deleteUser = useDeleteUser();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("overview");
+  const [isEditModeReady, setIsEditModeReady] = React.useState(false);
 
   const currentUserRole = session?.user.role;
   const canCreateSuperAdmin = currentUserRole === USER_ROLES.SUPERADMIN;
@@ -131,6 +132,20 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
       setActiveTab("overview");
     }
   }, [open, mode]);
+
+  // Prevent auto-submission when switching to edit mode
+  React.useEffect(() => {
+    if (mode === "edit") {
+      setIsEditModeReady(false);
+      // Enable form submission after a short delay
+      const timer = setTimeout(() => {
+        setIsEditModeReady(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setIsEditModeReady(true);
+    }
+  }, [mode]);
 
   const handleSubmit = (data: FormData) => {
     if (mode === "add") {
@@ -234,7 +249,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
             <DrawerFooterButtons
               mode={mode}
               canDelete={canDelete}
-              isPending={createUser.isPending || updateUser.isPending}
+              isPending={createUser.isPending || updateUser.isPending || (mode === "edit" && !isEditModeReady)}
               onEdit={() => onModeChange("edit")}
               onDelete={() => setDeleteDialogOpen(true)}
             />

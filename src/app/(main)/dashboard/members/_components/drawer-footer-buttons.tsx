@@ -27,8 +27,7 @@ export function DrawerFooterButtons({ mode, canDelete, isPending, onEdit, onDele
     );
   }
 
-  const buttonText =
-    mode === "add" ? (isPending ? "Creating..." : "Create Member") : isPending ? "Updating..." : "Update Member";
+  const buttonText = mode === "add" ? "Create Member" : "Update Member";
 
   return (
     <DrawerFooter className="gap-2">

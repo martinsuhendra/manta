@@ -188,7 +188,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid grid-cols-2">
                 <TabsTrigger value="basic" className="relative">
                   Basic Info
                   {tabErrors.basic && <AlertTriangle className="text-destructive ml-2 h-4 w-4" />}

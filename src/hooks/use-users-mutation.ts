@@ -29,7 +29,6 @@ export function useCreateUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("User created successfully");
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to create user";
@@ -44,12 +43,11 @@ export function useUpdateUser() {
 
   return useMutation({
     mutationFn: async ({ userId, data }: { userId: string; data: UpdateUserData }) => {
-      const response = await axios.put(`/api/users/${userId}`, data);
+      const response = await axios.patch(`/api/users/${userId}`, data);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("User updated successfully");
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to update user";
@@ -69,7 +67,6 @@ export function useDeleteUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("User deleted successfully");
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to delete user";

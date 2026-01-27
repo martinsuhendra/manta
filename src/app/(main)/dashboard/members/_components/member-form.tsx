@@ -1,3 +1,7 @@
+"use client";
+
+import * as React from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -41,11 +45,54 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
     },
   });
 
+  // Reset form when member or mode changes
+  React.useEffect(() => {
+    if (mode === "edit" && member) {
+      form.reset({
+        name: member.name ?? "",
+        email: member.email ?? "",
+        role: member.role,
+        phoneNo: member.phoneNo ?? "",
+      });
+    } else if (mode === "add") {
+      form.reset({
+        name: "",
+        email: "",
+        role: DEFAULT_USER_ROLE,
+        phoneNo: "",
+      });
+    }
+  }, [mode, member, form]);
+
   const availableRoles = getAvailableRoles(mode, canCreateSuperAdmin, canEditRoles, member?.role);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isPending) {
+      form.handleSubmit(onSubmit)(e);
+    }
+  };
 
   return (
     <Form {...form}>
-      <form id="member-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        id="member-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+            const form = e.currentTarget;
+            const inputs = Array.from(form.querySelectorAll("input, select"));
+            const currentIndex = inputs.indexOf(e.target);
+            const nextInput = inputs[currentIndex + 1] as HTMLElement;
+            if (nextInput) {
+              e.preventDefault();
+              nextInput.focus();
+            }
+          }
+        }}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="name"
