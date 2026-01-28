@@ -16,7 +16,7 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 
 export const DEFAULT_USER_ROLE: UserRole = USER_ROLES.MEMBER;
 
-export type RoleBadgeVariant = "destructive" | "default" | "secondary" | "outline";
+export type RoleBadgeVariant = "destructive" | "default" | "secondary" | "outline" | "success";
 
 export function getRoleVariant(role: string): RoleBadgeVariant {
   switch (role) {
@@ -27,7 +27,7 @@ export function getRoleVariant(role: string): RoleBadgeVariant {
     case USER_ROLES.TEACHER:
       return "secondary";
     case USER_ROLES.MEMBER:
-      return "outline";
+      return "success";
     default:
       return "outline";
   }

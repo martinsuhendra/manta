@@ -6,6 +6,7 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { MemberDetails } from "./schema";
+import { getSessionStatusVariant } from "./tabs/utils";
 
 type Booking = MemberDetails["bookings"][number];
 
@@ -94,7 +95,7 @@ export const createAttendanceHistoryColumns = (): ColumnDef<Booking>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Session Status" />,
     cell: ({ row }) => {
       return (
-        <StatusBadge variant={row.original.classSession.status === "COMPLETED" ? "default" : "secondary"}>
+        <StatusBadge variant={getSessionStatusVariant(row.original.classSession.status)}>
           {row.original.classSession.status}
         </StatusBadge>
       );

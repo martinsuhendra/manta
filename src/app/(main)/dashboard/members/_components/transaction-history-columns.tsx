@@ -10,7 +10,7 @@ import { MemberDetails } from "./schema";
 
 type Transaction = MemberDetails["transactions"][number];
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | "warning" => {
   switch (status) {
     case "COMPLETED":
       return "default";
@@ -18,6 +18,7 @@ const getStatusVariant = (status: string): "default" | "secondary" | "destructiv
     case "CANCELLED":
       return "destructive";
     case "PENDING":
+      return "warning";
     case "PROCESSING":
       return "secondary";
     case "REFUNDED":

@@ -4,7 +4,9 @@ import * as React from "react";
 
 import { CheckCircle2, XCircle, Clock, AlertCircle, CreditCard, CalendarCheck, ClockIcon } from "lucide-react";
 
-export function getTransactionStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+export function getTransactionStatusVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" | "warning" {
   switch (status) {
     case "COMPLETED":
       return "default";
@@ -12,6 +14,7 @@ export function getTransactionStatusVariant(status: string): "default" | "second
     case "CANCELLED":
       return "destructive";
     case "PENDING":
+      return "warning";
     case "PROCESSING":
       return "secondary";
     case "REFUNDED":
@@ -45,6 +48,19 @@ export function getBookingStatusVariant(status: string): "default" | "secondary"
     case "NO_SHOW":
       return "destructive";
     case "WAITLISTED":
+      return "secondary";
+    default:
+      return "secondary";
+  }
+}
+
+export function getSessionStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "COMPLETED":
+      return "default";
+    case "CANCELLED":
+      return "destructive";
+    case "SCHEDULED":
       return "secondary";
     default:
       return "secondary";

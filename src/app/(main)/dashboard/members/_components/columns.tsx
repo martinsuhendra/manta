@@ -1,6 +1,15 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { EllipsisVertical, Mail, Phone, Calendar, UserCheck, CreditCard, CalendarCheck } from "lucide-react";
+import {
+  EllipsisVertical,
+  Mail,
+  Phone,
+  Calendar,
+  UserCheck,
+  CreditCard,
+  CalendarCheck,
+  ShoppingCart,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,6 +33,7 @@ interface MemberActions {
   onViewProfile: (member: Member) => void;
   onEditMember: (member: Member) => void;
   onDeleteMember: (member: Member) => void;
+  onPurchaseMembership?: (member: Member) => void;
 }
 
 export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[] => [
@@ -197,6 +207,17 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
             >
               Edit Member
             </DropdownMenuItem>
+            {actions.onPurchaseMembership && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.onPurchaseMembership?.(member);
+                }}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Purchase Membership
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"

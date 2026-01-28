@@ -2,11 +2,25 @@
 
 import * as React from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CreditCard, Calendar, Package, CheckCircle2 } from "lucide-react";
+import { CreditCard, Calendar, Package, CheckCircle2, Loader2, DollarSign } from "lucide-react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
+
+import { MemberDetails } from "../schema";
 
 import { EmptyState } from "./empty-state";
 import { SeeHistoryButton } from "./see-history-button";
@@ -53,7 +67,7 @@ export function TransactionsTab({ transactions, memberId }: TransactionsTabProps
 
       <div className="space-y-3">
         {recentTransactions.map((transaction) => (
-          <TransactionCard key={transaction.id} transaction={transaction} />
+          <TransactionCard key={transaction.id} transaction={transaction} memberId={memberId} />
         ))}
       </div>
 
@@ -65,8 +79,141 @@ export function TransactionsTab({ transactions, memberId }: TransactionsTabProps
   );
 }
 
-function TransactionCard({ transaction }: { transaction: Transaction }) {
+function TransactionCard({ transaction, memberId }: { transaction: Transaction; memberId: string }) {
+  const queryClient = useQueryClient();
+  const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
+  const [isLoadingPayment, setIsLoadingPayment] = React.useState(false);
+  const [isSettling, setIsSettling] = React.useState(false);
+  const [settleDialogOpen, setSettleDialogOpen] = React.useState(false);
   const isCompleted = transaction.status === "COMPLETED";
+  const isPending = transaction.status === "PENDING";
+  const isMidtrans = transaction.paymentProvider === "midtrans";
+
+  const handlePayNow = async () => {
+    if (!isSnapLoaded) {
+      toast.error("Payment gateway is loading. Please wait a moment and try again.");
+      return;
+    }
+
+    setIsLoadingPayment(true);
+    try {
+      const response = await fetch(`/api/admin/transactions/${transaction.id}/snap-token`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error("Failed to open payment", {
+          description: result.error || "Something went wrong.",
+        });
+        return;
+      }
+
+      if (!result.snapToken) {
+        toast.error("Failed to initialize payment", {
+          description: "Payment token was not generated. Please try again.",
+        });
+        return;
+      }
+
+      // Open Midtrans Snap
+      openSnap(result.snapToken, {
+        onSuccess: () => {
+          toast.success("Payment successful!", {
+            description: "Transaction has been completed.",
+          });
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          queryClient.invalidateQueries({ queryKey: ["member-details", memberId] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        },
+        onPending: () => {
+          toast.info("Payment pending", {
+            description: "Waiting for payment confirmation.",
+          });
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          queryClient.invalidateQueries({ queryKey: ["member-details", memberId] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        },
+        onError: () => {
+          toast.error("Payment failed", {
+            description: "Please try again or contact support.",
+          });
+        },
+        onClose: () => {
+          // User closed the popup, no action needed
+        },
+      });
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Something went wrong", {
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsLoadingPayment(false);
+    }
+  };
+
+  const handleSettlePayment = async () => {
+    setIsSettling(true);
+    try {
+      const response = await fetch(`/api/admin/transactions/${transaction.id}/settle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentMethod: "Cash",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error("Failed to settle transaction", {
+          description: result.error || "Something went wrong.",
+        });
+        return;
+      }
+
+      toast.success("Transaction settled successfully!", {
+        description: "Cash payment has been recorded and membership activated.",
+      });
+
+      setSettleDialogOpen(false);
+
+      // Optimistically update the transaction in the cache for immediate UI feedback
+      queryClient.setQueryData<MemberDetails>(["member-details", memberId], (oldData: MemberDetails | undefined) => {
+        if (!oldData) return oldData;
+
+        return {
+          ...oldData,
+          transactions: oldData.transactions.map((t) =>
+            t.id === transaction.id
+              ? {
+                  ...t,
+                  status: "COMPLETED",
+                  paymentMethod: "Cash",
+                  paymentProvider: "manual",
+                  paidAt: new Date().toISOString(),
+                }
+              : t,
+          ),
+        };
+      });
+
+      // Invalidate queries to ensure data consistency
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["member-details", memberId] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    } catch (error) {
+      console.error("Settle payment error:", error);
+      toast.error("Something went wrong", {
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSettling(false);
+    }
+  };
 
   return (
     <div
@@ -119,6 +266,40 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
             </div>
           </div>
 
+          {isPending && (
+            <div className="space-y-2 border-t pt-3">
+              {isMidtrans && (
+                <Button
+                  onClick={handlePayNow}
+                  disabled={isLoadingPayment || !isSnapLoaded}
+                  className="w-full"
+                  size="sm"
+                >
+                  {isLoadingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Pay Now
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                onClick={() => setSettleDialogOpen(true)}
+                variant={isMidtrans ? "outline" : "default"}
+                className="w-full"
+                size="sm"
+              >
+                <DollarSign className="mr-2 h-4 w-4" />
+                Settle Cash Payment
+              </Button>
+            </div>
+          )}
+
           {transaction.paidAt && (
             <div className="border-t pt-3">
               <div className="flex items-center gap-2 text-sm">
@@ -131,6 +312,56 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
           )}
         </div>
       </div>
+
+      <Dialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settle Cash Payment</DialogTitle>
+            <DialogDescription>
+              Mark this transaction as completed with cash payment. The associated membership will be activated
+              automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-muted/50 rounded-lg border p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Product:</span>
+                  <span className="font-medium">{transaction.product.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className="font-medium">
+                    {formatPrice(transaction.amount)} {transaction.currency}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Method:</span>
+                  <span className="font-medium">Cash</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setSettleDialogOpen(false)} disabled={isSettling}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSettlePayment} disabled={isSettling}>
+              {isSettling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Settling...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Confirm Cash Payment
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

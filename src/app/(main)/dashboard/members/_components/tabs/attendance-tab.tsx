@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import { EmptyState } from "./empty-state";
 import { SeeHistoryButton } from "./see-history-button";
-import { getBookingStatusIcon, getBookingStatusVariant } from "./utils";
+import { getBookingStatusIcon, getBookingStatusVariant, getSessionStatusVariant } from "./utils";
 
 interface Booking {
   id: string;
@@ -114,7 +114,7 @@ function AttendanceCard({ booking }: { booking: Booking }) {
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Session Status</p>
-              <StatusBadge variant={booking.classSession.status === "COMPLETED" ? "default" : "secondary"}>
+              <StatusBadge variant={getSessionStatusVariant(booking.classSession.status)}>
                 {booking.classSession.status}
               </StatusBadge>
             </div>

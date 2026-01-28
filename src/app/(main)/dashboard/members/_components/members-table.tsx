@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Plus } from "lucide-react";
+import { CreditCard, Plus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -14,6 +14,7 @@ import { createMemberColumns } from "./columns";
 import { MemberDetailDrawer } from "./member-detail-drawer";
 import { MembersSearch } from "./members-search";
 import { MembersTableSkeleton } from "./members-table-skeleton";
+import { PurchaseMembershipDialog } from "./purchase-membership-dialog";
 import { RoleFilter } from "./role-filter";
 import { Member } from "./schema";
 
@@ -30,6 +31,8 @@ export function MembersTable({ data, isLoading }: MembersTableProps) {
   const [drawerMode, setDrawerMode] = React.useState<DrawerMode>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = React.useState(false);
+  const [purchaseSelectedMember, setPurchaseSelectedMember] = React.useState<Member | null>(null);
 
   // Filter data based on selected role
   const filteredData = React.useMemo(() => {
@@ -61,6 +64,10 @@ export function MembersTable({ data, isLoading }: MembersTableProps) {
         setSelectedMember(member);
         setDrawerMode("view");
         setDrawerOpen(true);
+      },
+      onPurchaseMembership: (member: Member) => {
+        setPurchaseSelectedMember(member);
+        setPurchaseDialogOpen(true);
       },
     }),
     [],
@@ -96,6 +103,16 @@ export function MembersTable({ data, isLoading }: MembersTableProps) {
         </div>
         <div className="flex items-center gap-2">
           <DataTableViewOptions table={table} />
+          <Button
+            variant="outline"
+            onClick={() => {
+              setPurchaseSelectedMember(null);
+              setPurchaseDialogOpen(true);
+            }}
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            Purchase Membership
+          </Button>
           <Button onClick={handleAddClick}>
             <Plus className="mr-2 h-4 w-4" />
             Add Member
@@ -125,6 +142,12 @@ export function MembersTable({ data, isLoading }: MembersTableProps) {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onModeChange={setDrawerMode}
+      />
+
+      <PurchaseMembershipDialog
+        open={purchaseDialogOpen}
+        onOpenChange={setPurchaseDialogOpen}
+        selectedMember={purchaseSelectedMember}
       />
     </div>
   );
