@@ -116,14 +116,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create Midtrans Snap token
+    // Create Midtrans Snap token (requires valid email)
+    const customerEmail = user.email ?? validatedData.customerEmail;
+    if (!customerEmail) {
+      return NextResponse.json({ error: "User must have an email for payment processing" }, { status: 400 });
+    }
+
     let snapToken: string | null = null;
     try {
       const snapResponse = await createSnapTransaction({
         transactionId: transaction.id,
         amount: Number(product.price),
         customerName: user.name || "Customer",
-        customerEmail: user.email,
+        customerEmail,
         customerPhone: user.phoneNo || undefined,
         productId: validatedData.productId,
         productName: product.name,
