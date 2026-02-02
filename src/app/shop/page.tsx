@@ -1,15 +1,23 @@
 import { Metadata } from "next";
 
+import { addDays } from "date-fns";
+
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { USER_ROLES } from "@/lib/types";
 
-import { PublicProductCard } from "./_components/public-product-card";
-import { ShopHeader } from "./_components/shop-header";
+import { AboutSection } from "./_components/about-section";
+import { FacilitiesSection } from "./_components/facilities-section";
+import { InstructorsSection } from "./_components/instructors-section";
+import { LandingHero } from "./_components/landing-hero";
+import { MembershipPlans } from "./_components/membership-plans";
+import { ShopHeaderWrapper } from "./_components/shop-header-wrapper";
+import { UpcomingSessions } from "./_components/upcoming-sessions";
 
 export const metadata: Metadata = {
-  title: `${APP_CONFIG.name} - Membership Plans`,
-  description: "Browse our membership plans and join our community today.",
+  title: `${APP_CONFIG.name} - Join Our Community`,
+  description: "Experience world-class CrossFit training, expert coaching, and a supportive community.",
 };
 
 async function getActiveProducts() {
@@ -44,51 +52,121 @@ async function getActiveProducts() {
   }
 }
 
+async function getUpcomingSessions() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = addDays(today, 7);
+
+    const sessions = await prisma.classSession.findMany({
+      where: {
+        date: {
+          gte: today,
+          lte: nextWeek,
+        },
+        status: "SCHEDULED",
+      },
+      include: {
+        item: {
+          select: {
+            name: true,
+            capacity: true,
+            color: true,
+          },
+        },
+        teacher: {
+          select: {
+            name: true,
+          },
+        },
+        bookings: {
+          where: { status: { not: "CANCELLED" } },
+          select: { id: true },
+        },
+      },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
+      take: 10,
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      date: session.date.toISOString(),
+      startTime: session.startTime,
+      endTime: session.endTime,
+      item: session.item,
+      teacher: session.teacher,
+      spotsLeft: Math.max(0, session.item.capacity - session.bookings.length),
+    }));
+  } catch (error) {
+    console.error("Failed to fetch sessions:", error);
+    return [];
+  }
+}
+
+async function getInstructors() {
+  try {
+    const instructors = await prisma.user.findMany({
+      where: {
+        role: USER_ROLES.TEACHER,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        email: true,
+      },
+      take: 4,
+    });
+    return instructors;
+  } catch (error) {
+    console.error("Failed to fetch instructors:", error);
+    return [];
+  }
+}
+
 export default async function ShopPage() {
-  const products = await getActiveProducts();
-  const session = await auth();
+  const [products, sessions, instructors, session] = await Promise.all([
+    getActiveProducts(),
+    getUpcomingSessions(),
+    getInstructors(),
+    auth(),
+  ]);
 
   return (
     <div className="bg-background min-h-screen">
       {/* Header */}
-      <ShopHeader session={session} />
+      <ShopHeaderWrapper session={session} />
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">Welcome to {APP_CONFIG.name}</h2>
-          <p className="text-muted-foreground mt-6 text-lg">
-            Join our community and unlock exclusive benefits with our flexible membership plans.
-          </p>
-        </div>
-      </section>
-
-      {/* Products Section */}
-      <section className="container mx-auto px-4 pb-16">
-        {products.length === 0 ? (
-          <div className="text-muted-foreground py-16 text-center">
-            <p className="text-lg">No membership plans available at the moment.</p>
-            <p className="mt-2 text-sm">Please check back later.</p>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8 text-center">
-              <h3 className="text-2xl font-bold">Choose Your Plan</h3>
-              <p className="text-muted-foreground mt-2">Select the membership that best fits your needs</p>
-            </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
-                <PublicProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
+      <main>
+        <LandingHero />
+        <AboutSection />
+        <UpcomingSessions sessions={sessions} />
+        <FacilitiesSection />
+        <InstructorsSection instructors={instructors} />
+        <MembershipPlans products={products} />
+      </main>
 
       {/* Footer */}
-      <footer className="border-t">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-muted-foreground text-center text-sm">
+      <footer className="border-t border-white/10 bg-slate-950 py-12 text-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-bold">{APP_CONFIG.name}</h3>
+              <p className="text-muted-foreground mt-2 text-sm">Forging elite fitness since 2024.</p>
+            </div>
+            <div className="flex gap-6 text-sm text-gray-400">
+              <a href="#" className="hover:text-white">
+                Terms
+              </a>
+              <a href="#" className="hover:text-white">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-white">
+                Contact
+              </a>
+            </div>
+          </div>
+          <div className="mt-8 text-center text-xs text-gray-500">
             <p>{APP_CONFIG.copyright}</p>
           </div>
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 
 import { Session } from "next-auth";
@@ -16,6 +18,12 @@ interface ShopHeaderProps {
 }
 
 export function ShopHeader({ session }: ShopHeaderProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/shop" });
   };
@@ -27,7 +35,9 @@ export function ShopHeader({ session }: ShopHeaderProps) {
           <h1 className="text-xl font-bold">{APP_CONFIG.name}</h1>
         </Link>
         <nav className="flex items-center gap-4">
-          {session ? (
+          {!mounted ? (
+            <div className="bg-muted h-9 w-24 animate-pulse rounded-md" />
+          ) : session ? (
             <>
               {session.user.role === "MEMBER" && (
                 <Link href="/shop/book">
