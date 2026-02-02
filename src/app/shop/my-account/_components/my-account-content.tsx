@@ -235,7 +235,12 @@ async function handleReopenPayment(
 
 const editProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  phoneNo: z.string().min(1, "Phone number is required"),
+  phoneNo: z
+    .string()
+    .min(1, "Phone number is required")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be at most 15 digits")
+    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
 });
 
 type EditProfileFormValues = z.infer<typeof editProfileSchema>;

@@ -214,7 +214,6 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
                   actions.onPurchaseMembership?.(member);
                 }}
               >
-                <ShoppingCart className="mr-2 h-4 w-4" />
                 Purchase Membership
               </DropdownMenuItem>
             )}
