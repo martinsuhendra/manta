@@ -60,13 +60,15 @@ export const createMembershipColumns = (actions: ActionsType): ColumnDef<Members
       const variant =
         status === "ACTIVE"
           ? "success"
-          : status === "PENDING"
-            ? "warning"
-            : status === "EXPIRED"
-              ? "destructive"
-              : status === "SUSPENDED"
-                ? "secondary"
-                : "outline";
+          : status === "FREEZED"
+            ? "secondary"
+            : status === "PENDING"
+              ? "warning"
+              : status === "EXPIRED"
+                ? "destructive"
+                : status === "SUSPENDED"
+                  ? "secondary"
+                  : "outline";
 
       const formatStatus = (str: string) => {
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();

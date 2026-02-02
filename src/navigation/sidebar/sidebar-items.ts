@@ -1,11 +1,13 @@
 import {
-  Users,
+  BadgeCheck,
   LayoutDashboard,
   ChartBar,
   Banknote,
   Package,
-  UserCheck,
   Calendar,
+  Snowflake,
+  UserCircle2,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -69,6 +71,23 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
         comingSoon: false,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        subItems: [
+          {
+            title: "Members",
+            url: "/dashboard/members",
+            icon: UserCircle2,
+          },
+          {
+            title: "Memberships",
+            url: "/dashboard/admin/memberships",
+            icon: BadgeCheck,
+          },
+          {
+            title: "Freeze Requests",
+            url: "/dashboard/admin/freeze-requests",
+            icon: Snowflake,
+          },
+        ],
       },
       {
         title: "Classes",

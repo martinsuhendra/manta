@@ -59,6 +59,8 @@ model User {
   sessions      Session[]
   teacherItems  TeacherItem[]  @relation("TeacherItems")
   transactions  Transaction[]
+  freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
+  freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
 
   @@map("users")
 }
@@ -154,8 +156,34 @@ model Membership {
   transaction Transaction?          @relation(fields: [transactionId], references: [id], onDelete: SetNull)
   bookings   Booking[]
   quotaUsage MembershipQuotaUsage[]
+  freezeRequests MembershipFreezeRequest[]
 
   @@map("memberships")
+}
+
+model MembershipFreezeRequest {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId    String    @map("membership_id") @db.Uuid
+  reason          String
+  reasonDetails   String?   @map("reason_details")
+  status          String    @default("PENDING_APPROVAL")
+  requestedById   String    @map("requested_by_id") @db.Uuid
+  approvedById    String?   @map("approved_by_id") @db.Uuid
+  rejectionReason String?   @map("rejection_reason")
+  freezeStartDate DateTime? @map("freeze_start_date") @db.Timestamp(6)
+  freezeEndDate   DateTime? @map("freeze_end_date") @db.Timestamp(6)
+  totalFrozenDays Int?      @map("total_frozen_days")
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamp(6)
+
+  membership  Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  requestedBy User       @relation("FreezeRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  approvedBy  User?      @relation("FreezeApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([membershipId])
+  @@index([status])
+  @@index([freezeEndDate])
+  @@map("membership_freeze_requests")
 }
 
 model Item {

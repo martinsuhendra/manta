@@ -10,7 +10,7 @@ import { USER_ROLES } from "@/lib/types";
 const createMembershipSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
   productId: z.string().uuid("Invalid product ID"),
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).default("ACTIVE"),
+  status: z.enum(["ACTIVE", "FREEZED", "EXPIRED", "SUSPENDED", "PENDING"]).default("ACTIVE"),
   joinDate: z.string().optional(),
 });
 
@@ -22,7 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
