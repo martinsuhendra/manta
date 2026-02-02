@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, CreditCard, Edit, Loader2, Mail, Phone, User } from "lucide-react";
+import { Calendar, CreditCard, Edit, Loader2, Mail, Phone, Snowflake, User } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -30,6 +30,8 @@ import { APP_CONFIG } from "@/config/app-config";
 import { useMemberCancelBooking } from "@/hooks/use-member-sessions";
 import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
+
+import { RequestFreezeDialog } from "./request-freeze-dialog";
 
 interface AccountData {
   user: {
@@ -60,6 +62,29 @@ interface AccountData {
       createdAt: string;
     } | null;
   } | null;
+  frozenMembership: {
+    id: string;
+    status: string;
+    joinDate: string;
+    expiredAt: string;
+    product: {
+      id: string;
+      name: string;
+      price: number;
+      validDays: number;
+    };
+  } | null;
+  freezeRequests: Array<{
+    id: string;
+    membershipId: string;
+    reason: string;
+    reasonDetails: string | null;
+    status: string;
+    freezeStartDate: string | null;
+    freezeEndDate: string | null;
+    createdAt: string;
+    membership: { id: string; status: string; product: { name: string } };
+  }>;
   allMemberships: Array<{
     id: string;
     status: string;
@@ -127,11 +152,13 @@ function formatDate(dateString: string) {
 function getStatusBadge(status: string) {
   const statusColors: Record<string, string> = {
     ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    FREEZED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     EXPIRED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
     SUSPENDED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     COMPLETED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    PENDING_APPROVAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   };
 
   return (
@@ -208,7 +235,12 @@ async function handleReopenPayment(
 
 const editProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  phoneNo: z.string().min(1, "Phone number is required"),
+  phoneNo: z
+    .string()
+    .min(1, "Phone number is required")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be at most 15 digits")
+    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
 });
 
 type EditProfileFormValues = z.infer<typeof editProfileSchema>;
@@ -219,6 +251,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
+  const [isRequestFreezeOpen, setIsRequestFreezeOpen] = useState(false);
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
   const cancelBookingMutation = useMemberCancelBooking();
 
@@ -276,34 +309,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
 
   return (
     <div className="bg-background min-h-screen">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/shop" className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">{APP_CONFIG.name}</h1>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/shop">
-              <Button variant="ghost" size="sm">
-                Back to Shop
-              </Button>
-            </Link>
-            {accountData.user.role === "MEMBER" && (
-              <Link href="/shop/book">
-                <Button variant="ghost" size="sm">
-                  Book a class
-                </Button>
-              </Link>
-            )}
-            {session && (
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                Sign Out
-              </Button>
-            )}
-          </nav>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">My Account</h1>
@@ -424,18 +429,47 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
             </DialogContent>
           </Dialog>
 
-          {/* Active Membership */}
+          {/* Active / Frozen Membership */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Active Membership</CardTitle>
-              <CardDescription>Your current membership status</CardDescription>
+              <CardTitle>
+                {accountData.activeMembership
+                  ? "Active Membership"
+                  : accountData.frozenMembership
+                    ? "Frozen Membership"
+                    : "Membership"}
+              </CardTitle>
+              <CardDescription>
+                {accountData.activeMembership
+                  ? "Your current membership status"
+                  : accountData.frozenMembership
+                    ? "Your membership is temporarily frozen"
+                    : "Your membership status"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {accountData.activeMembership ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-lg font-semibold">{accountData.activeMembership.product.name}</h3>
-                    {getStatusBadge(accountData.activeMembership.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(accountData.activeMembership.status)}
+                      {(() => {
+                        const pendingFreeze = accountData.freezeRequests.find(
+                          (fr) =>
+                            fr.membershipId === accountData.activeMembership?.id && fr.status === "PENDING_APPROVAL",
+                        );
+                        const canRequestFreeze = !pendingFreeze;
+                        return canRequestFreeze ? (
+                          <Button variant="outline" size="sm" onClick={() => setIsRequestFreezeOpen(true)}>
+                            <Snowflake className="mr-1 h-4 w-4" />
+                            Request Freeze
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Freeze request pending</span>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <Separator />
                   <div className="grid grid-cols-2 gap-4">
@@ -460,6 +494,45 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         {getStatusBadge(accountData.activeMembership.transaction.status)}
                       </div>
                     )}
+                  </div>
+                </div>
+              ) : accountData.frozenMembership ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">{accountData.frozenMembership.product.name}</h3>
+                    {getStatusBadge("FREEZED")}
+                  </div>
+                  <Separator />
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-muted-foreground text-sm">
+                      Your membership is frozen. You cannot book classes during this period. It will automatically
+                      resume when the freeze period ends.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-muted-foreground text-sm">Join Date</p>
+                      <p className="font-medium">{formatDate(accountData.frozenMembership.joinDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Expires On (after freeze)</p>
+                      <p className="font-medium">{formatDate(accountData.frozenMembership.expiredAt)}</p>
+                    </div>
+                    {(() => {
+                      const activeFreeze = accountData.freezeRequests.find(
+                        (fr) =>
+                          fr.membershipId === accountData.frozenMembership?.id &&
+                          fr.status === "APPROVED" &&
+                          fr.freezeEndDate &&
+                          new Date(fr.freezeEndDate) > new Date(),
+                      );
+                      return activeFreeze ? (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground text-sm">Freeze ends</p>
+                          <p className="font-medium">{formatDate(activeFreeze.freezeEndDate!)}</p>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -634,14 +707,12 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-muted-foreground text-center text-sm">
-            <p>{APP_CONFIG.copyright}</p>
-          </div>
-        </div>
-      </footer>
+      <RequestFreezeDialog
+        open={isRequestFreezeOpen}
+        onOpenChange={setIsRequestFreezeOpen}
+        membershipId={accountData.activeMembership?.id ?? ""}
+        productName={accountData.activeMembership?.product.name ?? ""}
+      />
     </div>
   );
 }

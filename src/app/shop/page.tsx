@@ -1,16 +1,46 @@
 import { Metadata } from "next";
 
-import { auth } from "@/auth";
+import { addDays } from "date-fns";
+
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { USER_ROLES } from "@/lib/types";
 
-import { PublicProductCard } from "./_components/public-product-card";
-import { ShopHeader } from "./_components/shop-header";
+import { AboutSection } from "./_components/about-section";
+import { ClassesSection } from "./_components/classes-section";
+import { FacilitiesSection } from "./_components/facilities-section";
+import { InstructorsSection } from "./_components/instructors-section";
+import { LandingHero } from "./_components/landing-hero";
+import { MembershipPlans } from "./_components/membership-plans";
+import { UpcomingSessions } from "./_components/upcoming-sessions";
 
 export const metadata: Metadata = {
-  title: `${APP_CONFIG.name} - Membership Plans`,
-  description: "Browse our membership plans and join our community today.",
+  title: `${APP_CONFIG.name} - Join Our Community`,
+  description: "Experience world-class CrossFit training, expert coaching, and a supportive community.",
 };
+
+async function getClasses() {
+  try {
+    const classes = await prisma.item.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        duration: true,
+        capacity: true,
+        color: true,
+        image: true,
+      },
+    });
+    return classes;
+  } catch (error) {
+    console.error("Failed to fetch classes:", error);
+    return [];
+  }
+}
 
 async function getActiveProducts() {
   try {
@@ -44,55 +74,105 @@ async function getActiveProducts() {
   }
 }
 
+async function getUpcomingSessions() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = addDays(today, 7);
+
+    const sessions = await prisma.classSession.findMany({
+      where: {
+        date: {
+          gte: today,
+          lte: nextWeek,
+        },
+        status: "SCHEDULED",
+      },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            duration: true,
+            capacity: true,
+            color: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        bookings: {
+          where: { status: { not: "CANCELLED" } },
+          select: { id: true },
+        },
+      },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
+      take: 10,
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      itemId: session.itemId,
+      teacherId: session.teacherId,
+      date: session.date.toISOString().split("T")[0],
+      startTime: session.startTime,
+      endTime: session.endTime,
+      status: session.status,
+      notes: session.notes,
+      item: session.item,
+      teacher: session.teacher,
+      spotsLeft: Math.max(0, session.item.capacity - session.bookings.length),
+      capacity: session.item.capacity,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch sessions:", error);
+    return [];
+  }
+}
+
+async function getInstructors() {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: USER_ROLES.TEACHER,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        email: true,
+        bio: true,
+      },
+      take: 4,
+    });
+    return users.map(({ bio, ...rest }) => ({ ...rest, description: bio }));
+  } catch (error) {
+    console.error("Failed to fetch instructors:", error);
+    return [];
+  }
+}
+
 export default async function ShopPage() {
-  const products = await getActiveProducts();
-  const session = await auth();
+  const [products, sessions, classes, instructors] = await Promise.all([
+    getActiveProducts(),
+    getUpcomingSessions(),
+    getClasses(),
+    getInstructors(),
+  ]);
 
   return (
-    <div className="bg-background min-h-screen">
-      {/* Header */}
-      <ShopHeader session={session} />
-
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">Welcome to {APP_CONFIG.name}</h2>
-          <p className="text-muted-foreground mt-6 text-lg">
-            Join our community and unlock exclusive benefits with our flexible membership plans.
-          </p>
-        </div>
-      </section>
-
-      {/* Products Section */}
-      <section className="container mx-auto px-4 pb-16">
-        {products.length === 0 ? (
-          <div className="text-muted-foreground py-16 text-center">
-            <p className="text-lg">No membership plans available at the moment.</p>
-            <p className="mt-2 text-sm">Please check back later.</p>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8 text-center">
-              <h3 className="text-2xl font-bold">Choose Your Plan</h3>
-              <p className="text-muted-foreground mt-2">Select the membership that best fits your needs</p>
-            </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
-                <PublicProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-muted-foreground text-center text-sm">
-            <p>{APP_CONFIG.copyright}</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    <>
+      <LandingHero />
+      <AboutSection />
+      <ClassesSection classes={classes} />
+      <UpcomingSessions sessions={sessions} />
+      <FacilitiesSection />
+      <InstructorsSection instructors={instructors} />
+      <MembershipPlans products={products} />
+    </>
   );
 }

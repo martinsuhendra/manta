@@ -10,6 +10,8 @@ interface CreateUserData {
   email: string;
   role: string;
   phoneNo?: string;
+  image?: string | null;
+  bio?: string | null;
 }
 
 interface UpdateUserData {
@@ -17,6 +19,8 @@ interface UpdateUserData {
   email?: string;
   role?: string;
   phoneNo?: string;
+  image?: string | null;
+  bio?: string | null;
 }
 
 export function useCreateUser() {
@@ -46,8 +50,9 @@ export function useUpdateUser() {
       const response = await axios.patch(`/api/users/${userId}`, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["member-details", variables.userId] });
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to update user";

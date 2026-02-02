@@ -1,3 +1,13 @@
+export const MEMBERSHIP_STATUS = {
+  ACTIVE: "ACTIVE",
+  FREEZED: "FREEZED",
+  EXPIRED: "EXPIRED",
+  SUSPENDED: "SUSPENDED",
+  PENDING: "PENDING",
+} as const;
+
+export type MembershipStatus = (typeof MEMBERSHIP_STATUS)[keyof typeof MEMBERSHIP_STATUS];
+
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   SUPERADMIN: "SUPERADMIN",
@@ -25,9 +35,9 @@ export function getRoleVariant(role: string): RoleBadgeVariant {
     case USER_ROLES.ADMIN:
       return "default";
     case USER_ROLES.TEACHER:
-      return "secondary";
-    case USER_ROLES.MEMBER:
       return "success";
+    case USER_ROLES.MEMBER:
+      return "secondary";
     default:
       return "outline";
   }

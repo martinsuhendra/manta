@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react";
 
-import { User } from "@/app/(main)/dashboard/users/_components/schema";
+import { Member } from "@/app/(main)/dashboard/users/_components/schema";
 
 interface UseUsersReturn {
-  users: User[];
+  users: Member[];
   loading: boolean;
   error: string | null;
   refetch: () => void;
 }
 
 export function useUsers(): UseUsersReturn {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

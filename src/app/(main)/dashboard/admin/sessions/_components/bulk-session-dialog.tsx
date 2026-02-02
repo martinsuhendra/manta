@@ -479,24 +479,18 @@ export function BulkSessionDialog({ open, onOpenChange, onSuccess }: BulkSession
                                               }}
                                             />
                                           </FormControl>
-                                          <FormLabel className="flex-1 cursor-pointer">
-                                            <div className="flex items-center gap-2">
-                                              {item.color && (
-                                                <div
-                                                  className="h-4 w-4 rounded-full"
-                                                  style={{ backgroundColor: item.color }}
-                                                />
+                                          <FormLabel className="flex-1 cursor-pointer space-y-1">
+                                            <div className="flex flex-col gap-0.5">
+                                              <h5 className="font-medium">{item.name}</h5>
+                                              <p className="text-muted-foreground mt-1 text-sm">{item.duration} min</p>
+                                              {item.schedules && item.schedules.length > 0 ? (
+                                                <p className="text-muted-foreground text-xs">
+                                                  {item.schedules.length} schedule(s) configured
+                                                </p>
+                                              ) : (
+                                                <p className="text-muted-foreground text-xs">—</p>
                                               )}
-                                              <span className="font-medium">{item.name}</span>
-                                              <span className="text-muted-foreground text-sm">
-                                                ({item.duration} min)
-                                              </span>
                                             </div>
-                                            {item.schedules && item.schedules.length > 0 && (
-                                              <div className="text-muted-foreground mt-1 text-xs">
-                                                {item.schedules.length} schedule(s) configured
-                                              </div>
-                                            )}
                                           </FormLabel>
                                         </FormItem>
                                       );

@@ -90,6 +90,7 @@ ngrok http 3000
 ## Features Implemented
 
 ### 1. Purchase Flow
+
 - User clicks "Purchase Now" on a membership product
 - System creates transaction and membership with PENDING status
 - Midtrans Snap token is generated
@@ -97,12 +98,14 @@ ngrok http 3000
 - User completes payment in the popup
 
 ### 2. Reopen Pending Payments
+
 - Users can view pending transactions in "My Account"
 - "Continue Payment" button appears for PENDING transactions
 - Clicking the button reopens the Snap payment popup
 - Snap tokens are cached for 24 hours (Midtrans token expiry)
 
 ### 3. Webhook Handler
+
 - Receives payment notifications from Midtrans
 - Verifies signature using SHA512 hash
 - Validates transaction status with Midtrans API
@@ -110,6 +113,7 @@ ngrok http 3000
 - Sends email notifications on successful payment
 
 ### 4. Security Features
+
 - Signature verification on all webhook calls
 - Transaction status verification with Midtrans API
 - Idempotency handling for duplicate webhooks
@@ -119,12 +123,12 @@ ngrok http 3000
 ## Payment Flow Diagram
 
 ```
-User → Click Purchase → Create Transaction (PENDING) 
+User → Click Purchase → Create Transaction (PENDING)
                      → Create Membership (PENDING)
                      → Generate Snap Token
                      → Open Snap Popup
                      → Complete Payment
-                     
+
 Midtrans → Send Webhook → Verify Signature
                         → Verify Status with API
                         → Update Transaction (COMPLETED)
@@ -134,24 +138,24 @@ Midtrans → Send Webhook → Verify Signature
 
 ## Transaction Status Mapping
 
-| Midtrans Status | Internal Status | Membership Action |
-|----------------|-----------------|-------------------|
-| capture, settlement | COMPLETED | Activate |
-| pending | PENDING | No change |
-| deny | FAILED | Suspend |
-| cancel | CANCELLED | Suspend |
-| expire | EXPIRED | Suspend |
-| refund, partial_refund | REFUNDED | Suspend |
+| Midtrans Status        | Internal Status | Membership Action |
+| ---------------------- | --------------- | ----------------- |
+| capture, settlement    | COMPLETED       | Activate          |
+| pending                | PENDING         | No change         |
+| deny                   | FAILED          | Suspend           |
+| cancel                 | CANCELLED       | Suspend           |
+| expire                 | EXPIRED         | Suspend           |
+| refund, partial_refund | REFUNDED        | Suspend           |
 
 ## Testing
 
 ### Test Cards (Sandbox Only)
 
-| Card Number | 3D Secure | Result |
-|-------------|-----------|--------|
-| 4811 1111 1111 1114 | Yes | Success |
-| 4911 1111 1111 1113 | Yes | Challenge by FDS |
-| 4411 1111 1111 1118 | No | Success |
+| Card Number         | 3D Secure | Result           |
+| ------------------- | --------- | ---------------- |
+| 4811 1111 1111 1114 | Yes       | Success          |
+| 4911 1111 1111 1113 | Yes       | Challenge by FDS |
+| 4411 1111 1111 1118 | No        | Success          |
 
 CVV: Any 3 digits  
 Expiry: Any future date  
@@ -187,24 +191,28 @@ OTP: 112233
 ## Troubleshooting
 
 ### Snap Popup Not Opening
+
 - Check browser console for errors
 - Verify `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` is set
 - Ensure Snap.js is loaded (check Network tab)
 - Check for CORS issues
 
 ### Webhook Not Received
+
 - Verify webhook URL is correct in Midtrans dashboard
 - Check webhook URL is publicly accessible (not localhost)
 - Review server logs for errors
 - Test webhook with Postman
 
 ### Payment Success but Membership Not Activated
+
 - Check webhook logs
 - Verify signature verification passed
 - Check transaction status in database
 - Review email logs
 
 ### Invalid Signature Error
+
 - Verify `MIDTRANS_SERVER_KEY` is correct
 - Check notification payload format
 - Review signature calculation logic

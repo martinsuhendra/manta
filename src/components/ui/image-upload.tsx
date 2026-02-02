@@ -12,9 +12,10 @@ interface ImageUploadProps {
   onChange: (value?: string) => void;
   disabled?: boolean;
   className?: string;
+  aspectRatio?: "video" | "square";
 }
 
-export function ImageUpload({ value, onChange, disabled, className }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, className, aspectRatio = "video" }: ImageUploadProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +54,12 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
       />
 
       {value ? (
-        <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+        <div
+          className={cn(
+            "relative w-full overflow-hidden rounded-lg border bg-muted",
+            aspectRatio === "square" ? "aspect-square" : "aspect-video"
+          )}
+        >
           <Image
             src={value}
             alt="Product image"
@@ -75,7 +81,8 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
         <div
           onClick={handleClick}
           className={cn(
-            "flex aspect-video w-full cursor-pointer items-center justify-center rounded-lg border border-dashed bg-muted/40 hover:bg-muted/60 transition-colors",
+            "flex w-full cursor-pointer items-center justify-center rounded-lg border border-dashed bg-muted/40 transition-colors hover:bg-muted/60",
+            aspectRatio === "square" ? "aspect-square" : "aspect-video",
             disabled && "cursor-not-allowed opacity-50"
           )}
         >

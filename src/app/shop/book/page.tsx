@@ -5,8 +5,6 @@ import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { USER_ROLES } from "@/lib/types";
 
-import { ShopHeader } from "../_components/shop-header";
-
 import { BookPageContent } from "./_components/book-page-content";
 
 export const metadata: Metadata = {
@@ -25,10 +23,5 @@ export default async function BookPage() {
     redirect("/shop");
   }
 
-  return (
-    <div className="bg-background min-h-screen">
-      <ShopHeader session={session} />
-      <BookPageContent />
-    </div>
-  );
+  return <BookPageContent />;
 }

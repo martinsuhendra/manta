@@ -25,7 +25,7 @@ export default function AdminMembershipsPage() {
   }
 
   return (
-    <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN]}>
+    <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]}>
       <div className="@container/main flex flex-col gap-4 md:gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Memberships</h1>

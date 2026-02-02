@@ -90,6 +90,17 @@ export function MembershipDetailDrawer({
     },
   });
 
+  const { data: freezeHistory = [] } = useQuery({
+    queryKey: ["admin-freeze-requests", "all", membership?.id ?? ""],
+    queryFn: async () => {
+      if (!membership?.id) return [];
+      const response = await fetch(`/api/admin/freeze-requests?membershipId=${membership.id}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!membership?.id && open && mode === "view",
+  });
+
   // Fetch users (only MEMBER role) for add mode
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["users", "MEMBER"],
@@ -116,7 +127,7 @@ export function MembershipDetailDrawer({
   React.useEffect(() => {
     if (mode === "edit" && membership && open) {
       form.reset({
-        status: membership.status as "ACTIVE" | "EXPIRED" | "SUSPENDED" | "PENDING",
+        status: membership.status as "ACTIVE" | "FREEZED" | "EXPIRED" | "SUSPENDED" | "PENDING",
         expiredAt: format(new Date(membership.expiredAt), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
       });
     } else if (mode === "add" && open) {
@@ -228,13 +239,15 @@ export function MembershipDetailDrawer({
   const statusVariant =
     membership?.status === "ACTIVE"
       ? "success"
-      : membership?.status === "PENDING"
-        ? "warning"
-        : membership?.status === "EXPIRED"
-          ? "destructive"
-          : membership?.status === "SUSPENDED"
-            ? "secondary"
-            : "outline";
+      : membership?.status === "FREEZED"
+        ? "secondary"
+        : membership?.status === "PENDING"
+          ? "warning"
+          : membership?.status === "EXPIRED"
+            ? "destructive"
+            : membership?.status === "SUSPENDED"
+              ? "secondary"
+              : "outline";
 
   const getTitle = () => {
     if (mode === "add") return "Add New Membership";
@@ -326,8 +339,66 @@ export function MembershipDetailDrawer({
                         {format(new Date(membership.expiredAt), "MMM dd, yyyy 'at' HH:mm")}
                       </div>
                     </div>
+                    {membership.status === "FREEZED" &&
+                      (() => {
+                        const activeFreeze = freezeHistory.find(
+                          (fr: { status: string; freezeEndDate: string | null }) =>
+                            fr.status === "APPROVED" && fr.freezeEndDate && new Date(fr.freezeEndDate) > new Date(),
+                        );
+                        return activeFreeze ? (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground font-medium">Freeze Period:</span>
+                            <div>
+                              {format(new Date(activeFreeze.freezeStartDate), "MMM dd, yyyy")} –{" "}
+                              {format(new Date(activeFreeze.freezeEndDate), "MMM dd, yyyy")}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                   </div>
                 </div>
+
+                {freezeHistory.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold">Freeze History</h3>
+                      <div className="space-y-2">
+                        {freezeHistory.map(
+                          (fr: {
+                            id: string;
+                            reason: string;
+                            status: string;
+                            freezeStartDate: string | null;
+                            freezeEndDate: string | null;
+                            createdAt: string;
+                            requestedBy: { name: string | null };
+                            approvedBy: { name: string | null } | null;
+                          }) => (
+                            <div key={fr.id} className="border-input rounded-md border p-3 text-sm">
+                              <div className="flex justify-between">
+                                <span className="font-medium capitalize">{fr.reason.toLowerCase()}</span>
+                                <span className="text-muted-foreground capitalize">
+                                  {fr.status.replace(/_/g, " ").toLowerCase()}
+                                </span>
+                              </div>
+                              {fr.freezeStartDate && fr.freezeEndDate && (
+                                <div className="text-muted-foreground mt-1">
+                                  {format(new Date(fr.freezeStartDate), "MMM dd, yyyy")} –{" "}
+                                  {format(new Date(fr.freezeEndDate), "MMM dd, yyyy")}
+                                </div>
+                              )}
+                              <div className="text-muted-foreground mt-1 text-xs">
+                                Requested {format(new Date(fr.createdAt), "MMM dd, yyyy")}
+                                {fr.approvedBy?.name && ` • Approved by ${fr.approvedBy.name}`}
+                              </div>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <Separator />
 
@@ -482,6 +553,7 @@ export function MembershipDetailDrawer({
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="ACTIVE">Active</SelectItem>
+                            <SelectItem value="FREEZED">Frozen</SelectItem>
                             <SelectItem value="PENDING">Pending</SelectItem>
                             <SelectItem value="EXPIRED">Expired</SelectItem>
                             <SelectItem value="SUSPENDED">Suspended</SelectItem>

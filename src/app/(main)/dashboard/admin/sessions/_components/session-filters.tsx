@@ -2,64 +2,62 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-import { Filter, X } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarIcon, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useItems } from "@/hooks/use-items-query";
 import { useTeachers } from "@/hooks/use-users-query";
+import { cn } from "@/lib/utils";
 
 import { SessionFilter } from "./schema";
 
 interface SessionFiltersProps {
+  appliedFilters: SessionFilter;
   onFilterChange: (filters: SessionFilter) => void;
 }
 
-/* eslint-disable-next-line complexity */
-export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
-  const [filters, setFilters] = useState<SessionFilter>({});
+export function SessionFilters({ appliedFilters, onFilterChange }: SessionFiltersProps) {
+  const [draftFilters, setDraftFilters] = useState<SessionFilter>(appliedFilters);
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: items = [] } = useItems();
   const { data: teachers = [] } = useTeachers();
 
-  const updateFilter = (key: keyof SessionFilter, value: string | undefined) => {
-    // Convert "all" values to undefined (no filter)
+  useEffect(() => {
+    if (isOpen) {
+      setDraftFilters(appliedFilters);
+    }
+  }, [isOpen, appliedFilters]);
+
+  const updateDraft = (key: keyof SessionFilter, value: string | undefined) => {
     const filterValue = value === "all" ? undefined : value;
-
-    const newFilters = {
-      ...filters,
-      [key]: filterValue || undefined,
-    };
-
-    // Remove undefined values
+    const newFilters = { ...draftFilters, [key]: filterValue || undefined };
     Object.keys(newFilters).forEach((k) => {
       if (newFilters[k as keyof SessionFilter] === undefined) {
         delete newFilters[k as keyof SessionFilter];
       }
     });
-
-    setFilters(newFilters);
-    onFilterChange(newFilters);
+    setDraftFilters(newFilters);
   };
 
-  const clearFilters = () => {
-    setFilters({});
-    onFilterChange({});
+  const handleApply = () => {
+    onFilterChange(draftFilters);
+    setIsOpen(false);
   };
 
-  const clearFilter = (key: keyof SessionFilter) => {
-    updateFilter(key, undefined);
+  const handleClearAll = () => {
+    setDraftFilters({});
   };
 
-  // Count active filters
-  const activeFilterCount = Object.values(filters).filter((value) => value !== undefined && value !== "").length;
+  const activeFilterCount = Object.values(appliedFilters).filter((value) => value !== undefined && value !== "").length;
 
   return (
     <div className="flex items-center gap-2">
@@ -78,12 +76,12 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80" align="start">
+        <PopoverContent className="w-[420px]" align="start">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">Filter Sessions</h4>
-              {activeFilterCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+              {Object.keys(draftFilters).length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleClearAll}>
                   Clear all
                 </Button>
               )}
@@ -92,33 +90,83 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label htmlFor="start-date" className="text-xs">
-                  Start Date
-                </Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={filters.startDate || ""}
-                  onChange={(e) => updateFilter("startDate", e.target.value)}
-                />
+                <Label className="text-xs">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !draftFilters.startDate && "text-muted-foreground",
+                      )}
+                    >
+                      {draftFilters.startDate ? (
+                        format(new Date(draftFilters.startDate + "T00:00:00"), "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={draftFilters.startDate ? new Date(draftFilters.startDate + "T00:00:00") : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, "0");
+                          const day = String(date.getDate()).padStart(2, "0");
+                          updateDraft("startDate", `${year}-${month}-${day}`);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="end-date" className="text-xs">
-                  End Date
-                </Label>
-                <Input
-                  id="end-date"
-                  type="date"
-                  value={filters.endDate || ""}
-                  onChange={(e) => updateFilter("endDate", e.target.value)}
-                />
+                <Label className="text-xs">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !draftFilters.endDate && "text-muted-foreground",
+                      )}
+                    >
+                      {draftFilters.endDate ? (
+                        format(new Date(draftFilters.endDate + "T00:00:00"), "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={draftFilters.endDate ? new Date(draftFilters.endDate + "T00:00:00") : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, "0");
+                          const day = String(date.getDate()).padStart(2, "0");
+                          updateDraft("endDate", `${year}-${month}-${day}`);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
             {/* Item Filter */}
             <div className="space-y-1">
               <Label className="text-xs">Class/Activity</Label>
-              <Select value={filters.itemId || "all"} onValueChange={(value) => updateFilter("itemId", value)}>
+              <Select value={draftFilters.itemId || "all"} onValueChange={(value) => updateDraft("itemId", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
@@ -136,7 +184,10 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
             {/* Teacher Filter */}
             <div className="space-y-1">
               <Label className="text-xs">Teacher</Label>
-              <Select value={filters.teacherId || "all"} onValueChange={(value) => updateFilter("teacherId", value)}>
+              <Select
+                value={draftFilters.teacherId || "all"}
+                onValueChange={(value) => updateDraft("teacherId", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All teachers" />
                 </SelectTrigger>
@@ -155,7 +206,7 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
             {/* Status Filter */}
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
-              <Select value={filters.status || "all"} onValueChange={(value) => updateFilter("status", value)}>
+              <Select value={draftFilters.status || "all"} onValueChange={(value) => updateDraft("status", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
@@ -167,101 +218,18 @@ export function SessionFilters({ onFilterChange }: SessionFiltersProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleApply}>
+                Apply Filters
+              </Button>
+            </div>
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Active Filter Badges */}
-      {activeFilterCount > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {filters.startDate && (
-            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
-              <span>From: {filters.startDate}</span>
-              <button
-                type="button"
-                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  clearFilter("startDate");
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          {filters.endDate && (
-            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
-              <span>To: {filters.endDate}</span>
-              <button
-                type="button"
-                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  clearFilter("endDate");
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          {filters.itemId && (
-            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
-              <span>{items.find((item) => item.id === filters.itemId)?.name || "Unknown Item"}</span>
-              <button
-                type="button"
-                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  clearFilter("itemId");
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          {filters.teacherId && (
-            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
-              <span>
-                {filters.teacherId === "unassigned"
-                  ? "Unassigned"
-                  : teachers.find((teacher) => teacher.id === filters.teacherId)?.name ||
-                    teachers.find((teacher) => teacher.id === filters.teacherId)?.email ||
-                    "Unknown Teacher"}
-              </span>
-              <button
-                type="button"
-                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  clearFilter("teacherId");
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          {filters.status && (
-            <div className="bg-secondary text-secondary-foreground flex items-center gap-2 rounded-full px-3 py-1 text-sm">
-              <span>{filters.status}</span>
-              <button
-                type="button"
-                className="hover:bg-secondary/80 flex h-4 w-4 items-center justify-center rounded-full transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  clearFilter("status");
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

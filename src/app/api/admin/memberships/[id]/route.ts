@@ -8,8 +8,7 @@ import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
 const updateMembershipSchema = z.object({
-  status: z.enum(["ACTIVE", "EXPIRED", "SUSPENDED", "PENDING"]).optional(),
-  remainingQuota: z.number().min(0).optional(),
+  status: z.enum(["ACTIVE", "FREEZED", "EXPIRED", "SUSPENDED", "PENDING"]).optional(),
   expiredAt: z.string().datetime().optional(),
 });
 
@@ -21,7 +20,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -42,10 +41,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (validatedData.status) {
       updateData.status = validatedData.status;
-    }
-
-    if (validatedData.remainingQuota !== undefined) {
-      updateData.remainingQuota = validatedData.remainingQuota;
     }
 
     if (validatedData.expiredAt) {
@@ -102,7 +97,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -117,7 +117,23 @@ async function getAccountData() {
     }
 
     // Format the response
-    const activeMembership = user.memberships.find((m) => m.status === "ACTIVE" && new Date(m.expiredAt) > new Date());
+    const now = new Date();
+    const activeMembership = user.memberships.find((m) => m.status === "ACTIVE" && new Date(m.expiredAt) > now);
+    const frozenMembership = user.memberships.find((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
+
+    const freezeRequests = await prisma.membershipFreezeRequest.findMany({
+      where: { requestedById: user.id },
+      include: {
+        membership: {
+          select: {
+            id: true,
+            status: true,
+            product: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     return {
       user: {
@@ -152,6 +168,31 @@ async function getAccountData() {
               : null,
           }
         : null,
+      frozenMembership: frozenMembership
+        ? {
+            id: frozenMembership.id,
+            status: frozenMembership.status,
+            joinDate: frozenMembership.joinDate.toISOString(),
+            expiredAt: frozenMembership.expiredAt.toISOString(),
+            product: {
+              id: frozenMembership.product.id,
+              name: frozenMembership.product.name,
+              price: Number(frozenMembership.product.price),
+              validDays: frozenMembership.product.validDays,
+            },
+          }
+        : null,
+      freezeRequests: freezeRequests.map((fr) => ({
+        id: fr.id,
+        membershipId: fr.membershipId,
+        reason: fr.reason,
+        reasonDetails: fr.reasonDetails,
+        status: fr.status,
+        freezeStartDate: fr.freezeStartDate?.toISOString() ?? null,
+        freezeEndDate: fr.freezeEndDate?.toISOString() ?? null,
+        createdAt: fr.createdAt.toISOString(),
+        membership: fr.membership,
+      })),
       allMemberships: user.memberships.map((m) => ({
         id: m.id,
         status: m.status,

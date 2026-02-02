@@ -1,4 +1,4 @@
-import { User } from "@/app/(main)/dashboard/users/_components/schema";
+import { Member } from "@/app/(main)/dashboard/users/_components/schema";
 
 export const userQueryKeys = {
   all: ["users"] as const,
@@ -8,7 +8,7 @@ export const userQueryKeys = {
   detail: (id: string) => [...userQueryKeys.details(), id] as const,
 };
 
-export async function fetchUsers(): Promise<User[]> {
+export async function fetchUsers(): Promise<Member[]> {
   const response = await fetch("/api/users");
 
   if (!response.ok) {
@@ -18,7 +18,7 @@ export async function fetchUsers(): Promise<User[]> {
   return response.json();
 }
 
-export async function fetchUser(id: string): Promise<User> {
+export async function fetchUser(id: string): Promise<Member> {
   const response = await fetch(`/api/users/${id}`);
 
   if (!response.ok) {
@@ -28,7 +28,7 @@ export async function fetchUser(id: string): Promise<User> {
   return response.json();
 }
 
-export async function createUser(userData: Partial<User>): Promise<User> {
+export async function createUser(userData: Partial<Member>): Promise<Member> {
   const response = await fetch("/api/users", {
     method: "POST",
     headers: {
@@ -45,7 +45,7 @@ export async function createUser(userData: Partial<User>): Promise<User> {
   return response.json();
 }
 
-export async function updateUser(id: string, userData: Partial<User>): Promise<User> {
+export async function updateUser(id: string, userData: Partial<Member>): Promise<Member> {
   const response = await fetch(`/api/users/${id}`, {
     method: "PATCH",
     headers: {

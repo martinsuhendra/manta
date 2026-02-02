@@ -12,7 +12,14 @@ const createUserSchema = z.object({
   role: z
     .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
     .default(DEFAULT_USER_ROLE),
-  phoneNo: z.string().optional(),
+  phoneNo: z
+    .string()
+    .min(1, "Phone number is required")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be at most 15 digits")
+    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  image: z.string().nullable().optional(),
+  bio: z.string().max(2000).nullable().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -35,6 +42,8 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         phoneNo: true,
+        image: true,
+        bio: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -89,6 +98,8 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
+        image: validatedData.image ?? undefined,
+        bio: validatedData.bio ?? undefined,
       },
       include: {
         _count: {
