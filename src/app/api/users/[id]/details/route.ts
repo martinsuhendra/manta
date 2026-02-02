@@ -26,6 +26,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         email: true,
         role: true,
         phoneNo: true,
+        image: true,
+        bio: true,
         createdAt: true,
         updatedAt: true,
         memberships: {
@@ -93,6 +95,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           orderBy: {
             createdAt: "desc",
           },
+        },
+        classSessions: {
+          where: {
+            date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+            status: "SCHEDULED",
+          },
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+                duration: true,
+                capacity: true,
+                color: true,
+              },
+            },
+            _count: {
+              select: { bookings: true },
+            },
+          },
+          orderBy: [{ date: "asc" }, { startTime: "asc" }],
+          take: 50,
         },
         _count: {
           select: {

@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 import { CheckCircle2 } from "lucide-react";
 
 import { APP_CONFIG } from "@/config/app-config";
@@ -25,7 +23,7 @@ export function AboutSection() {
               <h2 className="text-base leading-7 font-semibold text-blue-600">About Us</h2>
               <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">More Than Just a Gym</p>
               <p className="text-muted-foreground mt-6 text-lg leading-8">
-                At {APP_CONFIG.name}, we believe in the transformative power of fitness. Founded in 2024, our mission
+                At {APP_CONFIG.name}, we believe in the transformative power of fitness. Founded in 2026, our mission
                 has been to create a space where everyone—from competitive athletes to fitness beginners—can push their
                 limits and achieve their goals.
               </p>
@@ -39,9 +37,9 @@ export function AboutSection() {
               </div>
             </div>
           </div>
-          <div className="relative">
-            <div className="bg-muted absolute -inset-4 -z-10 rounded-xl opacity-50 blur-xl" />
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gray-900 shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0">
+          <div className="relative min-w-0 overflow-hidden">
+            <div className="bg-muted absolute inset-0 -z-10 rounded-xl opacity-50 blur-xl" />
+            <div className="relative aspect-[4/3] w-full max-w-full overflow-hidden rounded-xl bg-gray-900 shadow-xl ring-1 ring-gray-400/10">
               <div className="flex h-full items-center justify-center text-gray-500">
                 {/* Placeholder for gym image */}
                 <span className="text-lg">Gym Interior Image Placeholder</span>

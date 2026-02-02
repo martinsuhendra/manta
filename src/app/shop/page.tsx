@@ -2,23 +2,45 @@ import { Metadata } from "next";
 
 import { addDays } from "date-fns";
 
-import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
 import { AboutSection } from "./_components/about-section";
+import { ClassesSection } from "./_components/classes-section";
 import { FacilitiesSection } from "./_components/facilities-section";
 import { InstructorsSection } from "./_components/instructors-section";
 import { LandingHero } from "./_components/landing-hero";
 import { MembershipPlans } from "./_components/membership-plans";
-import { ShopHeaderWrapper } from "./_components/shop-header-wrapper";
 import { UpcomingSessions } from "./_components/upcoming-sessions";
 
 export const metadata: Metadata = {
   title: `${APP_CONFIG.name} - Join Our Community`,
   description: "Experience world-class CrossFit training, expert coaching, and a supportive community.",
 };
+
+async function getClasses() {
+  try {
+    const classes = await prisma.item.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        duration: true,
+        capacity: true,
+        color: true,
+        image: true,
+      },
+    });
+    return classes;
+  } catch (error) {
+    console.error("Failed to fetch classes:", error);
+    return [];
+  }
+}
 
 async function getActiveProducts() {
   try {
@@ -69,14 +91,18 @@ async function getUpcomingSessions() {
       include: {
         item: {
           select: {
+            id: true,
             name: true,
+            duration: true,
             capacity: true,
             color: true,
           },
         },
         teacher: {
           select: {
+            id: true,
             name: true,
+            email: true,
           },
         },
         bookings: {
@@ -90,12 +116,17 @@ async function getUpcomingSessions() {
 
     return sessions.map((session) => ({
       id: session.id,
-      date: session.date.toISOString(),
+      itemId: session.itemId,
+      teacherId: session.teacherId,
+      date: session.date.toISOString().split("T")[0],
       startTime: session.startTime,
       endTime: session.endTime,
+      status: session.status,
+      notes: session.notes,
       item: session.item,
       teacher: session.teacher,
       spotsLeft: Math.max(0, session.item.capacity - session.bookings.length),
+      capacity: session.item.capacity,
     }));
   } catch (error) {
     console.error("Failed to fetch sessions:", error);
@@ -105,7 +136,7 @@ async function getUpcomingSessions() {
 
 async function getInstructors() {
   try {
-    const instructors = await prisma.user.findMany({
+    const users = await prisma.user.findMany({
       where: {
         role: USER_ROLES.TEACHER,
       },
@@ -114,10 +145,11 @@ async function getInstructors() {
         name: true,
         image: true,
         email: true,
+        bio: true,
       },
       take: 4,
     });
-    return instructors;
+    return users.map(({ bio, ...rest }) => ({ ...rest, description: bio }));
   } catch (error) {
     console.error("Failed to fetch instructors:", error);
     return [];
@@ -125,52 +157,22 @@ async function getInstructors() {
 }
 
 export default async function ShopPage() {
-  const [products, sessions, instructors, session] = await Promise.all([
+  const [products, sessions, classes, instructors] = await Promise.all([
     getActiveProducts(),
     getUpcomingSessions(),
+    getClasses(),
     getInstructors(),
-    auth(),
   ]);
 
   return (
-    <div className="bg-background min-h-screen">
-      {/* Header */}
-      <ShopHeaderWrapper session={session} />
-
-      <main>
-        <LandingHero />
-        <AboutSection />
-        <UpcomingSessions sessions={sessions} />
-        <FacilitiesSection />
-        <InstructorsSection instructors={instructors} />
-        <MembershipPlans products={products} />
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 bg-slate-950 py-12 text-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-            <div className="text-center md:text-left">
-              <h3 className="text-lg font-bold">{APP_CONFIG.name}</h3>
-              <p className="text-muted-foreground mt-2 text-sm">Forging elite fitness since 2024.</p>
-            </div>
-            <div className="flex gap-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-white">
-                Terms
-              </a>
-              <a href="#" className="hover:text-white">
-                Privacy
-              </a>
-              <a href="#" className="hover:text-white">
-                Contact
-              </a>
-            </div>
-          </div>
-          <div className="mt-8 text-center text-xs text-gray-500">
-            <p>{APP_CONFIG.copyright}</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    <>
+      <LandingHero />
+      <AboutSection />
+      <ClassesSection classes={classes} />
+      <UpcomingSessions sessions={sessions} />
+      <FacilitiesSection />
+      <InstructorsSection instructors={instructors} />
+      <MembershipPlans products={products} />
+    </>
   );
 }

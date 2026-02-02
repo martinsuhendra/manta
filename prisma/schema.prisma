@@ -46,6 +46,7 @@ model User {
   email         String?        @unique(map: "user_email_idx")
   emailVerified DateTime?      @db.Timestamp(6)
   image         String?
+  bio           String?        // Teacher profile description
   password      String?
   role          String         @default("MEMBER")
   createdAt     DateTime       @default(now()) @db.Timestamp(6)

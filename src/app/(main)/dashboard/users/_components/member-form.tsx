@@ -7,8 +7,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { USER_ROLES, USER_ROLE_LABELS, DEFAULT_USER_ROLE } from "@/lib/types";
 
 import { getAvailableRoles } from "./member-detail-drawer-utils";
@@ -26,6 +28,8 @@ const formSchema = z.object({
     .min(10, "Phone number must be at least 10 digits")
     .max(15, "Phone number must be at most 15 digits")
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  image: z.string().nullable().optional(),
+  bio: z.string().max(2000).nullable().optional(),
 });
 
 export type FormData = z.infer<typeof formSchema>;
@@ -40,6 +44,7 @@ interface MemberFormProps {
 }
 
 export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, onSubmit, isPending }: MemberFormProps) {
+  const memberWithExtras = member as Member & { image?: string | null; bio?: string | null };
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,17 +52,22 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
       email: member?.email ?? "",
       role: member?.role ?? DEFAULT_USER_ROLE,
       phoneNo: member?.phoneNo ?? "",
+      image: memberWithExtras?.image ?? null,
+      bio: memberWithExtras?.bio ?? null,
     },
   });
 
   // Reset form when member or mode changes
   React.useEffect(() => {
     if (mode === "edit" && member) {
+      const m = member as Member & { image?: string | null; bio?: string | null };
       form.reset({
         name: member.name ?? "",
         email: member.email ?? "",
         role: member.role,
         phoneNo: member.phoneNo ?? "",
+        image: m.image ?? null,
+        bio: m.bio ?? null,
       });
     } else if (mode === "add") {
       form.reset({
@@ -65,6 +75,8 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         email: "",
         role: DEFAULT_USER_ROLE,
         phoneNo: "",
+        image: null,
+        bio: null,
       });
     }
   }, [mode, member, form]);
@@ -172,6 +184,49 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
             </FormItem>
           )}
         />
+
+        {(form.watch("role") === USER_ROLES.TEACHER || member?.role === USER_ROLES.TEACHER) && (
+          <>
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Profile Picture</FormLabel>
+                  <FormControl>
+                    <ImageUpload
+                      value={field.value ?? undefined}
+                      onChange={(v) => field.onChange(v ?? null)}
+                      aspectRatio="square"
+                      className="max-w-[200px]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description / Bio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Tell members about your background, specialties, and teaching style..."
+                      className="min-h-[100px] resize-y"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <p className="text-muted-foreground text-xs">Max 2000 characters. Shown on your profile.</p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
       </form>
     </Form>
   );

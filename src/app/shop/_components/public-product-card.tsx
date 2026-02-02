@@ -58,7 +58,12 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isPurchasing, setIsPurchasing] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const { data: session } = useSession();
+
+  // Defer Dialog rendering until after mount to avoid Radix useId() hydration mismatch
+  // when multiple Dialogs render in a grid (different IDs on server vs client)
+  React.useEffect(() => setMounted(true), []);
   const router = useRouter();
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
 
@@ -214,7 +219,11 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         )}
       </CardContent>
       <CardFooter>
-        {!session ? (
+        {!mounted ? (
+          <Button className="w-full" variant="default" disabled>
+            Purchase Now
+          </Button>
+        ) : !session ? (
           <SignUpDialog>
             <Button className="w-full" variant="default">
               Purchase Now

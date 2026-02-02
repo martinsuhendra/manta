@@ -14,10 +14,10 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
-import { createMembershipHistoryColumns } from "../../_components/membership-history-columns";
+import { createAttendanceHistoryColumns } from "../../_components/attendance-history-columns";
 import { MemberDetails } from "../../_components/schema";
 
-export default function MemberMembershipsPage() {
+export default function MemberSessionsPage() {
   const params = useParams();
   const memberId = params.id as string;
 
@@ -34,10 +34,10 @@ export default function MemberMembershipsPage() {
     },
   });
 
-  const columns = React.useMemo(() => createMembershipHistoryColumns(), []);
+  const columns = React.useMemo(() => createAttendanceHistoryColumns(), []);
 
   const table = useDataTableInstance({
-    data: memberDetails?.memberships ?? [],
+    data: memberDetails?.bookings ?? [],
     columns,
     getRowId: (row) => row.id,
   });
@@ -53,7 +53,7 @@ export default function MemberMembershipsPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-destructive text-lg font-semibold">Error loading memberships</p>
+        <p className="text-destructive text-lg font-semibold">Error loading attendance</p>
         <p className="text-muted-foreground mt-2 text-sm">{error.message}</p>
       </div>
     );
@@ -64,14 +64,14 @@ export default function MemberMembershipsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/members">
+            <Link href="/dashboard/users">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Membership History</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Attendance History</h1>
             <p className="text-muted-foreground">
-              {memberDetails?.name ?? "Member"}&apos;s complete membership history
+              {memberDetails?.name ?? "Member"}&apos;s complete attendance history
             </p>
           </div>
         </div>

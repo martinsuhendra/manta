@@ -3,21 +3,23 @@
 import { useState } from "react";
 
 import { format } from "date-fns";
-import { Loader2, Mail, Phone, Calendar, Shield, KeyRound } from "lucide-react";
+import { Loader2, Mail, Phone, Calendar, Shield, KeyRound, User } from "lucide-react";
 import { toast } from "sonner";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
+import { USER_ROLES, USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
-import { Member } from "./schema";
+import { Member, MemberDetails } from "./schema";
 
 interface OverviewTabProps {
   member: Member;
+  memberDetails?: MemberDetails | (MemberDetails & { classSessions?: unknown[] }) | null;
 }
 
-export function OverviewTab({ member }: OverviewTabProps) {
+export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
   const [isSending, setIsSending] = useState(false);
 
   const handleSendResetLink = async () => {
@@ -42,8 +44,38 @@ export function OverviewTab({ member }: OverviewTabProps) {
       setIsSending(false);
     }
   };
+  const isTeacher = member.role === USER_ROLES.TEACHER;
+  const teacherDetails = isTeacher && memberDetails && "image" in memberDetails ? memberDetails : null;
+  const image = teacherDetails?.image ?? (member as Member & { image?: string }).image;
+  const bio = teacherDetails?.bio ?? (member as Member & { bio?: string }).bio;
+
   return (
     <div className="space-y-6">
+      {isTeacher && (image || bio) && (
+        <>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Profile</h3>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              {image && (
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={image} alt={member.name ?? "Profile"} />
+                  <AvatarFallback>
+                    <User className="h-12 w-12" />
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {bio && (
+                <div className="flex-1">
+                  <label className="text-muted-foreground text-sm font-medium">About</label>
+                  <p className="mt-1 text-base whitespace-pre-wrap">{bio}</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <Separator />
+        </>
+      )}
+
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Basic Information</h3>
         <div className="space-y-4">

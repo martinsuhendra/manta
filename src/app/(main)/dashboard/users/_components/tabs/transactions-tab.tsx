@@ -71,10 +71,7 @@ export function TransactionsTab({ transactions, memberId }: TransactionsTabProps
         ))}
       </div>
 
-      <SeeHistoryButton
-        href={`/dashboard/members/${memberId}/transactions`}
-        show={transactions.length > RECENT_LIMIT}
-      />
+      <SeeHistoryButton href={`/dashboard/users/${memberId}/transactions`} show={transactions.length > RECENT_LIMIT} />
     </div>
   );
 }

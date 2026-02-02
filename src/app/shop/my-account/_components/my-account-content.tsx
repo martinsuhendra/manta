@@ -309,34 +309,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
 
   return (
     <div className="bg-background min-h-screen">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/shop" className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">{APP_CONFIG.name}</h1>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/shop">
-              <Button variant="ghost" size="sm">
-                Back to Shop
-              </Button>
-            </Link>
-            {accountData.user.role === "MEMBER" && (
-              <Link href="/shop/book">
-                <Button variant="ghost" size="sm">
-                  Book a class
-                </Button>
-              </Link>
-            )}
-            {session && (
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                Sign Out
-              </Button>
-            )}
-          </nav>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">My Account</h1>
@@ -741,15 +713,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
         membershipId={accountData.activeMembership?.id ?? ""}
         productName={accountData.activeMembership?.product.name ?? ""}
       />
-
-      {/* Footer */}
-      <footer className="mt-12 border-t">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-muted-foreground text-center text-sm">
-            <p>{APP_CONFIG.copyright}</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

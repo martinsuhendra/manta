@@ -62,7 +62,7 @@ export function MembershipsTab({ memberships, memberId, memberName }: Membership
         </div>
       )}
 
-      <SeeHistoryButton href={`/dashboard/members/${memberId}/memberships`} show={hasHistory} />
+      <SeeHistoryButton href={`/dashboard/users/${memberId}/memberships`} show={hasHistory} />
     </div>
   );
 }

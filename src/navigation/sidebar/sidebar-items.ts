@@ -67,14 +67,14 @@ export const sidebarItems: NavGroup[] = [
     items: [
       {
         title: "Users & Membership",
-        url: "/dashboard/members",
+        url: "/dashboard/users",
         icon: Users,
         comingSoon: false,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
         subItems: [
           {
-            title: "Members",
-            url: "/dashboard/members",
+            title: "Users",
+            url: "/dashboard/users",
             icon: UserCircle2,
           },
           {

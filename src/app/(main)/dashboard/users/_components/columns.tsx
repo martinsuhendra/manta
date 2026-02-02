@@ -1,6 +1,15 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { EllipsisVertical, Mail, Phone, Calendar } from "lucide-react";
+import {
+  EllipsisVertical,
+  Mail,
+  Phone,
+  Calendar,
+  UserCheck,
+  CreditCard,
+  CalendarCheck,
+  ShoppingCart,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,17 +25,18 @@ import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
-import { User } from "./schema";
+import { Member } from "./schema";
 
 // Define the actions interface for the columns
-interface UserActions {
-  onRowClick: (user: User) => void;
-  onViewProfile: (user: User) => void;
-  onEditUser: (user: User) => void;
-  onDeleteUser: (user: User) => void;
+interface MemberActions {
+  onRowClick: (member: Member) => void;
+  onViewProfile: (member: Member) => void;
+  onEditMember: (member: Member) => void;
+  onDeleteMember: (member: Member) => void;
+  onPurchaseMembership?: (member: Member) => void;
 }
 
-export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
+export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -110,7 +120,40 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
     cell: ({ row }) => {
       const count = row.original._count.memberships;
 
-      return <StatusBadge variant="secondary">{count}</StatusBadge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <UserCheck className="text-muted-foreground h-3.5 w-3.5" />
+          <StatusBadge variant="secondary">{count}</StatusBadge>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "_count.transactions",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Transactions" />,
+    cell: ({ row }) => {
+      const count = row.original._count.transactions;
+
+      return (
+        <div className="flex items-center gap-1.5">
+          <CreditCard className="text-muted-foreground h-3.5 w-3.5" />
+          <StatusBadge variant="secondary">{count}</StatusBadge>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "_count.bookings",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Attendance" />,
+    cell: ({ row }) => {
+      const count = row.original._count.bookings;
+
+      return (
+        <div className="flex items-center gap-1.5">
+          <CalendarCheck className="text-muted-foreground h-3.5 w-3.5" />
+          <StatusBadge variant="secondary">{count}</StatusBadge>
+        </div>
+      );
     },
   },
   {
@@ -130,7 +173,7 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
   {
     id: "actions",
     cell: ({ row }) => {
-      const user = row.original;
+      const member = row.original;
 
       return (
         <DropdownMenu>
@@ -151,7 +194,7 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                actions.onViewProfile(user);
+                actions.onViewProfile(member);
               }}
             >
               View Profile
@@ -159,20 +202,30 @@ export const createUserColumns = (actions: UserActions): ColumnDef<User>[] => [
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                actions.onEditUser(user);
+                actions.onEditMember(member);
               }}
             >
-              Edit User
+              Edit Member
             </DropdownMenuItem>
+            {actions.onPurchaseMembership && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.onPurchaseMembership?.(member);
+                }}
+              >
+                Purchase Membership
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={(e) => {
                 e.stopPropagation();
-                actions.onDeleteUser(user);
+                actions.onDeleteMember(member);
               }}
             >
-              Delete User
+              Delete Member
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

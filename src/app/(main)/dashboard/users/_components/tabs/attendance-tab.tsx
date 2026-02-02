@@ -68,7 +68,7 @@ export function AttendanceTab({ bookings, memberId }: AttendanceTabProps) {
         ))}
       </div>
 
-      <SeeHistoryButton href={`/dashboard/members/${memberId}/sessions`} show={bookings.length > RECENT_LIMIT} />
+      <SeeHistoryButton href={`/dashboard/users/${memberId}/sessions`} show={bookings.length > RECENT_LIMIT} />
     </div>
   );
 }

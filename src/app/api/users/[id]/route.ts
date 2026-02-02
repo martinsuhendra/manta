@@ -17,6 +17,8 @@ const updateUserSchema = z.object({
     .max(15, "Phone number must be at most 15 digits")
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format")
     .optional(),
+  image: z.string().nullable().optional(),
+  bio: z.string().max(2000).nullable().optional(),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +33,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         email: true,
         role: true,
         phoneNo: true,
+        image: true,
+        bio: true,
         createdAt: true,
         updatedAt: true,
         _count: {

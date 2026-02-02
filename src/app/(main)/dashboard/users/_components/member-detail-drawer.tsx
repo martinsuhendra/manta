@@ -32,6 +32,7 @@ import { Member, MemberDetails } from "./schema";
 import { TabTriggers } from "./tab-triggers";
 import { AttendanceTab } from "./tabs/attendance-tab";
 import { MembershipsTab } from "./tabs/memberships-tab";
+import { TeacherSessionsTab } from "./tabs/teacher-sessions-tab";
 import { TransactionsTab } from "./tabs/transactions-tab";
 
 type DrawerMode = "view" | "edit" | "add" | null;
@@ -59,6 +60,7 @@ interface WarningMessagesProps {
   isSelfDelete: boolean;
   isTargetSuperAdmin: boolean;
   canDeleteSuperAdmin: boolean;
+  member: Member | null;
 }
 
 const WarningMessages = ({
@@ -66,6 +68,7 @@ const WarningMessages = ({
   isSelfDelete,
   isTargetSuperAdmin,
   canDeleteSuperAdmin,
+  member,
 }: WarningMessagesProps) => {
   if (!canDelete) {
     return (
@@ -91,8 +94,9 @@ const WarningMessages = ({
         <div className="space-y-1">
           <p className="text-sm font-medium text-orange-800">Warning</p>
           <p className="text-sm text-orange-700">
-            This member&apos;s memberships, transactions, and attendance records will also be deleted. This action
-            cannot be undone.
+            {member?.role === USER_ROLES.TEACHER
+              ? "This teacher's profile and session assignments will also be deleted. This action cannot be undone."
+              : "This member's memberships, transactions, and attendance records will also be deleted. This action cannot be undone."}
           </p>
         </div>
       </div>
@@ -198,39 +202,51 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 <LoadingSpinner />
               ) : (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col justify-start gap-6">
-                  <TabTriggers memberDetails={memberDetails} />
+                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} />
 
                   <TabsContent value="overview" className="relative flex flex-col gap-4 overflow-auto">
-                    <OverviewTab member={member} />
+                    <OverviewTab member={member} memberDetails={memberDetails} />
                   </TabsContent>
 
-                  <TabsContent value="memberships" className="flex flex-col">
-                    {memberDetails ? (
-                      <MembershipsTab
-                        memberships={memberDetails.memberships}
-                        memberId={member.id}
-                        memberName={member.name}
-                      />
-                    ) : (
-                      <LoadingSpinner />
-                    )}
-                  </TabsContent>
+                  {member.role === USER_ROLES.TEACHER ? (
+                    <TabsContent value="sessions" className="flex flex-col">
+                      {memberDetails && "classSessions" in memberDetails ? (
+                        <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
+                      ) : (
+                        <LoadingSpinner />
+                      )}
+                    </TabsContent>
+                  ) : (
+                    <>
+                      <TabsContent value="memberships" className="flex flex-col">
+                        {memberDetails ? (
+                          <MembershipsTab
+                            memberships={memberDetails.memberships}
+                            memberId={member.id}
+                            memberName={member.name}
+                          />
+                        ) : (
+                          <LoadingSpinner />
+                        )}
+                      </TabsContent>
 
-                  <TabsContent value="transactions" className="flex flex-col">
-                    {memberDetails ? (
-                      <TransactionsTab transactions={memberDetails.transactions} memberId={member.id} />
-                    ) : (
-                      <LoadingSpinner />
-                    )}
-                  </TabsContent>
+                      <TabsContent value="transactions" className="flex flex-col">
+                        {memberDetails ? (
+                          <TransactionsTab transactions={memberDetails.transactions} memberId={member.id} />
+                        ) : (
+                          <LoadingSpinner />
+                        )}
+                      </TabsContent>
 
-                  <TabsContent value="attendance" className="flex flex-col">
-                    {memberDetails ? (
-                      <AttendanceTab bookings={memberDetails.bookings} memberId={member.id} />
-                    ) : (
-                      <LoadingSpinner />
-                    )}
-                  </TabsContent>
+                      <TabsContent value="attendance" className="flex flex-col">
+                        {memberDetails ? (
+                          <AttendanceTab bookings={memberDetails.bookings} memberId={member.id} />
+                        ) : (
+                          <LoadingSpinner />
+                        )}
+                      </TabsContent>
+                    </>
+                  )}
                 </Tabs>
               )
             ) : mode === "edit" || mode === "add" ? (
@@ -281,8 +297,9 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 </div>
                 <div className="text-muted-foreground text-sm">{member.email ?? "No Email"}</div>
                 <div className="text-muted-foreground text-sm">
-                  {member._count.memberships} membership(s), {member._count.transactions} transaction(s),{" "}
-                  {member._count.bookings} booking(s)
+                  {member.role === USER_ROLES.TEACHER
+                    ? `${member._count.bookings} session(s) taught`
+                    : `${member._count.memberships} membership(s), ${member._count.transactions} transaction(s), ${member._count.bookings} booking(s)`}
                 </div>
               </div>
 
@@ -291,6 +308,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 isSelfDelete={isSelfDelete}
                 isTargetSuperAdmin={isTargetSuperAdmin}
                 canDeleteSuperAdmin={canDeleteSuperAdmin}
+                member={member}
               />
             </div>
           )}
