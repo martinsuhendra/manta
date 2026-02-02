@@ -56,7 +56,7 @@ function ItemImage({ item }: { item: Item }) {
 
   return (
     <div className="space-y-2">
-      <span className="text-sm font-medium">Item Image</span>
+      <h4 className="text-sm font-medium">Item Image</h4>
       <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-lg border">
         <Image src={item.image} alt={item.name} fill className="object-cover" />
       </div>

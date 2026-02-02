@@ -58,7 +58,7 @@ export function SessionsView() {
     <div className="space-y-6">
       {/* Header actions */}
       <div className="flex items-center justify-between gap-2">
-        {activeTab === "list" && <SessionFilters onFilterChange={handleFilterChange} />}
+        {activeTab === "list" && <SessionFilters appliedFilters={filters} onFilterChange={handleFilterChange} />}
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)}>
             <Layers className="mr-2 h-4 w-4" />

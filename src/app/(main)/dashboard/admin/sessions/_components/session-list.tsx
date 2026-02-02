@@ -4,16 +4,18 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 
-import { format, addDays, startOfDay, subDays } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addDays, startOfDay, startOfMonth, subDays } from "date-fns";
+import { Calendar, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useSessions } from "@/hooks/use-sessions-query";
 
+import { BulkAssignTeacherDialog } from "./bulk-assign-teacher-dialog";
 import { SessionFilter, Session } from "./schema";
 import { createSessionColumns } from "./session-columns";
 
@@ -22,35 +24,36 @@ interface SessionListProps {
   onEditSession?: (session: Session) => void;
 }
 
-const DAYS_PER_PAGE = 30;
+const DATE_RANGE_DAYS = 30;
 
 export function SessionList({ filters, onEditSession }: SessionListProps) {
-  const [currentStartDate, setCurrentStartDate] = useState(() => startOfDay(new Date()));
+  const [currentStartDate, setCurrentStartDate] = useState(() => startOfMonth(new Date()));
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
 
-  // Calculate date range for current page (30 days from start date)
+  // Calculate date range for fetching (30 days from start date)
   const dateRange = useMemo(() => {
     const start = startOfDay(currentStartDate);
-    const end = startOfDay(addDays(start, DAYS_PER_PAGE - 1));
+    const end = startOfDay(addDays(start, DATE_RANGE_DAYS - 1));
     return { start, end };
   }, [currentStartDate]);
 
-  // Merge date range with existing filters
+  // Merge date range with existing filters - use filter dates when provided, else default range
   const filtersWithDateRange = useMemo<SessionFilter>(() => {
     return {
       ...filters,
-      startDate: dateRange.start.toISOString().split("T")[0],
-      endDate: dateRange.end.toISOString().split("T")[0],
+      startDate: filters.startDate ?? dateRange.start.toISOString().split("T")[0],
+      endDate: filters.endDate ?? dateRange.end.toISOString().split("T")[0],
     };
   }, [filters, dateRange]);
 
   const { data: sessions = [], isLoading, refetch } = useSessions(filtersWithDateRange);
 
-  const handlePreviousPage = () => {
-    setCurrentStartDate((prev) => subDays(prev, DAYS_PER_PAGE));
+  const handlePreviousPeriod = () => {
+    setCurrentStartDate((prev) => subDays(prev, DATE_RANGE_DAYS));
   };
 
-  const handleNextPage = () => {
-    setCurrentStartDate((prev) => addDays(prev, DAYS_PER_PAGE));
+  const handleNextPeriod = () => {
+    setCurrentStartDate((prev) => addDays(prev, DATE_RANGE_DAYS));
   };
 
   const handleToday = () => {
@@ -73,19 +76,21 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
     data: sessions,
     columns,
     getRowId: (row) => row.id,
-    defaultPageSize: 50,
+    defaultPageSize: 30,
   });
 
-  // Format date range for display
+  // Format date range for display (use actual range being fetched)
   const formattedDateRange = React.useMemo(() => {
     try {
-      const startFormatted = format(dateRange.start, "MMM d, yyyy");
-      const endFormatted = format(dateRange.end, "MMM d, yyyy");
-      return `${startFormatted} - ${endFormatted}`;
+      const start = filtersWithDateRange.startDate
+        ? new Date(filtersWithDateRange.startDate + "T00:00:00")
+        : dateRange.start;
+      const end = filtersWithDateRange.endDate ? new Date(filtersWithDateRange.endDate + "T00:00:00") : dateRange.end;
+      return `${format(start, "MMM d, yyyy")} - ${format(end, "MMM d, yyyy")}`;
     } catch {
       return "";
     }
-  }, [dateRange]);
+  }, [filtersWithDateRange.startDate, filtersWithDateRange.endDate, dateRange]);
 
   if (isLoading) {
     return (
@@ -106,11 +111,27 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
   }
 
   const hasSessions = sessions.length > 0;
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedSessionIds = selectedRows.map((row) => row.original.id);
 
   return (
     <div className="space-y-4">
       {hasSessions ? (
-        <DataTable table={table} columns={columns} />
+        <>
+          {selectedSessionIds.length > 0 && (
+            <div className="bg-muted/50 flex items-center gap-2 rounded-lg border px-4 py-2">
+              <span className="text-muted-foreground text-sm">
+                {selectedSessionIds.length} session{selectedSessionIds.length !== 1 ? "s" : ""} selected
+              </span>
+              <Button variant="outline" size="sm" className="ml-auto" onClick={() => setBulkAssignOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Assign Teacher
+              </Button>
+            </div>
+          )}
+          <DataTable table={table} columns={columns} />
+          <DataTablePagination table={table} />
+        </>
       ) : (
         <Card>
           <CardContent className="p-8 text-center">
@@ -128,30 +149,40 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
         </Card>
       )}
 
-      {/* Custom Date Range Pagination - Always visible */}
+      {/* Date range navigation - change which 30-day window to view */}
       <div className="flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-muted-foreground text-sm">
           <span className="font-medium">{formattedDateRange}</span>
           <span className="ml-2">
             {hasSessions
-              ? `Showing ${table.getFilteredRowModel().rows.length} session${table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}`
+              ? `${sessions.length} session${sessions.length !== 1 ? "s" : ""} in this period`
               : "No sessions in this date range"}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={isLoading}>
+          <Button variant="outline" size="sm" onClick={handlePreviousPeriod} disabled={isLoading}>
             <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Previous</span>
+            <span className="hidden sm:inline">Previous period</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleToday} disabled={isLoading}>
             Today
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={isLoading}>
-            <span className="hidden sm:inline">Next</span>
+          <Button variant="outline" size="sm" onClick={handleNextPeriod} disabled={isLoading}>
+            <span className="hidden sm:inline">Next period</span>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
+      <BulkAssignTeacherDialog
+        open={bulkAssignOpen}
+        onOpenChange={setBulkAssignOpen}
+        sessionIds={selectedSessionIds}
+        onSuccess={() => {
+          refetch();
+          table.resetRowSelection();
+        }}
+      />
     </div>
   );
 }

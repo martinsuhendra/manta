@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Trash2, UserPlus, Users as UsersIcon, MoreHorizontal, X } from "lucide-react";
+import { Edit2, Trash2, UserCircle2, UserPlus, Users as UsersIcon, MoreHorizontal, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,9 @@ interface CompactSessionCardActionsProps {
   onStatusUpdate: (sessionId: string, status: "SCHEDULED" | "CANCELLED" | "COMPLETED") => void;
   onCancelClick: (session: Session) => void;
   onDeleteClick: (session: Session) => void;
+  onAssignTeacher?: () => void;
+  /** When true, shows icon-only button (for table rows) */
+  compact?: boolean;
 }
 
 export function CompactSessionCardActions({
@@ -34,14 +37,21 @@ export function CompactSessionCardActions({
   onStatusUpdate,
   onCancelClick,
   onDeleteClick,
+  onAssignTeacher,
+  compact = false,
 }: CompactSessionCardActionsProps) {
   return (
-    <div className="flex items-center justify-end pt-2">
+    <div className={compact ? "flex justify-end" : "flex items-center justify-end pt-2"}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()} className="h-8">
-            <MoreHorizontal className="mr-1 h-3.5 w-3.5" />
-            Actions
+          <Button
+            variant={compact ? "ghost" : "outline"}
+            size={compact ? "icon" : "sm"}
+            onClick={(e) => e.stopPropagation()}
+            className={compact ? "h-8 w-8" : "h-8"}
+          >
+            <MoreHorizontal className={compact ? "h-4 w-4" : "mr-1 h-3.5 w-3.5"} />
+            {!compact && "Actions"}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
@@ -58,6 +68,19 @@ export function CompactSessionCardActions({
             >
               <Edit2 className="mr-2 h-3.5 w-3.5" />
               Edit Session
+            </DropdownMenuItem>
+          )}
+
+          {onAssignTeacher && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAssignTeacher();
+              }}
+              className="cursor-pointer text-sm"
+            >
+              <UserCircle2 className="mr-2 h-3.5 w-3.5" />
+              Assign Teacher
             </DropdownMenuItem>
           )}
 

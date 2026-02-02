@@ -35,9 +35,9 @@ export function getRoleVariant(role: string): RoleBadgeVariant {
     case USER_ROLES.ADMIN:
       return "default";
     case USER_ROLES.TEACHER:
-      return "secondary";
-    case USER_ROLES.MEMBER:
       return "success";
+    case USER_ROLES.MEMBER:
+      return "secondary";
     default:
       return "outline";
   }
