@@ -5,17 +5,16 @@ import * as React from "react";
 import Link from "next/link";
 
 import { format, parseISO } from "date-fns";
-import { ArrowRight, User, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { MemberSession } from "@/hooks/use-member-sessions";
 import { cn } from "@/lib/utils";
 
 import { BookingModal } from "../book/_components/booking-modal";
 
+import { SessionCard } from "./session-card";
 import { SessionDetailsDialog } from "./session-details-dialog";
 
 interface UpcomingSessionsProps {
@@ -144,65 +143,14 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
                 </div>
                 <div className="space-y-4">
                   {getSessionsForDate(date).map((session) => (
-                    <Card
+                    <SessionCard
                       key={session.id}
-                      className="group border-border bg-card/80 hover:border-primary/50 hover:shadow-primary/5 cursor-pointer overflow-hidden transition-all hover:shadow-lg"
-                      onClick={() => handleCardClick(session)}
-                    >
-                      <CardContent className="p-0">
-                        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-                          <div className="flex min-w-0 flex-1 items-start gap-4">
-                            <div
-                              className="bg-primary/30 group-hover:bg-primary h-12 w-1 shrink-0 rounded-full transition-colors"
-                              style={session.item.color ? { backgroundColor: session.item.color } : undefined}
-                            />
-                            <div>
-                              <span className="text-foreground block text-2xl font-black">
-                                {session.startTime} – {session.endTime}
-                              </span>
-                              <span className="text-muted-foreground text-sm font-bold uppercase">
-                                {format(parseISO(session.date), "EEE")}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-foreground group-hover:text-primary text-xl font-bold transition-colors">
-                                  {session.item.name}
-                                </h3>
-                                <Badge variant="secondary" className="text-xs font-semibold">
-                                  {session.item.name}
-                                </Badge>
-                              </div>
-                              <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-4 text-sm">
-                                {session.teacher && (
-                                  <span className="flex items-center gap-1">
-                                    <User className="h-3 w-3" />
-                                    Coach {session.teacher.name ?? "TBA"}
-                                  </span>
-                                )}
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {session.spotsLeft} spots left
-                                </span>
-                                {session.spotsLeft <= 3 && session.spotsLeft > 0 && (
-                                  <span className="text-destructive text-xs font-medium">Almost full</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="shrink-0">
-                            <Button
-                              size="sm"
-                              className="w-full md:w-auto"
-                              onClick={(e) => handleJoinClick(e, session)}
-                              disabled={session.spotsLeft === 0}
-                            >
-                              {session.spotsLeft === 0 ? "Full" : "Join Session"}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      session={session}
+                      onCardClick={() => handleCardClick(session)}
+                      actionLabel={session.spotsLeft === 0 ? "Full" : "Join Session"}
+                      onActionClick={(e) => handleJoinClick(e, session)}
+                      actionDisabled={session.spotsLeft === 0}
+                    />
                   ))}
                 </div>
               </div>

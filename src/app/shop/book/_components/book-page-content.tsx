@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemberSessions, useSessionEligibilityBatch, type MemberSession } from "@/hooks/use-member-sessions";
 
+import { SessionCard } from "../../_components/session-card";
+
 import { BookingModal } from "./booking-modal";
-import { SessionCard } from "./session-card";
 
 const defaultStart = startOfDay(new Date());
 const defaultEnd = addDays(defaultStart, 14);
@@ -111,7 +112,10 @@ export function BookPageContent({ classes }: BookPageContentProps) {
               key={session.id}
               session={session}
               eligibility={bySessionId[session.id]}
-              onSelect={() => handleSelectSession(session)}
+              onCardClick={() => handleSelectSession(session)}
+              actionLabel="View"
+              onActionClick={() => handleSelectSession(session)}
+              actionDisabled={false}
             />
           ))}
         </div>
