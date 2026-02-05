@@ -19,7 +19,7 @@ const features = [
 
 export function AboutSection() {
   return (
-    <SectionWithPattern id="about" className="border-border bg-muted/30 border-t py-24 sm:py-32">
+    <SectionWithPattern id="about" className="border-border bg-muted/30 sporty-section-fill border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="lg:pt-4">

@@ -89,7 +89,7 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
   if (todaySessions.length === 0) return null;
 
   return (
-    <SectionWithPattern id="schedule" className="border-border bg-muted/20 border-t py-24 sm:py-32">
+    <SectionWithPattern id="schedule" className="border-border bg-muted/20 sporty-section-fill border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         {!hideTitle && (
           <div className="mx-auto mb-12 max-w-2xl text-center">

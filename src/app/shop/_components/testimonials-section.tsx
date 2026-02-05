@@ -21,7 +21,7 @@ const TESTIMONIALS = [
 
 export function TestimonialsSection() {
   return (
-    <SectionWithPattern className="border-border bg-background border-t py-24 sm:py-32">
+    <SectionWithPattern className="border-border bg-background sporty-section-fill border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl">
