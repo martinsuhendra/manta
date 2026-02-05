@@ -4,22 +4,35 @@ import { useMemo, useState } from "react";
 
 import { addDays, format, startOfDay } from "date-fns";
 
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemberSessions, useSessionEligibilityBatch, type MemberSession } from "@/hooks/use-member-sessions";
 
+import { SessionCard } from "../../_components/session-card";
+
 import { BookingModal } from "./booking-modal";
-import { SessionCard } from "./session-card";
 
 const defaultStart = startOfDay(new Date());
 const defaultEnd = addDays(defaultStart, 14);
 
-export function BookPageContent() {
+interface ClassOption {
+  id: string;
+  name: string;
+}
+
+interface BookPageContentProps {
+  classes: ClassOption[];
+}
+
+export function BookPageContent({ classes }: BookPageContentProps) {
   const [startDate, setStartDate] = useState(() => format(defaultStart, "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(() => format(defaultEnd, "yyyy-MM-dd"));
+  const [itemId, setItemId] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<MemberSession | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const filters = useMemo(() => ({ startDate, endDate }), [startDate, endDate]);
+  const filters = useMemo(() => ({ startDate, endDate, itemId: itemId || undefined }), [startDate, endDate, itemId]);
   const { data: sessions = [], isLoading } = useMemberSessions(filters);
   const sessionIds = useMemo(() => sessions.map((s) => s.id), [sessions]);
   const { bySessionId } = useSessionEligibilityBatch(sessionIds, sessionIds.length > 0);
@@ -30,17 +43,19 @@ export function BookPageContent() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <section className="mb-8">
-        <h2 className="text-2xl font-bold">Book a class</h2>
-        <p className="text-muted-foreground mt-1">Browse upcoming sessions and book based on your membership.</p>
+    <div className="container mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      <section className="mb-6 sm:mb-8">
+        <h2 className="text-xl font-bold sm:text-2xl">Book a class</h2>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+          Browse upcoming sessions and book based on your membership.
+        </p>
       </section>
 
-      <section className="mb-6 flex flex-wrap gap-4">
+      <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-muted-foreground text-sm" htmlFor="start">
+          <Label className="text-muted-foreground text-sm" htmlFor="start">
             From
-          </label>
+          </Label>
           <input
             id="start"
             type="date"
@@ -50,9 +65,9 @@ export function BookPageContent() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-muted-foreground text-sm" htmlFor="end">
+          <Label className="text-muted-foreground text-sm" htmlFor="end">
             To
-          </label>
+          </Label>
           <input
             id="end"
             type="date"
@@ -60,6 +75,24 @@ export function BookPageContent() {
             onChange={(e) => setEndDate(e.target.value)}
             className="border-input bg-background rounded-md border px-3 py-1.5 text-sm"
           />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="text-muted-foreground text-sm" htmlFor="class">
+            Class
+          </Label>
+          <Select value={itemId || "all"} onValueChange={(v) => setItemId(v === "all" ? "" : v)}>
+            <SelectTrigger id="class" className="w-full min-w-0 sm:w-[180px]">
+              <SelectValue placeholder="All classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All classes</SelectItem>
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </section>
 
@@ -81,7 +114,10 @@ export function BookPageContent() {
               key={session.id}
               session={session}
               eligibility={bySessionId[session.id]}
-              onSelect={() => handleSelectSession(session)}
+              onCardClick={() => handleSelectSession(session)}
+              actionLabel="View"
+              onActionClick={() => handleSelectSession(session)}
+              actionDisabled={false}
             />
           ))}
         </div>

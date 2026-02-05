@@ -262,3 +262,73 @@
 .scrollbar-thin:hover::-webkit-scrollbar-thumb:hover {
   background-color: rgb(156 163 175);
 }
+
+/* Hero animations and utilities */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.5rem);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-1000 > * {
+  transform-style: preserve-3d;
+}
+
+.hero-visual-card {
+  transform: rotateY(12deg);
+  transition: transform 0.7s ease;
+}
+.hero-visual-card:hover {
+  transform: rotateY(0deg) scale(1.02);
+}
+
+/* Sporty section fill – dot grid + orange-to-transparent gradient (design system) */
+.sporty-section-fill {
+  background-image:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--primary) 14%, transparent) 0%,
+      color-mix(in oklch, var(--primary) 6%, transparent) 25%,
+      transparent 55%
+    ),
+    url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23000' fill-opacity='0.04'/%3E%3Ccircle cx='20' cy='4' r='1' fill='%23000' fill-opacity='0.04'/%3E%3Ccircle cx='4' cy='20' r='1' fill='%23000' fill-opacity='0.04'/%3E%3Ccircle cx='20' cy='20' r='1' fill='%23000' fill-opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+.dark .sporty-section-fill {
+  background-image:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--primary) 18%, transparent) 0%,
+      color-mix(in oklch, var(--primary) 8%, transparent) 25%,
+      transparent 55%
+    ),
+    url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23fff' fill-opacity='0.04'/%3E%3Ccircle cx='20' cy='4' r='1' fill='%23fff' fill-opacity='0.04'/%3E%3Ccircle cx='4' cy='20' r='1' fill='%23fff' fill-opacity='0.04'/%3E%3Ccircle cx='20' cy='20' r='1' fill='%23fff' fill-opacity='0.04'/%3E%3C/svg%3E");
+}

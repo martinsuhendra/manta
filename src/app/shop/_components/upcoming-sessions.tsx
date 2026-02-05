@@ -5,33 +5,48 @@ import * as React from "react";
 import Link from "next/link";
 
 import { format, parseISO } from "date-fns";
-import { ArrowRight, Calendar, Clock, User, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { MemberSession } from "@/hooks/use-member-sessions";
 import { cn } from "@/lib/utils";
 
 import { BookingModal } from "../book/_components/booking-modal";
 
+import { SectionWithPattern } from "./section-with-pattern";
+import { SessionCard } from "./session-card";
 import { SessionDetailsDialog } from "./session-details-dialog";
 
 interface UpcomingSessionsProps {
   sessions: MemberSession[];
   hideTitle?: boolean;
   showViewFullSchedule?: boolean;
+  /** When true (e.g. landing page), show only today's sessions. When false (e.g. schedule page), show all sessions from filters. */
+  todayOnly?: boolean;
 }
 
-export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = true }: UpcomingSessionsProps) {
+export function UpcomingSessions({
+  sessions,
+  hideTitle,
+  showViewFullSchedule = true,
+  todayOnly = true,
+}: UpcomingSessionsProps) {
   const { data: authSession } = useSession();
+  const [filter, setFilter] = React.useState<string>("All");
   const [selectedSession, setSelectedSession] = React.useState<MemberSession | null>(null);
   const [showDetails, setShowDetails] = React.useState(false);
   const [showBooking, setShowBooking] = React.useState(false);
 
   const isMember = authSession?.user?.role === "MEMBER";
+
+  const sessionsToShow = React.useMemo(() => {
+    if (todayOnly) {
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      return sessions.filter((s) => s.date === todayStr);
+    }
+    return sessions;
+  }, [sessions, todayOnly]);
 
   const handleCardClick = (session: MemberSession) => {
     setSelectedSession(session);
@@ -54,140 +69,110 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
     setShowBooking(true);
   };
 
-  if (sessions.length === 0) return null;
+  const classTypes = React.useMemo(() => {
+    const names = new Set(sessionsToShow.map((s) => s.item.name));
+    return Array.from(names).sort();
+  }, [sessionsToShow]);
 
-  // Group sessions by date
-  const groupedSessions = sessions.reduce(
-    (acc, session) => {
-      const dateKey = session.date;
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(session);
-      return acc;
-    },
-    {} as Record<string, MemberSession[]>,
+  const filteredSessions = React.useMemo(
+    () => (filter === "All" ? sessionsToShow : sessionsToShow.filter((s) => s.item.name === filter)),
+    [filter, sessionsToShow],
   );
 
-  const sortedDates = Object.keys(groupedSessions).sort();
+  const groupedSessions = React.useMemo(() => {
+    const acc: Record<string, MemberSession[]> = {};
+    for (const session of filteredSessions) {
+      const dateKey = session.date;
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(session);
+    }
+    return acc;
+  }, [filteredSessions]);
+
+  const sortedDates = React.useMemo(() => Object.keys(groupedSessions).sort(), [groupedSessions]);
+
+  const getSessionsForDate = React.useCallback(
+    (d: string): MemberSession[] => (Object.hasOwn(groupedSessions, d) ? groupedSessions[d] : []),
+    [groupedSessions],
+  );
+
+  if (todayOnly && sessionsToShow.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-slate-50 py-24 sm:py-32 dark:bg-slate-950">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 -left-4 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl filter" />
-      <div className="absolute -right-4 bottom-0 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl filter" />
-
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+    <SectionWithPattern id="schedule" className="border-border bg-muted/20 sporty-section-fill border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
         {!hideTitle && (
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Upcoming Sessions
+          <div className="mx-auto mb-8 max-w-2xl text-center sm:mb-12">
+            <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase italic sm:text-3xl md:text-4xl md:text-5xl">
+              Class Schedule
             </h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-              Join one of our scheduled classes. Sign up to book your spot!
+            <p className="text-muted-foreground mt-3 text-sm sm:mt-4 sm:text-base">
+              Book your spot. First come, first served.
             </p>
           </div>
         )}
 
-        <div className={hideTitle ? "space-y-12" : "mt-16 space-y-12"}>
-          {sortedDates.map((date) => (
-            <div key={date} className="relative">
-              <div className="mb-6 flex items-center gap-4">
-                <div className="flex flex-col items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-white shadow-lg">
-                  <span className="text-xs font-bold uppercase">{format(parseISO(date), "MMM")}</span>
-                  <span className="text-2xl font-bold">{format(parseISO(date), "dd")}</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                  {format(parseISO(date), "EEEE")}
-                </h3>
-                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-              </div>
-
-              <ScrollArea className="w-full pb-4 whitespace-nowrap">
-                <div className="flex w-max space-x-6 px-1">
-                  {groupedSessions[date].map((session) => (
-                    <Card
-                      key={session.id}
-                      className="group relative w-[320px] shrink-0 cursor-pointer overflow-hidden border-slate-200 bg-white/50 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 dark:border-slate-800 dark:bg-slate-900/50"
-                      onClick={() => handleCardClick(session)}
-                    >
-                      {/* Top colored accent line */}
-                      <div
-                        className="absolute top-0 left-0 h-1 w-full"
-                        style={{ backgroundColor: session.item.color || "#3b82f6" }}
-                      />
-
-                      <CardContent className="flex h-full flex-col p-6">
-                        <div className="flex-1 space-y-4">
-                          <div className="flex items-start justify-between">
-                            <h3 className="line-clamp-1 text-xl font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                              {session.item.name}
-                            </h3>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "shrink-0 border-0 px-2.5 py-1 text-xs font-medium transition-colors",
-                                session.spotsLeft <= 3
-                                  ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                                  : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-                              )}
-                            >
-                              {session.spotsLeft === 0 ? "Full" : `${session.spotsLeft} left`}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <Clock className="h-4 w-4 text-blue-500" />
-                            <span>
-                              {session.startTime} - {session.endTime}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                            {session.teacher && (
-                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                <User className="h-4 w-4 text-slate-400" />
-                                <span className="truncate">{session.teacher.name ?? "Coach"}</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                              <Users className="h-4 w-4 text-slate-400" />
-                              <span>Capacity: {session.item.capacity}</span>
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            className="mt-4 w-full"
-                            onClick={(e) => handleJoinClick(e, session)}
-                            disabled={session.spotsLeft === 0}
-                          >
-                            Join Session
-                          </Button>
-                        </div>
-
-                        {/* Decorative faint background icon */}
-                        <div className="pointer-events-none absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.05]">
-                          <Calendar className="h-32 w-32" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </div>
+        <div className="mb-10 flex flex-wrap justify-center gap-2">
+          {["All", ...classTypes].map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setFilter(name)}
+              className={cn(
+                "rounded-full px-6 py-2 text-sm font-bold tracking-wide uppercase transition-all",
+                filter === name
+                  ? "bg-primary text-primary-foreground shadow-primary/20 shadow-lg"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground border",
+              )}
+            >
+              {name}
+            </button>
           ))}
         </div>
 
+        {filteredSessions.length === 0 ? (
+          <div className="border-border rounded-xl border border-dashed py-12 text-center">
+            <p className="text-muted-foreground">No classes found for this filter.</p>
+          </div>
+        ) : (
+          <div className={hideTitle ? "space-y-8" : "space-y-10"}>
+            {sortedDates.map((date) => (
+              <div key={date}>
+                <div className="mb-3 flex items-center gap-3 sm:mb-4 sm:gap-4">
+                  <div className="bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-lg px-3 py-1.5 shadow-md sm:rounded-xl sm:px-4 sm:py-2">
+                    <span className="text-[10px] font-bold uppercase sm:text-xs">{format(parseISO(date), "MMM")}</span>
+                    <span className="text-xl font-black sm:text-2xl">{format(parseISO(date), "dd")}</span>
+                  </div>
+                  <h3 className="text-foreground truncate text-base font-bold sm:text-xl">
+                    {format(parseISO(date), "EEEE")}
+                  </h3>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+                <div className="space-y-4">
+                  {getSessionsForDate(date).map((session) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      onCardClick={() => handleCardClick(session)}
+                      actionLabel={session.spotsLeft === 0 ? "Full" : "Join Session"}
+                      onActionClick={(e) => handleJoinClick(e, session)}
+                      actionDisabled={session.spotsLeft === 0}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {!hideTitle && showViewFullSchedule && (
           <div className="mt-12 flex justify-center">
-            <Link href="/shop/schedule">
-              <Button size="lg" className="gap-2">
+            <Button asChild size="lg" className="gap-2 font-bold tracking-wide uppercase">
+              <Link href="/shop/schedule">
                 View Full Schedule
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </div>
@@ -202,6 +187,6 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
       {isMember && (
         <BookingModal session={showBooking ? selectedSession : null} open={showBooking} onOpenChange={setShowBooking} />
       )}
-    </section>
+    </SectionWithPattern>
   );
 }

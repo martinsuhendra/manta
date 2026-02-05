@@ -1,19 +1,7 @@
 "use client";
 
-import { PublicProductCard } from "./public-product-card";
-
-interface PublicProduct {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  validDays: number;
-  image: string | null;
-  paymentUrl: string | null;
-  whatIsIncluded: string | null;
-  features: string[];
-  createdAt: string;
-}
+import { PublicProductCard, type PublicProduct } from "./public-product-card";
+import { SectionWithPattern } from "./section-with-pattern";
 
 interface MembershipPlansProps {
   products: PublicProduct[];
@@ -21,12 +9,14 @@ interface MembershipPlansProps {
 
 export function MembershipPlans({ products }: MembershipPlansProps) {
   return (
-    <section id="plans" className="bg-background py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <SectionWithPattern id="plans" className="border-border bg-muted/30 border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Membership Plans</h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Choose the plan that fits your goals. No hidden fees, just results.
+          <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase italic sm:text-3xl md:text-4xl md:text-5xl">
+            Join The Ranks
+          </h2>
+          <p className="text-muted-foreground mt-3 text-sm sm:mt-4 sm:text-base">
+            No contracts, no hidden fees. Just pure effort and results.
           </p>
         </div>
 
@@ -36,13 +26,13 @@ export function MembershipPlans({ products }: MembershipPlansProps) {
             <p className="mt-2 text-sm">Please check back later.</p>
           </div>
         ) : (
-          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <PublicProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

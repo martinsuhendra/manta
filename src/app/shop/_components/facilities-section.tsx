@@ -4,6 +4,8 @@ import { Dumbbell, LayoutGrid, ShowerHead, Timer, Wifi, Wind } from "lucide-reac
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { SectionWithPattern } from "./section-with-pattern";
+
 const facilities = [
   {
     name: "Premium Equipment",
@@ -39,25 +41,27 @@ const facilities = [
 
 export function FacilitiesSection() {
   return (
-    <section className="bg-muted/30 py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <SectionWithPattern className="border-border bg-background border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">World-Class Facilities</h2>
-          <p className="text-muted-foreground mt-4 text-lg">
+          <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase sm:text-3xl md:text-4xl md:text-5xl">
+            World-Class Facilities
+          </h2>
+          <p className="text-muted-foreground mt-3 text-base sm:mt-4 sm:text-lg">
             Everything you need to perform at your best, all under one roof.
           </p>
         </div>
-        <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {facilities.map((facility) => (
             <Card
               key={facility.name}
-              className="bg-background border-none shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+              className="border-border bg-card hover:border-primary/50 hover:shadow-primary/5 transition-all hover:shadow-lg"
             >
               <CardHeader>
                 <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
                   <facility.icon className="text-primary h-6 w-6" />
                 </div>
-                <CardTitle>{facility.name}</CardTitle>
+                <CardTitle className="text-lg font-bold tracking-wide uppercase">{facility.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm leading-6">{facility.description}</p>
@@ -66,6 +70,6 @@ export function FacilitiesSection() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

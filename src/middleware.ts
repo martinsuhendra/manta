@@ -28,7 +28,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`, nextUrl));
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  // Expose pathname so root layout can force dark theme for shop (customer) pages
+  response.headers.set("x-pathname", nextUrl.pathname);
+  return response;
 }
 
 export const config = {

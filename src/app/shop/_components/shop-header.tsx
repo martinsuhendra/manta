@@ -55,17 +55,22 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             : "bg-background/80 border-border/40 border-b py-4 backdrop-blur-md",
       )}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/shop" className="group flex items-center gap-2">
+      <div className="container mx-auto flex h-14 min-h-[3.5rem] items-center justify-between gap-3 px-4 sm:h-16 sm:px-4">
+        <Link href="/shop" className="group flex shrink-0 items-center gap-2">
           <div className="bg-primary text-primary-foreground relative flex h-8 w-8 items-center justify-center rounded-lg font-bold transition-transform group-hover:scale-110">
             {APP_CONFIG.name.substring(0, 1)}
           </div>
-          <span className={cn("text-xl font-bold tracking-tight transition-colors", isTransparent && "text-white")}>
+          <span
+            className={cn(
+              "text-base font-bold tracking-tight transition-colors sm:text-xl",
+              isTransparent && "text-white",
+            )}
+          >
             {APP_CONFIG.name}
           </span>
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
           {!mounted ? (
             <div className="bg-muted h-9 w-24 animate-pulse rounded-md" />
           ) : session ? (
