@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { BookingModal } from "../book/_components/booking-modal";
 
+import { SectionWithPattern } from "./section-with-pattern";
 import { SessionCard } from "./session-card";
 import { SessionDetailsDialog } from "./session-details-dialog";
 
@@ -31,6 +32,11 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
   const [showBooking, setShowBooking] = React.useState(false);
 
   const isMember = authSession?.user?.role === "MEMBER";
+
+  const todaySessions = React.useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    return sessions.filter((s) => s.date === todayStr);
+  }, [sessions]);
 
   const handleCardClick = (session: MemberSession) => {
     setSelectedSession(session);
@@ -54,13 +60,13 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
   };
 
   const classTypes = React.useMemo(() => {
-    const names = new Set(sessions.map((s) => s.item.name));
+    const names = new Set(todaySessions.map((s) => s.item.name));
     return Array.from(names).sort();
-  }, [sessions]);
+  }, [todaySessions]);
 
   const filteredSessions = React.useMemo(
-    () => (filter === "All" ? sessions : sessions.filter((s) => s.item.name === filter)),
-    [filter, sessions],
+    () => (filter === "All" ? todaySessions : todaySessions.filter((s) => s.item.name === filter)),
+    [filter, todaySessions],
   );
 
   const groupedSessions = React.useMemo(() => {
@@ -80,11 +86,11 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
     [groupedSessions],
   );
 
-  if (sessions.length === 0) return null;
+  if (todaySessions.length === 0) return null;
 
   return (
-    <section id="schedule" className="border-border bg-muted/20 border-t py-24 sm:py-32">
-      <div className="relative container mx-auto px-4">
+    <SectionWithPattern id="schedule" className="border-border bg-muted/20 border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
         {!hideTitle && (
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl md:text-5xl">
@@ -94,21 +100,8 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
           </div>
         )}
 
-        {/* Filter pills */}
         <div className="mb-10 flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFilter("All")}
-            className={cn(
-              "rounded-full px-6 py-2 text-sm font-bold tracking-wide uppercase transition-all",
-              filter === "All"
-                ? "bg-primary text-primary-foreground shadow-primary/20 shadow-lg"
-                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground border",
-            )}
-          >
-            All
-          </button>
-          {classTypes.map((name) => (
+          {["All", ...classTypes].map((name) => (
             <button
               key={name}
               type="button"
@@ -180,6 +173,6 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
       {isMember && (
         <BookingModal session={showBooking ? selectedSession : null} open={showBooking} onOpenChange={setShowBooking} />
       )}
-    </section>
+    </SectionWithPattern>
   );
 }

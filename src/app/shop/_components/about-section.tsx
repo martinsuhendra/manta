@@ -1,8 +1,12 @@
 "use client";
 
+import Image from "next/image";
+
 import { CheckCircle2 } from "lucide-react";
 
 import { APP_CONFIG } from "@/config/app-config";
+
+import { SectionWithPattern } from "./section-with-pattern";
 
 const features = [
   "Certified & Experienced Coaches",
@@ -15,7 +19,7 @@ const features = [
 
 export function AboutSection() {
   return (
-    <section id="about" className="border-border bg-muted/30 border-t py-24 sm:py-32">
+    <SectionWithPattern id="about" className="border-border bg-muted/30 border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="lg:pt-4">
@@ -37,15 +41,17 @@ export function AboutSection() {
               ))}
             </ul>
           </div>
-          <div className="border-border bg-card relative min-w-0 overflow-hidden rounded-2xl border">
-            <div className="bg-muted aspect-[4/3] w-full overflow-hidden rounded-2xl">
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="text-muted-foreground text-sm tracking-wider uppercase">Gym interior</span>
-              </div>
-            </div>
+          <div className="border-border bg-card relative aspect-[4/3] min-w-0 overflow-hidden rounded-2xl border">
+            <Image
+              src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5"
+              alt="Gym interior"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+            />
           </div>
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

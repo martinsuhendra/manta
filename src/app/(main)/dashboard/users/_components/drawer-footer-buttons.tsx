@@ -17,17 +17,17 @@ export function DrawerFooterButtons({ mode, canDelete, isPending, onEdit, onDele
       <DrawerFooter className="gap-2">
         <Button variant="outline" onClick={onEdit} className="w-full">
           <Pencil className="mr-2 h-4 w-4" />
-          Edit Member
+          Edit User
         </Button>
         <Button variant="destructive" onClick={onDelete} disabled={!canDelete} className="w-full">
           <Trash2 className="mr-2 h-4 w-4" />
-          Delete Member
+          Delete User
         </Button>
       </DrawerFooter>
     );
   }
 
-  const buttonText = mode === "add" ? "Create Member" : "Update Member";
+  const buttonText = mode === "add" ? "Create User" : "Update User";
 
   return (
     <DrawerFooter className="gap-2">

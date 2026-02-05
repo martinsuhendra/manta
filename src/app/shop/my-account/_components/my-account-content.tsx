@@ -28,7 +28,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -317,6 +316,11 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
+  const hasPendingFreeze =
+    accountData.activeMembership != null &&
+    accountData.freezeRequests.some(
+      (fr) => fr.membershipId === accountData.activeMembership?.id && fr.status === "PENDING_APPROVAL",
+    );
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/shop" });
@@ -364,7 +368,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
       <div className="animate-fade-in-up container mx-auto px-4 py-20">
         {/* Profile Header */}
         <div className="border-border bg-card relative mb-8 overflow-hidden rounded-3xl border p-6 shadow-xl md:p-10">
-          <div className="bg-sport-pattern pointer-events-none absolute inset-0 opacity-[0.05]" />
           <div className="relative z-10 flex flex-col items-center gap-8 md:flex-row">
             <div className="relative">
               <div className="border-primary h-24 w-24 overflow-hidden rounded-full border-4 shadow-2xl md:h-32 md:w-32">
@@ -465,25 +468,18 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         <p className="text-muted-foreground text-sm">
                           Renews on {formatDate(accountData.activeMembership.expiredAt)}
                         </p>
-                        {(() => {
-                          const pendingFreeze = accountData.freezeRequests.find(
-                            (fr) =>
-                              fr.membershipId === accountData.activeMembership?.id && fr.status === "PENDING_APPROVAL",
-                          );
-                          const canRequestFreeze = !pendingFreeze;
-                          return canRequestFreeze ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-4"
-                              onClick={() => setIsRequestFreezeOpen(true)}
-                            >
-                              Request Freeze
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
-                          );
-                        })()}
+                        {hasPendingFreeze ? (
+                          <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-4"
+                            onClick={() => setIsRequestFreezeOpen(true)}
+                          >
+                            Request Freeze
+                          </Button>
+                        )}
                       </div>
                       <div className="w-full border-t pt-6 text-center md:w-auto md:border-t-0 md:border-l md:pt-0 md:pl-10 md:text-right">
                         <p className="text-foreground text-2xl font-black">
@@ -492,6 +488,9 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         <p className="text-muted-foreground text-xs font-bold uppercase">
                           per {accountData.activeMembership.product.validDays} days
                         </p>
+                        <Button size="sm" variant="outline" className="mt-4 w-full md:w-auto" asChild>
+                          <Link href="/shop">Manage Billing</Link>
+                        </Button>
                       </div>
                     </div>
                   ) : accountData.frozenMembership ? (

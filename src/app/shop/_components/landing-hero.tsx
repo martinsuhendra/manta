@@ -21,7 +21,6 @@ export function LandingHero() {
           className="h-full w-full object-cover opacity-20 contrast-125 grayscale"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[var(--background)] via-[var(--background)]/90 to-[var(--primary)]/10 mix-blend-multiply" />
-        <div className="bg-sport-pattern absolute inset-0" />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 text-center lg:text-left">

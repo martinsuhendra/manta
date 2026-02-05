@@ -71,7 +71,6 @@ export function SessionCard({
           alt=""
           className="h-full w-full object-cover opacity-[0.08]"
         />
-        <div className="bg-sport-pattern absolute inset-0 opacity-60" />
         <div className="from-background/95 via-background/85 absolute inset-0 bg-gradient-to-r to-transparent" />
       </div>
       <CardContent className="relative z-10 p-0">

@@ -6,14 +6,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Package } from "lucide-react";
+import { ArrowRight, Loader2, Package } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +29,7 @@ import { formatPrice } from "@/lib/utils";
 
 import { SignUpDialog } from "./sign-up-dialog";
 
-interface PublicProduct {
+export interface PublicProduct {
   id: string;
   name: string;
   description: string | null;
@@ -45,7 +44,6 @@ interface PublicProduct {
 
 interface PublicProductCardProps {
   product: PublicProduct;
-  highlight?: boolean;
 }
 
 const purchaseFormSchema = z.object({
@@ -55,7 +53,7 @@ const purchaseFormSchema = z.object({
 
 type PurchaseFormValues = z.infer<typeof purchaseFormSchema>;
 
-export function PublicProductCard({ product, highlight = false }: PublicProductCardProps) {
+export function PublicProductCard({ product }: PublicProductCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isPurchasing, setIsPurchasing] = React.useState(false);
@@ -165,165 +163,186 @@ export function PublicProductCard({ product, highlight = false }: PublicProductC
   };
 
   return (
-    <Card
-      className={
-        highlight
-          ? "group border-primary shadow-primary/20 hover:shadow-primary/20 relative flex h-full flex-col overflow-hidden shadow-xl transition-all hover:shadow-2xl"
-          : "group border-border bg-card hover:border-primary/50 hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden transition-all hover:shadow-lg"
-      }
-    >
-      {highlight && (
-        <div className="bg-primary text-primary-foreground absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-bold uppercase shadow-lg">
-          Most Popular
+    <div className="group border-primary bg-card hover:border-foreground relative flex h-full flex-col overflow-hidden border-r-4 border-b-4 transition-all duration-300">
+      <div className="bg-muted relative aspect-[16/10] w-full overflow-hidden">
+        {product.image ? (
+          <>
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
+            />
+            <div
+              className="bg-primary/10 absolute inset-0 transition-colors duration-300 group-hover:bg-transparent"
+              aria-hidden
+            />
+          </>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Package className="text-muted-foreground h-14 w-14 opacity-50" />
+          </div>
+        )}
+        <div className="bg-primary text-primary-foreground absolute bottom-0 left-0 px-6 py-2 text-sm font-black uppercase italic">
+          {product.validDays} days
         </div>
-      )}
-      <CardHeader>
-        <div className="bg-muted relative mb-4 aspect-video overflow-hidden rounded-lg border">
-          {product.image ? (
-            <Image src={product.image} alt={product.name} fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Package className="text-muted-foreground h-12 w-12" />
-            </div>
-          )}
-        </div>
-        <CardTitle className="text-xl">{product.name}</CardTitle>
-        {product.description && <CardDescription className="mt-2">{product.description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex-1 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold">{formatPrice(product.price)}</div>
-          <div className="text-muted-foreground text-sm">{product.validDays} days validity</div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-8 md:p-10">
+        <h3 className="text-foreground mb-4 text-2xl font-black tracking-tighter uppercase italic md:text-3xl">
+          {product.name}
+        </h3>
+        {product.description && (
+          <p className="text-muted-foreground mb-6 leading-relaxed font-medium md:mb-8">{product.description}</p>
+        )}
+
+        <div className="mb-6 flex items-baseline justify-between gap-4 md:mb-8">
+          <span className="text-foreground text-2xl font-black tracking-tight">{formatPrice(product.price)}</span>
         </div>
 
         {product.features.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Features:</h4>
-            <ul className="text-muted-foreground space-y-1 text-sm">
-              {product.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="mb-6 flex flex-wrap gap-2 md:mb-8">
+            {product.features.map((feature) => (
+              <span
+                key={feature}
+                className="border-border bg-accent px-3 py-1 text-[10px] font-black tracking-widest uppercase"
+              >
+                {feature}
+              </span>
+            ))}
           </div>
         )}
 
         {product.whatIsIncluded && (
-          <div className="border-t pt-4">
+          <div className="border-border mb-6 border-t pt-4 md:mb-8">
             <Button
               variant="ghost"
               size="sm"
-              className="mb-2 h-auto justify-between p-0 text-sm font-medium hover:bg-transparent"
+              className="text-muted-foreground hover:text-foreground -ml-2 h-auto p-0 text-xs font-semibold tracking-wider uppercase hover:bg-transparent"
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              What&apos;s Included?
-              {isExpanded ? <span className="ml-2 text-xs">▲</span> : <span className="ml-2 text-xs">▼</span>}
+              What&apos;s included
+              {isExpanded ? (
+                <span className="ml-1.5 text-[10px]">▲</span>
+              ) : (
+                <span className="ml-1.5 text-[10px]">▼</span>
+              )}
             </Button>
             {isExpanded && (
               <div
-                className="text-muted-foreground prose prose-sm max-w-none text-sm [&_li]:ml-0 [&_ol]:ml-3 [&_ol]:list-decimal [&_ul]:ml-3 [&_ul]:list-disc"
+                className="text-muted-foreground prose prose-sm mt-3 max-w-none text-sm [&_li]:ml-0 [&_ol]:ml-3 [&_ol]:list-decimal [&_ul]:ml-3 [&_ul]:list-disc"
                 dangerouslySetInnerHTML={{ __html: product.whatIsIncluded }}
               />
             )}
           </div>
         )}
-      </CardContent>
-      <CardFooter>
-        {!mounted ? (
-          <Button className="w-full" variant="default" disabled>
-            Purchase Now
-          </Button>
-        ) : !session ? (
-          <SignUpDialog>
-            <Button className="w-full" variant="default">
-              Purchase Now
+
+        <div className="mt-auto pt-2">
+          {!mounted ? (
+            <Button
+              className="text-primary flex items-center gap-4 font-black tracking-widest uppercase hover:gap-6"
+              variant="ghost"
+              disabled
+            >
+              Purchase Now <ArrowRight className="h-5 w-5" />
             </Button>
-          </SignUpDialog>
-        ) : (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full" variant="default">
-                Purchase Now
+          ) : !session ? (
+            <SignUpDialog>
+              <Button
+                className="text-primary flex items-center gap-4 font-black tracking-widest uppercase transition-all hover:gap-6"
+                variant="ghost"
+              >
+                Purchase Now <ArrowRight className="h-5 w-5" />
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Purchase {product.name}</DialogTitle>
-                <DialogDescription>
-                  Enter your information to complete your membership purchase. You&apos;ll be redirected to complete
-                  payment.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="customerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" disabled={!!session.user} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="customerEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" disabled={!!session.user} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="bg-muted rounded-lg p-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="text-lg font-bold">{formatPrice(product.price)}</span>
-                    </div>
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      Valid for {product.validDays} days from purchase date
-                    </p>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                      disabled={isPurchasing}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isPurchasing || !isSnapLoaded}>
-                      {isPurchasing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : !isSnapLoaded ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Loading Payment...
-                        </>
-                      ) : (
-                        "Continue to Payment"
+            </SignUpDialog>
+          ) : (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  className="text-primary flex w-full items-center justify-center gap-4 font-black tracking-widest uppercase transition-all hover:gap-6"
+                  variant="ghost"
+                >
+                  Purchase Now <ArrowRight className="h-5 w-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Purchase {product.name}</DialogTitle>
+                  <DialogDescription>
+                    Enter your information to complete your membership purchase. You&apos;ll be redirected to complete
+                    payment.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="customerName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" disabled={!!session.user} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        )}
-      </CardFooter>
-    </Card>
+                    />
+                    <FormField
+                      control={form.control}
+                      name="customerEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="john@example.com" disabled={!!session.user} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="bg-muted rounded-lg p-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Total</span>
+                        <span className="text-lg font-bold">{formatPrice(product.price)}</span>
+                      </div>
+                      <p className="text-muted-foreground mt-2 text-xs">
+                        Valid for {product.validDays} days from purchase date
+                      </p>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        disabled={isPurchasing}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isPurchasing || !isSnapLoaded}>
+                        {isPurchasing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : !isSnapLoaded ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading Payment...
+                          </>
+                        ) : (
+                          "Continue to Payment"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

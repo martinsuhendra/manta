@@ -4,6 +4,8 @@ import Image from "next/image";
 
 import { User } from "lucide-react";
 
+import { SectionWithPattern } from "./section-with-pattern";
+
 interface Instructor {
   id: string;
   name: string | null;
@@ -20,8 +22,8 @@ export function InstructorsSection({ instructors }: InstructorsSectionProps) {
   if (instructors.length === 0) return null;
 
   return (
-    <section className="border-border bg-muted/20 border-t py-24 sm:py-32">
-      <div className="relative container mx-auto px-4 py-20">
+    <SectionWithPattern className="border-border bg-muted/20 border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4 py-20">
         <div className="animate-fade-in-up mb-16 text-center">
           <h2 className="text-foreground mb-4 text-3xl font-black tracking-tighter uppercase italic md:text-5xl">
             Elite Coaching
@@ -68,6 +70,6 @@ export function InstructorsSection({ instructors }: InstructorsSectionProps) {
           ))}
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

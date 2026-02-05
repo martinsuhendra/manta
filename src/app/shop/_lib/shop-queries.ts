@@ -46,7 +46,6 @@ export async function getActiveProducts() {
         createdAt: true,
       },
     });
-    // Convert Decimal to number and Date to string for client components
     return products.map((product) => ({
       ...product,
       price: Number(product.price),

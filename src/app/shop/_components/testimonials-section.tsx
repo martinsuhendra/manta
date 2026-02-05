@@ -4,6 +4,8 @@ import { Star } from "lucide-react";
 
 import { APP_CONFIG } from "@/config/app-config";
 
+import { SectionWithPattern } from "./section-with-pattern";
+
 const TESTIMONIALS = [
   {
     name: "Member",
@@ -19,7 +21,7 @@ const TESTIMONIALS = [
 
 export function TestimonialsSection() {
   return (
-    <section className="border-border bg-background border-t py-24 sm:py-32">
+    <SectionWithPattern className="border-border bg-background border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl">
@@ -27,9 +29,9 @@ export function TestimonialsSection() {
           </h2>
         </div>
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
-          {TESTIMONIALS.map((t, i) => (
+          {TESTIMONIALS.map((t) => (
             <div
-              key={i}
+              key={`${t.name}-${t.role}`}
               className="border-border bg-card hover:border-primary/50 rounded-xl border p-8 text-left transition-all"
             >
               <div className="text-primary mb-4 flex gap-0.5">
@@ -46,6 +48,6 @@ export function TestimonialsSection() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

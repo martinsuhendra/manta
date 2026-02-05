@@ -205,7 +205,7 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
                 actions.onEditMember(member);
               }}
             >
-              Edit Member
+              Edit User
             </DropdownMenuItem>
             {actions.onPurchaseMembership && (
               <DropdownMenuItem

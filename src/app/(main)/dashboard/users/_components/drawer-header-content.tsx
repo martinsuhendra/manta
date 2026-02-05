@@ -11,14 +11,14 @@ interface DrawerHeaderContentProps {
 
 const MODE_CONFIG = {
   add: {
-    title: "Add New Member",
-    description: "Create a new member account. Fill in the required information below.",
+    title: "Add New User",
+    description: "Create a new user account. Fill in the required information below.",
     icon: Plus,
   },
   edit: {
-    title: "Edit Member",
+    title: "Edit User",
     description: (canEditRoles: boolean) =>
-      `Update member information and settings.${!canEditRoles ? " (Role editing requires SUPERADMIN privileges)" : ""}`,
+      `Update user information and settings.${!canEditRoles ? " (Role editing requires SUPERADMIN privileges)" : ""}`,
     icon: Pencil,
   },
   view: {

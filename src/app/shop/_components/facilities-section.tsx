@@ -4,6 +4,8 @@ import { Dumbbell, LayoutGrid, ShowerHead, Timer, Wifi, Wind } from "lucide-reac
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { SectionWithPattern } from "./section-with-pattern";
+
 const facilities = [
   {
     name: "Premium Equipment",
@@ -39,7 +41,7 @@ const facilities = [
 
 export function FacilitiesSection() {
   return (
-    <section className="border-border bg-background border-t py-24 sm:py-32">
+    <SectionWithPattern className="border-border bg-background border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase sm:text-4xl md:text-5xl">
@@ -68,6 +70,6 @@ export function FacilitiesSection() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }

@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Dumbbell, Users } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+import { SectionWithPattern } from "./section-with-pattern";
 
 interface ClassItem {
   id: string;
@@ -21,69 +23,105 @@ interface ClassesSectionProps {
   classes: ClassItem[];
 }
 
+function getClassFeatures(item: ClassItem): { label: string; value: string }[] {
+  return [
+    { label: "Duration", value: `${item.duration} min` },
+    { label: "Capacity", value: `Max ${item.capacity}` },
+    { label: "Level", value: "All levels" },
+  ];
+}
+
 export function ClassesSection({ classes }: ClassesSectionProps) {
   if (classes.length === 0) return null;
 
   return (
-    <section id="classes" className="border-border bg-background border-t py-24 sm:py-32">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase sm:text-4xl md:text-5xl">
-            Our Classes
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Discover the variety of programs we offer to reach your peak performance.
-          </p>
-        </div>
-        <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {classes.map((item) => (
-            <Link key={item.id} href={`/shop/classes/${item.id}`}>
-              <Card className="group border-border bg-card hover:border-primary/50 hover:shadow-primary/5 h-full overflow-hidden pt-0 transition-all hover:shadow-lg">
-                <CardHeader className="block p-0">
-                  <div className="bg-muted relative aspect-video w-full overflow-hidden">
-                    {item.image ? (
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        style={{ objectPosition: "center top" }}
-                      />
-                    ) : (
-                      <div
-                        className="flex h-full w-full items-center justify-center"
-                        style={{ backgroundColor: item.color || "var(--muted)" }}
-                      >
-                        <Dumbbell className="h-12 w-12 opacity-20" />
-                      </div>
-                    )}
-                    <div
-                      className="absolute right-0 bottom-0 left-0 h-1 opacity-80"
-                      style={{ backgroundColor: item.color || "var(--primary)" }}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <CardTitle className="group-hover:text-primary text-xl font-bold transition-colors">
-                    {item.name}
-                  </CardTitle>
-                  <div className="text-muted-foreground mt-2 flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      Max {item.capacity}
-                    </span>
-                    <span className="font-medium">{item.duration} min</span>
-                  </div>
-                  {item.description && (
-                    <CardDescription className="mt-4 line-clamp-3">{item.description}</CardDescription>
-                  )}
-                </CardContent>
-              </Card>
+    <SectionWithPattern id="classes" className="border-border bg-card/30 relative border-y py-24">
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="mb-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-foreground mb-4 text-3xl font-black tracking-tighter uppercase italic md:text-5xl">
+              Specialized <span className="text-primary">Disciplines</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl">
+              Whether you&apos;re looking for the explosive variety of CrossFit or the endurance-focused challenge of
+              HYROX, our specialized classes are designed for every fitness level.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            className="text-primary gap-2 font-bold tracking-widest uppercase hover:gap-3"
+            asChild
+          >
+            <Link href="#schedule">
+              Explore All Programs
+              <ChevronRight className="h-4 w-4" />
             </Link>
-          ))}
+          </Button>
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-2">
+          {classes.map((item) => {
+            const features = getClassFeatures(item);
+            const accentColor = item.color ?? "var(--primary)";
+            return (
+              <div
+                key={item.id}
+                className="group border-border bg-card relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+              >
+                <div className="relative aspect-[16/9] overflow-hidden">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full" style={{ backgroundColor: accentColor, opacity: 0.2 }} />
+                  )}
+                  <div className="from-card via-card/20 absolute inset-0 bg-gradient-to-t to-transparent" />
+                  <div
+                    className="bg-background/90 absolute top-6 left-6 rounded-full border-l-4 px-4 py-1.5 text-xs font-black tracking-widest uppercase shadow-lg backdrop-blur"
+                    style={{ borderLeftColor: accentColor }}
+                  >
+                    {item.name}
+                  </div>
+                </div>
+
+                <div className="p-8">
+                  <h3 className="text-foreground mb-4 text-2xl font-black tracking-tight uppercase italic">
+                    {item.name}
+                  </h3>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    {item.description ??
+                      `Structured training designed for all levels. ${item.duration}-minute sessions, max ${item.capacity} participants.`}
+                  </p>
+
+                  <div className="mb-8 grid grid-cols-3 gap-4">
+                    {features.map((feat) => (
+                      <div key={feat.label} className="border-border bg-accent/50 rounded-xl border p-3 text-center">
+                        <div className="text-muted-foreground mb-1 text-[10px] font-black tracking-tighter uppercase">
+                          {feat.label}
+                        </div>
+                        <div className="text-foreground text-[11px] font-bold uppercase">{feat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    className="group-hover:bg-primary group-hover:text-primary-foreground w-full rounded-xl py-4 text-sm font-black tracking-widest uppercase transition-colors"
+                    variant="secondary"
+                    asChild
+                  >
+                    <Link href={`/shop/classes/${item.id}`}>View Class Info</Link>
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </section>
+    </SectionWithPattern>
   );
 }
