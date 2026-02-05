@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Clock, MapPin } from "lucide-react";
+import { Clock, Facebook, Instagram, MapPin, Twitter } from "lucide-react";
 
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
@@ -28,16 +28,27 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                 Pushing the boundaries of human performance through functional fitness and high-intensity training.
               </p>
               <div className="flex gap-4">
-                {["Instagram", "Facebook", "Twitter"].map((social) => (
-                  <a
-                    key={social}
-                    href="#"
-                    className="bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground flex h-10 w-10 items-center justify-center rounded-full transition-colors"
-                    aria-label={social}
-                  >
-                    <span className="text-xs font-medium">{social.charAt(0)}</span>
-                  </a>
-                ))}
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary flex h-10 w-10 items-center justify-center rounded-full transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary flex h-10 w-10 items-center justify-center rounded-full transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-5 w-5" />
+                </a>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary flex h-10 w-10 items-center justify-center rounded-full transition-colors"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="h-5 w-5" />
+                </a>
               </div>
             </div>
             <div>
