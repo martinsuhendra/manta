@@ -37,12 +37,12 @@ export function ClassesSection({ classes }: ClassesSectionProps) {
   return (
     <SectionWithPattern id="classes" className="border-border bg-card/30 relative border-y py-24">
       <div className="relative mx-auto max-w-7xl px-4">
-        <div className="mb-16 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-foreground mb-4 text-3xl font-black tracking-tighter uppercase italic md:text-5xl">
+        <div className="mb-10 flex flex-col gap-4 sm:mb-16 sm:gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-foreground mb-3 text-2xl font-black tracking-tighter uppercase italic sm:mb-4 sm:text-3xl md:text-5xl">
               Specialized <span className="text-primary">Disciplines</span>
             </h2>
-            <p className="text-muted-foreground max-w-xl">
+            <p className="text-muted-foreground max-w-xl text-sm sm:text-base">
               Whether you&apos;re looking for the explosive variety of CrossFit or the endurance-focused challenge of
               HYROX, our specialized classes are designed for every fitness level.
             </p>
@@ -89,22 +89,27 @@ export function ClassesSection({ classes }: ClassesSectionProps) {
                   </div>
                 </div>
 
-                <div className="p-8">
-                  <h3 className="text-foreground mb-4 text-2xl font-black tracking-tight uppercase italic">
+                <div className="p-4 sm:p-6 md:p-8">
+                  <h3 className="text-foreground mb-3 text-xl font-black tracking-tight uppercase italic sm:mb-4 sm:text-2xl">
                     {item.name}
                   </h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-muted-foreground mb-4 text-sm leading-relaxed sm:mb-6 sm:text-base">
                     {item.description ??
                       `Structured training designed for all levels. ${item.duration}-minute sessions, max ${item.capacity} participants.`}
                   </p>
 
-                  <div className="mb-8 grid grid-cols-3 gap-4">
+                  <div className="mb-6 grid grid-cols-3 gap-2 sm:mb-8 sm:gap-4">
                     {features.map((feat) => (
-                      <div key={feat.label} className="border-border bg-accent/50 rounded-xl border p-3 text-center">
-                        <div className="text-muted-foreground mb-1 text-[10px] font-black tracking-tighter uppercase">
+                      <div
+                        key={feat.label}
+                        className="border-border bg-accent/50 rounded-lg border p-2 text-center sm:rounded-xl sm:p-3"
+                      >
+                        <div className="text-muted-foreground mb-0.5 text-[9px] font-black tracking-tighter uppercase sm:mb-1 sm:text-[10px]">
                           {feat.label}
                         </div>
-                        <div className="text-foreground text-[11px] font-bold uppercase">{feat.value}</div>
+                        <div className="text-foreground truncate text-[10px] font-bold uppercase sm:text-[11px]">
+                          {feat.value}
+                        </div>
                       </div>
                     ))}
                   </div>

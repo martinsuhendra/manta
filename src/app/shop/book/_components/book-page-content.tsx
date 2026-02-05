@@ -43,13 +43,15 @@ export function BookPageContent({ classes }: BookPageContentProps) {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <section className="mb-8">
-        <h2 className="text-2xl font-bold">Book a class</h2>
-        <p className="text-muted-foreground mt-1">Browse upcoming sessions and book based on your membership.</p>
+    <div className="container mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      <section className="mb-6 sm:mb-8">
+        <h2 className="text-xl font-bold sm:text-2xl">Book a class</h2>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+          Browse upcoming sessions and book based on your membership.
+        </p>
       </section>
 
-      <section className="mb-6 flex flex-wrap items-end gap-4">
+      <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex flex-wrap items-center gap-2">
           <Label className="text-muted-foreground text-sm" htmlFor="start">
             From
@@ -79,7 +81,7 @@ export function BookPageContent({ classes }: BookPageContentProps) {
             Class
           </Label>
           <Select value={itemId || "all"} onValueChange={(v) => setItemId(v === "all" ? "" : v)}>
-            <SelectTrigger id="class" className="w-[180px]">
+            <SelectTrigger id="class" className="w-full min-w-0 sm:w-[180px]">
               <SelectValue placeholder="All classes" />
             </SelectTrigger>
             <SelectContent>

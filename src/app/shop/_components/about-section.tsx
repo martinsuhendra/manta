@@ -24,10 +24,10 @@ export function AboutSection() {
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="lg:pt-4">
             <p className="text-primary text-sm font-semibold tracking-widest uppercase">About Us</p>
-            <h2 className="text-foreground mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+            <h2 className="text-foreground mt-0 text-2xl font-black tracking-tight sm:mt-2 sm:text-3xl md:text-4xl">
               More Than Just a Gym
             </h2>
-            <p className="text-muted-foreground mt-6 text-lg leading-8">
+            <p className="text-muted-foreground mt-4 text-base leading-7 sm:mt-6 sm:text-lg sm:leading-8">
               At {APP_CONFIG.name}, we believe in the transformative power of fitness. Our mission is to create a space
               where everyone—from competitive athletes to fitness beginners—can push their limits and achieve their
               goals.

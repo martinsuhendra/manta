@@ -103,10 +103,6 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
 
   return (
     <>
-      <div className="bg-slate-950 py-16 text-center text-white">
-        <h1 className="text-4xl font-bold">Class Schedule</h1>
-        <p className="mt-4 text-slate-400">View upcoming classes. Use filters to narrow your search.</p>
-      </div>
       <Suspense
         fallback={
           <div className="border-b border-slate-200 bg-white px-6 py-6 dark:border-slate-800 dark:bg-slate-900" />
@@ -114,7 +110,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       >
         <ScheduleFilters items={classes} />
       </Suspense>
-      <UpcomingSessions sessions={sessions} showViewFullSchedule={false} />
+      <UpcomingSessions sessions={sessions} showViewFullSchedule={false} todayOnly={false} />
     </>
   );
 }

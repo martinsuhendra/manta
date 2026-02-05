@@ -365,7 +365,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="animate-fade-in-up container mx-auto px-4 py-20">
+      <div className="animate-fade-in-up container mx-auto px-4 py-8 sm:py-12 md:py-20">
         {/* Profile Header */}
         <div className="border-border bg-card relative mb-8 overflow-hidden rounded-3xl border p-6 shadow-xl md:p-10">
           <div className="relative z-10 flex flex-col items-center gap-8 md:flex-row">

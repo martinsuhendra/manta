@@ -44,14 +44,14 @@ export function FacilitiesSection() {
     <SectionWithPattern className="border-border bg-background border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase sm:text-4xl md:text-5xl">
+          <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase sm:text-3xl md:text-4xl md:text-5xl">
             World-Class Facilities
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
+          <p className="text-muted-foreground mt-3 text-base sm:mt-4 sm:text-lg">
             Everything you need to perform at your best, all under one roof.
           </p>
         </div>
-        <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {facilities.map((facility) => (
             <Card
               key={facility.name}

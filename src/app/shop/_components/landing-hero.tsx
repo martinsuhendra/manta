@@ -12,7 +12,7 @@ const HERO_VISUAL_IMAGE = "https://images.unsplash.com/photo-1534438327276-14e53
 
 export function LandingHero() {
   return (
-    <div className="relative flex min-h-[90vh] items-center overflow-hidden pt-32 pb-20 lg:pt-48 lg:pb-32">
+    <div className="relative flex min-h-[85dvh] items-center overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-48 lg:pb-32">
       {/* Dynamic Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img
@@ -30,7 +30,7 @@ export function LandingHero() {
               <span className="bg-primary mr-2 flex h-2 w-2 animate-pulse rounded-full" />
               New Hyrox Season Starts Now
             </div>
-            <h1 className="animate-fade-in-up text-foreground text-5xl leading-[0.9] font-black tracking-tighter drop-shadow-2xl md:text-7xl">
+            <h1 className="animate-fade-in-up text-foreground text-4xl leading-tight font-black tracking-tighter drop-shadow-2xl sm:text-5xl md:text-7xl md:leading-[0.9]">
               DIVE INTO <br />
               <span className="from-primary bg-gradient-to-r to-orange-400 bg-clip-text text-transparent">
                 ELITE
@@ -38,7 +38,7 @@ export function LandingHero() {
               <br />
               PERFORMANCE
             </h1>
-            <p className="text-muted-foreground animate-fade-in-up mx-auto max-w-xl text-xl leading-relaxed delay-100 lg:mx-0">
+            <p className="text-muted-foreground animate-fade-in-up mx-auto max-w-xl text-base leading-relaxed delay-100 sm:text-xl lg:mx-0">
               The premier facility for Crossfit and Hyrox training. Join the {APP_CONFIG.name} community. Push limits,
               break barriers, and sweat together.
             </p>

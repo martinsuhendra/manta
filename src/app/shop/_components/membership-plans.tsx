@@ -12,10 +12,12 @@ export function MembershipPlans({ products }: MembershipPlansProps) {
     <SectionWithPattern id="plans" className="border-border bg-muted/30 border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl md:text-5xl">
+          <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase italic sm:text-3xl md:text-4xl md:text-5xl">
             Join The Ranks
           </h2>
-          <p className="text-muted-foreground mt-4">No contracts, no hidden fees. Just pure effort and results.</p>
+          <p className="text-muted-foreground mt-3 text-sm sm:mt-4 sm:text-base">
+            No contracts, no hidden fees. Just pure effort and results.
+          </p>
         </div>
 
         {products.length === 0 ? (

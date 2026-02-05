@@ -189,24 +189,26 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-8 md:p-10">
-        <h3 className="text-foreground mb-4 text-2xl font-black tracking-tighter uppercase italic md:text-3xl">
+      <div className="flex flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 md:p-10">
+        <h3 className="text-foreground mb-3 text-xl font-black tracking-tighter uppercase italic sm:mb-4 sm:text-2xl md:text-3xl">
           {product.name}
         </h3>
         {product.description && (
-          <p className="text-muted-foreground mb-6 leading-relaxed font-medium md:mb-8">{product.description}</p>
+          <p className="text-muted-foreground mb-4 line-clamp-2 text-sm leading-relaxed font-medium sm:mb-6 md:mb-8 md:line-clamp-none md:text-base">
+            {product.description}
+          </p>
         )}
 
-        <div className="mb-6 flex items-baseline justify-between gap-4 md:mb-8">
+        <div className="mb-4 flex items-baseline justify-between gap-2 sm:mb-6 md:mb-8">
           <span className="text-foreground text-2xl font-black tracking-tight">{formatPrice(product.price)}</span>
         </div>
 
         {product.features.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2 md:mb-8">
+          <div className="mb-4 flex flex-wrap gap-1.5 sm:mb-6 md:mb-8 md:gap-2">
             {product.features.map((feature) => (
               <span
                 key={feature}
-                className="border-border bg-accent px-3 py-1 text-[10px] font-black tracking-widest uppercase"
+                className="border-border bg-accent truncate px-2 py-0.5 text-[9px] font-black tracking-widest uppercase sm:px-3 sm:py-1 sm:text-[10px]"
               >
                 {feature}
               </span>

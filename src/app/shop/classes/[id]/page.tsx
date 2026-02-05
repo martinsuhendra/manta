@@ -127,16 +127,16 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
   return (
     <>
       <div className="border-b bg-slate-50 dark:bg-slate-950">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-6 sm:py-8">
           <Link
             href="/shop#classes"
-            className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-2 text-sm"
+            className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-2 text-sm sm:mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to classes
           </Link>
-          <div className="flex flex-col gap-8 md:flex-row md:items-start">
-            <div className="bg-muted aspect-video w-full max-w-md overflow-hidden rounded-xl md:aspect-square">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+            <div className="bg-muted aspect-video w-full max-w-md shrink-0 overflow-hidden rounded-xl md:aspect-square">
               {item.image ? (
                 <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
               ) : (
@@ -148,9 +148,9 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                 </div>
               )}
             </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold">{item.name}</h1>
-              <div className="text-muted-foreground mt-4 flex items-center gap-6 text-sm">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold sm:text-3xl">{item.name}</h1>
+              <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-4 text-sm sm:mt-4 sm:gap-6">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   <span>Max {item.capacity} participants</span>
@@ -165,11 +165,11 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold">Upcoming sessions</h2>
-        <p className="text-muted-foreground mt-1">Book a spot for this class.</p>
-        <div className="mt-8">
-          <UpcomingSessions sessions={sessions} hideTitle />
+      <div className="container mx-auto px-4 py-8 sm:py-12">
+        <h2 className="text-xl font-bold sm:text-2xl">Upcoming sessions</h2>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Book a spot for this class.</p>
+        <div className="mt-6 sm:mt-8">
+          <UpcomingSessions sessions={sessions} hideTitle todayOnly={false} />
         </div>
       </div>
     </>

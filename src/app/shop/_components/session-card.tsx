@@ -74,20 +74,22 @@ export function SessionCard({
         <div className="from-background/95 via-background/85 absolute inset-0 bg-gradient-to-r to-transparent" />
       </div>
       <CardContent className="relative z-10 p-0">
-        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 flex-1 items-start gap-4">
+        <div className="flex flex-col gap-4 p-4 sm:p-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
             <div
               className="bg-primary/30 group-hover:bg-primary h-12 w-1 shrink-0 rounded-full transition-colors"
               style={session.item.color ? { backgroundColor: session.item.color } : undefined}
             />
             <div>
-              <span className="text-foreground block text-2xl font-black">{formatTimeWithAmPm(session.startTime)}</span>
+              <span className="text-foreground block text-xl font-black sm:text-2xl">
+                {formatTimeWithAmPm(session.startTime)}
+              </span>
               <span className="text-muted-foreground text-sm font-bold uppercase">
                 {format(parseISO(session.date), "EEE")}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-foreground group-hover:text-primary text-xl font-bold transition-colors">
+              <h3 className="text-foreground group-hover:text-primary text-lg font-bold transition-colors sm:text-xl">
                 {session.item.name}
               </h3>
               <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-4 text-sm">

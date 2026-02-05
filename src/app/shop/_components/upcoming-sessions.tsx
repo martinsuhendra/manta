@@ -22,9 +22,16 @@ interface UpcomingSessionsProps {
   sessions: MemberSession[];
   hideTitle?: boolean;
   showViewFullSchedule?: boolean;
+  /** When true (e.g. landing page), show only today's sessions. When false (e.g. schedule page), show all sessions from filters. */
+  todayOnly?: boolean;
 }
 
-export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = true }: UpcomingSessionsProps) {
+export function UpcomingSessions({
+  sessions,
+  hideTitle,
+  showViewFullSchedule = true,
+  todayOnly = true,
+}: UpcomingSessionsProps) {
   const { data: authSession } = useSession();
   const [filter, setFilter] = React.useState<string>("All");
   const [selectedSession, setSelectedSession] = React.useState<MemberSession | null>(null);
@@ -33,10 +40,13 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
 
   const isMember = authSession?.user?.role === "MEMBER";
 
-  const todaySessions = React.useMemo(() => {
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    return sessions.filter((s) => s.date === todayStr);
-  }, [sessions]);
+  const sessionsToShow = React.useMemo(() => {
+    if (todayOnly) {
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      return sessions.filter((s) => s.date === todayStr);
+    }
+    return sessions;
+  }, [sessions, todayOnly]);
 
   const handleCardClick = (session: MemberSession) => {
     setSelectedSession(session);
@@ -60,13 +70,13 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
   };
 
   const classTypes = React.useMemo(() => {
-    const names = new Set(todaySessions.map((s) => s.item.name));
+    const names = new Set(sessionsToShow.map((s) => s.item.name));
     return Array.from(names).sort();
-  }, [todaySessions]);
+  }, [sessionsToShow]);
 
   const filteredSessions = React.useMemo(
-    () => (filter === "All" ? todaySessions : todaySessions.filter((s) => s.item.name === filter)),
-    [filter, todaySessions],
+    () => (filter === "All" ? sessionsToShow : sessionsToShow.filter((s) => s.item.name === filter)),
+    [filter, sessionsToShow],
   );
 
   const groupedSessions = React.useMemo(() => {
@@ -86,17 +96,19 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
     [groupedSessions],
   );
 
-  if (todaySessions.length === 0) return null;
+  if (todayOnly && sessionsToShow.length === 0) return null;
 
   return (
     <SectionWithPattern id="schedule" className="border-border bg-muted/20 sporty-section-fill border-t py-24 sm:py-32">
       <div className="container mx-auto px-4">
         {!hideTitle && (
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl md:text-5xl">
+          <div className="mx-auto mb-8 max-w-2xl text-center sm:mb-12">
+            <h2 className="text-foreground text-2xl font-black tracking-tighter uppercase italic sm:text-3xl md:text-4xl md:text-5xl">
               Class Schedule
             </h2>
-            <p className="text-muted-foreground mt-4">Book your spot. First come, first served.</p>
+            <p className="text-muted-foreground mt-3 text-sm sm:mt-4 sm:text-base">
+              Book your spot. First come, first served.
+            </p>
           </div>
         )}
 
@@ -126,12 +138,14 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
           <div className={hideTitle ? "space-y-8" : "space-y-10"}>
             {sortedDates.map((date) => (
               <div key={date}>
-                <div className="mb-4 flex items-center gap-4">
-                  <div className="bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-xl px-4 py-2 shadow-md">
-                    <span className="text-xs font-bold uppercase">{format(parseISO(date), "MMM")}</span>
-                    <span className="text-2xl font-black">{format(parseISO(date), "dd")}</span>
+                <div className="mb-3 flex items-center gap-3 sm:mb-4 sm:gap-4">
+                  <div className="bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-lg px-3 py-1.5 shadow-md sm:rounded-xl sm:px-4 sm:py-2">
+                    <span className="text-[10px] font-bold uppercase sm:text-xs">{format(parseISO(date), "MMM")}</span>
+                    <span className="text-xl font-black sm:text-2xl">{format(parseISO(date), "dd")}</span>
                   </div>
-                  <h3 className="text-foreground text-xl font-bold">{format(parseISO(date), "EEEE")}</h3>
+                  <h3 className="text-foreground truncate text-base font-bold sm:text-xl">
+                    {format(parseISO(date), "EEEE")}
+                  </h3>
                   <div className="bg-border h-px flex-1" />
                 </div>
                 <div className="space-y-4">
