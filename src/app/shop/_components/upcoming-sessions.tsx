@@ -5,13 +5,12 @@ import * as React from "react";
 import Link from "next/link";
 
 import { format, parseISO } from "date-fns";
-import { ArrowRight, Calendar, Clock, User, Users } from "lucide-react";
+import { ArrowRight, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { MemberSession } from "@/hooks/use-member-sessions";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +26,7 @@ interface UpcomingSessionsProps {
 
 export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = true }: UpcomingSessionsProps) {
   const { data: authSession } = useSession();
+  const [filter, setFilter] = React.useState<string>("All");
   const [selectedSession, setSelectedSession] = React.useState<MemberSession | null>(null);
   const [showDetails, setShowDetails] = React.useState(false);
   const [showBooking, setShowBooking] = React.useState(false);
@@ -54,140 +54,170 @@ export function UpcomingSessions({ sessions, hideTitle, showViewFullSchedule = t
     setShowBooking(true);
   };
 
-  if (sessions.length === 0) return null;
+  const classTypes = React.useMemo(() => {
+    const names = new Set(sessions.map((s) => s.item.name));
+    return Array.from(names).sort();
+  }, [sessions]);
 
-  // Group sessions by date
-  const groupedSessions = sessions.reduce(
-    (acc, session) => {
-      const dateKey = session.date;
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(session);
-      return acc;
-    },
-    {} as Record<string, MemberSession[]>,
+  const filteredSessions = React.useMemo(
+    () => (filter === "All" ? sessions : sessions.filter((s) => s.item.name === filter)),
+    [filter, sessions],
   );
 
-  const sortedDates = Object.keys(groupedSessions).sort();
+  const groupedSessions = React.useMemo(() => {
+    const acc: Record<string, MemberSession[]> = {};
+    for (const session of filteredSessions) {
+      const dateKey = session.date;
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(session);
+    }
+    return acc;
+  }, [filteredSessions]);
+
+  const sortedDates = React.useMemo(() => Object.keys(groupedSessions).sort(), [groupedSessions]);
+
+  const getSessionsForDate = React.useCallback(
+    (d: string): MemberSession[] => (Object.hasOwn(groupedSessions, d) ? groupedSessions[d] : []),
+    [groupedSessions],
+  );
+
+  if (sessions.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-slate-50 py-24 sm:py-32 dark:bg-slate-950">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 -left-4 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl filter" />
-      <div className="absolute -right-4 bottom-0 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl filter" />
-
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="schedule" className="border-border bg-muted/20 border-t py-24 sm:py-32">
+      <div className="relative container mx-auto px-4">
         {!hideTitle && (
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Upcoming Sessions
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl md:text-5xl">
+              Class Schedule
             </h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-              Join one of our scheduled classes. Sign up to book your spot!
-            </p>
+            <p className="text-muted-foreground mt-4">Book your spot. First come, first served.</p>
           </div>
         )}
 
-        <div className={hideTitle ? "space-y-12" : "mt-16 space-y-12"}>
-          {sortedDates.map((date) => (
-            <div key={date} className="relative">
-              <div className="mb-6 flex items-center gap-4">
-                <div className="flex flex-col items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-white shadow-lg">
-                  <span className="text-xs font-bold uppercase">{format(parseISO(date), "MMM")}</span>
-                  <span className="text-2xl font-bold">{format(parseISO(date), "dd")}</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                  {format(parseISO(date), "EEEE")}
-                </h3>
-                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-              </div>
+        {/* Filter pills */}
+        <div className="mb-10 flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFilter("All")}
+            className={cn(
+              "rounded-full px-6 py-2 text-sm font-bold tracking-wide uppercase transition-all",
+              filter === "All"
+                ? "bg-primary text-primary-foreground shadow-primary/20 shadow-lg"
+                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground border",
+            )}
+          >
+            All
+          </button>
+          {classTypes.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setFilter(name)}
+              className={cn(
+                "rounded-full px-6 py-2 text-sm font-bold tracking-wide uppercase transition-all",
+                filter === name
+                  ? "bg-primary text-primary-foreground shadow-primary/20 shadow-lg"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground border",
+              )}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
 
-              <ScrollArea className="w-full pb-4 whitespace-nowrap">
-                <div className="flex w-max space-x-6 px-1">
-                  {groupedSessions[date].map((session) => (
+        {filteredSessions.length === 0 ? (
+          <div className="border-border rounded-xl border border-dashed py-12 text-center">
+            <p className="text-muted-foreground">No classes found for this filter.</p>
+          </div>
+        ) : (
+          <div className={hideTitle ? "space-y-8" : "space-y-10"}>
+            {sortedDates.map((date) => (
+              <div key={date}>
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-xl px-4 py-2 shadow-md">
+                    <span className="text-xs font-bold uppercase">{format(parseISO(date), "MMM")}</span>
+                    <span className="text-2xl font-black">{format(parseISO(date), "dd")}</span>
+                  </div>
+                  <h3 className="text-foreground text-xl font-bold">{format(parseISO(date), "EEEE")}</h3>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+                <div className="space-y-4">
+                  {getSessionsForDate(date).map((session) => (
                     <Card
                       key={session.id}
-                      className="group relative w-[320px] shrink-0 cursor-pointer overflow-hidden border-slate-200 bg-white/50 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 dark:border-slate-800 dark:bg-slate-900/50"
+                      className="group border-border bg-card/80 hover:border-primary/50 hover:shadow-primary/5 cursor-pointer overflow-hidden transition-all hover:shadow-lg"
                       onClick={() => handleCardClick(session)}
                     >
-                      {/* Top colored accent line */}
-                      <div
-                        className="absolute top-0 left-0 h-1 w-full"
-                        style={{ backgroundColor: session.item.color || "#3b82f6" }}
-                      />
-
-                      <CardContent className="flex h-full flex-col p-6">
-                        <div className="flex-1 space-y-4">
-                          <div className="flex items-start justify-between">
-                            <h3 className="line-clamp-1 text-xl font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                              {session.item.name}
-                            </h3>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "shrink-0 border-0 px-2.5 py-1 text-xs font-medium transition-colors",
-                                session.spotsLeft <= 3
-                                  ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                                  : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-                              )}
-                            >
-                              {session.spotsLeft === 0 ? "Full" : `${session.spotsLeft} left`}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <Clock className="h-4 w-4 text-blue-500" />
-                            <span>
-                              {session.startTime} - {session.endTime}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                            {session.teacher && (
-                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                <User className="h-4 w-4 text-slate-400" />
-                                <span className="truncate">{session.teacher.name ?? "Coach"}</span>
+                      <CardContent className="p-0">
+                        <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+                          <div className="flex min-w-0 flex-1 items-start gap-4">
+                            <div
+                              className="bg-primary/30 group-hover:bg-primary h-12 w-1 shrink-0 rounded-full transition-colors"
+                              style={session.item.color ? { backgroundColor: session.item.color } : undefined}
+                            />
+                            <div>
+                              <span className="text-foreground block text-2xl font-black">
+                                {session.startTime} – {session.endTime}
+                              </span>
+                              <span className="text-muted-foreground text-sm font-bold uppercase">
+                                {format(parseISO(session.date), "EEE")}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-foreground group-hover:text-primary text-xl font-bold transition-colors">
+                                  {session.item.name}
+                                </h3>
+                                <Badge variant="secondary" className="text-xs font-semibold">
+                                  {session.item.name}
+                                </Badge>
                               </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                              <Users className="h-4 w-4 text-slate-400" />
-                              <span>Capacity: {session.item.capacity}</span>
+                              <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-4 text-sm">
+                                {session.teacher && (
+                                  <span className="flex items-center gap-1">
+                                    <User className="h-3 w-3" />
+                                    Coach {session.teacher.name ?? "TBA"}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {session.spotsLeft} spots left
+                                </span>
+                                {session.spotsLeft <= 3 && session.spotsLeft > 0 && (
+                                  <span className="text-destructive text-xs font-medium">Almost full</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-
-                          <Button
-                            size="sm"
-                            className="mt-4 w-full"
-                            onClick={(e) => handleJoinClick(e, session)}
-                            disabled={session.spotsLeft === 0}
-                          >
-                            Join Session
-                          </Button>
-                        </div>
-
-                        {/* Decorative faint background icon */}
-                        <div className="pointer-events-none absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.05]">
-                          <Calendar className="h-32 w-32" />
+                          <div className="shrink-0">
+                            <Button
+                              size="sm"
+                              className="w-full md:w-auto"
+                              onClick={(e) => handleJoinClick(e, session)}
+                              disabled={session.spotsLeft === 0}
+                            >
+                              {session.spotsLeft === 0 ? "Full" : "Join Session"}
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {!hideTitle && showViewFullSchedule && (
           <div className="mt-12 flex justify-center">
-            <Link href="/shop/schedule">
-              <Button size="lg" className="gap-2">
+            <Button asChild size="lg" className="gap-2 font-bold tracking-wide uppercase">
+              <Link href="/shop/schedule">
                 View Full Schedule
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </div>

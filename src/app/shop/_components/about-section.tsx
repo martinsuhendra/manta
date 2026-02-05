@@ -15,35 +15,32 @@ const features = [
 
 export function AboutSection() {
   return (
-    <section id="about" className="bg-background py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
-          <div className="lg:pt-4 lg:pr-8">
-            <div className="lg:max-w-lg">
-              <h2 className="text-base leading-7 font-semibold text-blue-600">About Us</h2>
-              <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">More Than Just a Gym</p>
-              <p className="text-muted-foreground mt-6 text-lg leading-8">
-                At {APP_CONFIG.name}, we believe in the transformative power of fitness. Founded in 2026, our mission
-                has been to create a space where everyone—from competitive athletes to fitness beginners—can push their
-                limits and achieve their goals.
-              </p>
-              <div className="mt-8 space-y-4">
-                {features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <span className="text-muted-foreground text-sm font-medium">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <section id="about" className="border-border bg-muted/30 border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="lg:pt-4">
+            <p className="text-primary text-sm font-semibold tracking-widest uppercase">About Us</p>
+            <h2 className="text-foreground mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+              More Than Just a Gym
+            </h2>
+            <p className="text-muted-foreground mt-6 text-lg leading-8">
+              At {APP_CONFIG.name}, we believe in the transformative power of fitness. Our mission is to create a space
+              where everyone—from competitive athletes to fitness beginners—can push their limits and achieve their
+              goals.
+            </p>
+            <ul className="mt-8 space-y-4">
+              {features.map((feature) => (
+                <li key={feature} className="text-muted-foreground flex items-start gap-3">
+                  <CheckCircle2 className="text-primary mt-0.5 h-5 w-5 shrink-0" />
+                  <span className="font-medium">{feature}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="relative min-w-0 overflow-hidden">
-            <div className="bg-muted absolute inset-0 -z-10 rounded-xl opacity-50 blur-xl" />
-            <div className="relative aspect-[4/3] w-full max-w-full overflow-hidden rounded-xl bg-gray-900 shadow-xl ring-1 ring-gray-400/10">
-              <div className="flex h-full items-center justify-center text-gray-500">
-                {/* Placeholder for gym image */}
-                <span className="text-lg">Gym Interior Image Placeholder</span>
-                {/* In a real app, use: <Image src="/path/to/image.jpg" alt="Gym interior" fill className="object-cover" /> */}
+          <div className="border-border bg-card relative min-w-0 overflow-hidden rounded-2xl border">
+            <div className="bg-muted aspect-[4/3] w-full overflow-hidden rounded-2xl">
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="text-muted-foreground text-sm tracking-wider uppercase">Gym interior</span>
               </div>
             </div>
           </div>

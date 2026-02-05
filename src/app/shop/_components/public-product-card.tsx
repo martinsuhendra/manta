@@ -45,6 +45,7 @@ interface PublicProduct {
 
 interface PublicProductCardProps {
   product: PublicProduct;
+  highlight?: boolean;
 }
 
 const purchaseFormSchema = z.object({
@@ -54,7 +55,7 @@ const purchaseFormSchema = z.object({
 
 type PurchaseFormValues = z.infer<typeof purchaseFormSchema>;
 
-export function PublicProductCard({ product }: PublicProductCardProps) {
+export function PublicProductCard({ product, highlight = false }: PublicProductCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isPurchasing, setIsPurchasing] = React.useState(false);
@@ -164,7 +165,18 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
   };
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
+    <Card
+      className={
+        highlight
+          ? "group border-primary shadow-primary/20 hover:shadow-primary/20 relative flex h-full flex-col overflow-hidden shadow-xl transition-all hover:shadow-2xl"
+          : "group border-border bg-card hover:border-primary/50 hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden transition-all hover:shadow-lg"
+      }
+    >
+      {highlight && (
+        <div className="bg-primary text-primary-foreground absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-bold uppercase shadow-lg">
+          Most Popular
+        </div>
+      )}
       <CardHeader>
         <div className="bg-muted relative mb-4 aspect-video overflow-hidden rounded-lg border">
           {product.image ? (

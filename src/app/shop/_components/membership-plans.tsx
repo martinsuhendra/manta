@@ -21,13 +21,13 @@ interface MembershipPlansProps {
 
 export function MembershipPlans({ products }: MembershipPlansProps) {
   return (
-    <section id="plans" className="bg-background py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="plans" className="border-border bg-muted/30 border-t py-24 sm:py-32">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Membership Plans</h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Choose the plan that fits your goals. No hidden fees, just results.
-          </p>
+          <h2 className="text-foreground text-3xl font-black tracking-tighter uppercase italic sm:text-4xl md:text-5xl">
+            Join The Ranks
+          </h2>
+          <p className="text-muted-foreground mt-4">No contracts, no hidden fees. Just pure effort and results.</p>
         </div>
 
         {products.length === 0 ? (
@@ -36,9 +36,14 @@ export function MembershipPlans({ products }: MembershipPlansProps) {
             <p className="mt-2 text-sm">Please check back later.</p>
           </div>
         ) : (
-          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-            {products.map((product) => (
-              <PublicProductCard key={product.id} product={product} />
+          <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {products.map((product, index) => (
+              <div
+                key={product.id}
+                className={index === 1 && products.length >= 3 ? "relative lg:z-10 lg:scale-105" : undefined}
+              >
+                <PublicProductCard product={product} highlight={index === 1 && products.length >= 3} />
+              </div>
             ))}
           </div>
         )}
