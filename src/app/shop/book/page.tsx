@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { USER_ROLES } from "@/lib/types";
 
+import { SectionWithPattern } from "../_components/section-with-pattern";
 import { getClasses } from "../_lib/shop-queries";
 
 import { BookPageContent } from "./_components/book-page-content";
@@ -26,5 +27,9 @@ export default async function BookPage() {
   }
 
   const classes = await getClasses();
-  return <BookPageContent classes={classes} />;
+  return (
+    <SectionWithPattern as="div" className="bg-muted/20 sporty-section-fill min-h-[60vh]">
+      <BookPageContent classes={classes} />
+    </SectionWithPattern>
+  );
 }

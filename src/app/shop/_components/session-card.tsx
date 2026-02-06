@@ -109,13 +109,13 @@ export function SessionCard({
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex w-full shrink-0 flex-row items-center justify-between gap-3 sm:w-auto md:w-auto">
             {eligibility != null &&
               (reason ? (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span>
+                      <span className="shrink-0">
                         <StatusBadge status={status} />
                       </span>
                     </TooltipTrigger>
@@ -129,7 +129,7 @@ export function SessionCard({
               ))}
             <Button
               size="lg"
-              className="w-full text-base font-black tracking-wide uppercase md:w-auto"
+              className="min-w-[100px] shrink-0 text-base font-black tracking-wide uppercase sm:min-w-[120px]"
               onClick={(e) => {
                 e.stopPropagation();
                 onActionClick(e);
