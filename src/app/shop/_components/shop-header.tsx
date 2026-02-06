@@ -5,14 +5,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Calendar, LogIn, LogOut, Menu, User, UserPlus } from "lucide-react";
+import { Calendar, LogIn, LogOut, User, UserPlus } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { APP_CONFIG } from "@/config/app-config";
 import { cn } from "@/lib/utils";
 
@@ -129,101 +136,95 @@ export function ShopHeader({ session }: ShopHeaderProps) {
 
         {/* Mobile Navigation */}
         <div className="md:hidden">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
+          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn("transition-colors", isTransparent && "text-white hover:bg-white/10 hover:text-white")}
               >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="flex flex-col gap-0 px-0 sm:max-w-xs">
-              <SheetHeader className="border-b px-6 py-4 text-left">
-                <SheetTitle className="flex items-center gap-2">
-                  <div className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-lg font-bold">
-                    {APP_CONFIG.name.substring(0, 1)}
-                  </div>
-                  {APP_CONFIG.name}
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="flex flex-1 flex-col gap-1 px-2 py-4">
-                {!mounted ? (
-                  <div className="space-y-4 px-4">
-                    <div className="bg-muted h-12 w-full animate-pulse rounded-md" />
-                    <div className="bg-muted h-8 w-3/4 animate-pulse rounded-md" />
-                    <div className="bg-muted h-8 w-1/2 animate-pulse rounded-md" />
-                  </div>
-                ) : session ? (
-                  <>
-                    <div className="mb-4 flex items-center gap-3 px-4 py-2">
-                      <Avatar className="h-10 w-10 border">
-                        <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
-                        <AvatarFallback>{session.user.name?.substring(0, 2).toUpperCase() || "U"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="truncate text-sm font-semibold">{session.user.name}</span>
-                        <span className="text-muted-foreground truncate text-xs">{session.user.email}</span>
-                      </div>
-                    </div>
-
-                    <Separator className="mb-2" />
-
-                    {session.user.role === "MEMBER" && (
-                      <Link href="/shop/book" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="h-12 w-full justify-start gap-3 text-base font-normal">
-                          <Calendar className="h-5 w-5" />
-                          Book a class
-                        </Button>
-                      </Link>
+                <span className="relative flex h-6 w-6 flex-col items-center justify-center" aria-hidden>
+                  <span
+                    className={cn(
+                      "absolute left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-current transition-all duration-300 ease-out",
+                      isOpen ? "top-1/2 -translate-y-1/2 rotate-45" : "top-[5px]",
                     )}
-                    <Link href="/shop/my-account" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="h-12 w-full justify-start gap-3 text-base font-normal">
-                        <User className="h-5 w-5" />
-                        My Account
-                      </Button>
-                    </Link>
-
-                    <div className="mt-auto">
-                      <Separator className="my-2" />
-                      <Button
-                        variant="ghost"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive h-12 w-full justify-start gap-3 text-base font-normal"
-                        onClick={() => {
-                          handleSignOut();
-                          setIsOpen(false);
-                        }}
-                      >
-                        <LogOut className="h-5 w-5" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <SignInDialog>
-                      <Button
-                        variant="ghost"
-                        className="h-12 w-full justify-start gap-3 text-base font-normal"
-                        onClick={() => {}}
-                      >
-                        <LogIn className="h-5 w-5" />
-                        Sign In
-                      </Button>
-                    </SignInDialog>
-                    <SignUpDialog>
-                      <Button variant="ghost" className="h-12 w-full justify-start gap-3 text-base font-normal">
-                        <UserPlus className="h-5 w-5" />
-                        Sign Up
-                      </Button>
-                    </SignUpDialog>
+                  />
+                  <span
+                    className={cn(
+                      "absolute top-1/2 left-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current transition-all duration-300 ease-out",
+                      isOpen && "scale-x-0 opacity-0",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "absolute bottom-[5px] left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-current transition-all duration-300 ease-out",
+                      isOpen ? "bottom-1/2 translate-y-1/2 -rotate-45" : "",
+                    )}
+                  />
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-2">
+              <DropdownMenuLabel className="font-normal">
+                {mounted && session ? (
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm leading-none font-medium">{session.user.name}</p>
+                    <p className="text-muted-foreground text-xs leading-none">{session.user.email}</p>
                   </div>
+                ) : (
+                  <span className="font-semibold">{APP_CONFIG.name}</span>
                 )}
-              </div>
-            </SheetContent>
-          </Sheet>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {!mounted ? (
+                <div className="space-y-2 p-2">
+                  <div className="bg-muted h-8 w-full animate-pulse rounded-md" />
+                  <div className="bg-muted h-8 w-3/4 animate-pulse rounded-md" />
+                </div>
+              ) : session ? (
+                <DropdownMenuGroup>
+                  {session.user.role === "MEMBER" && (
+                    <Link href="/shop/book">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        <span>Book a class</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  <Link href="/shop/my-account">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>My Account</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                    onClick={() => handleSignOut()}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              ) : (
+                <DropdownMenuGroup>
+                  <SignInDialog>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      <span>Sign In</span>
+                    </DropdownMenuItem>
+                  </SignInDialog>
+                  <SignUpDialog>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      <span>Sign Up</span>
+                    </DropdownMenuItem>
+                  </SignUpDialog>
+                </DropdownMenuGroup>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
