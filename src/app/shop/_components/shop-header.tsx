@@ -67,7 +67,7 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             : "bg-background/80 border-border/40 border-b backdrop-blur-md",
       )}
     >
-      <div className="container mx-auto flex h-14 items-center justify-between gap-3 px-4 sm:h-16 sm:px-4">
+      <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-5 sm:px-4 sm:py-6">
         <Link href="/shop" className="group flex shrink-0 items-center gap-2">
           <div className="bg-primary text-primary-foreground relative flex h-8 w-8 items-center justify-center rounded-lg font-bold transition-transform group-hover:scale-110">
             {APP_CONFIG.name.substring(0, 1)}

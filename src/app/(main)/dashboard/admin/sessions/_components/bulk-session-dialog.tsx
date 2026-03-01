@@ -674,7 +674,7 @@ export function BulkSessionDialog({ open, onOpenChange, onSuccess }: BulkSession
 
             {/* Save Template */}
             {!hasTemplateSelected && (
-              <div className="shrink-0 space-y-3 border-t pt-4">
+              <div className="shrink-0 space-y-3 pt-4">
                 <div className="flex items-center gap-2">
                   <Star className="text-muted-foreground h-4 w-4" />
                   <Label className="text-sm font-medium">Save as Template</Label>
@@ -695,7 +695,7 @@ export function BulkSessionDialog({ open, onOpenChange, onSuccess }: BulkSession
             )}
 
             {/* Action Buttons */}
-            <div className="flex shrink-0 items-center justify-end gap-2 border-t pt-4">
+            <div className="flex shrink-0 items-center justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
