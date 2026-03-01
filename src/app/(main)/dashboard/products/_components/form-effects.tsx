@@ -55,6 +55,7 @@ export function useFormEffects({
           description: product.description || "",
           price: product.price,
           validDays: product.validDays,
+          participantsPerPurchase: product.participantsPerPurchase ?? 1,
           features: product.features,
           image: product.image || "",
           paymentUrl: product.paymentUrl || "",

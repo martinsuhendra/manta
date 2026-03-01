@@ -43,6 +43,14 @@ export function BasicInfoTab({ product }: BasicInfoTabProps) {
               </p>
             </div>
             <div>
+              <label className="text-muted-foreground text-sm font-medium">Participants per purchase</label>
+              <p className="mt-1">
+                {product.participantsPerPurchase === 2
+                  ? "2 (Couple)"
+                  : `${product.participantsPerPurchase ?? 1} (Individual)`}
+              </p>
+            </div>
+            <div>
               <label className="text-muted-foreground text-sm font-medium">Status</label>
               <div className="mt-1">
                 <StatusBadge variant={product.isActive ? "success" : "secondary"}>

@@ -57,6 +57,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
+    const { _sum } = await prisma.booking.aggregate({
+      where: {
+        classSessionId: sessionId,
+        status: "CONFIRMED",
+      },
+      _sum: { participantCount: true },
+    });
+    const totalSlots = _sum?.participantCount ?? 0;
+    const spotsLeft = Math.max(0, classSession.item.capacity - totalSlots);
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -91,6 +101,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const eligibleMemberships: Array<{
       id: string;
       product: { name: string };
+      slotsRequired: number;
       remainingQuota: number | null;
       isEligible: true;
     }> = [];
@@ -133,6 +144,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       eligibleMemberships.push({
         id: membership.id,
         product: { name: membership.product.name },
+        slotsRequired: membership.product.participantsPerPurchase ?? 1,
         remainingQuota: remainingQuota === Infinity ? null : remainingQuota,
         isEligible: true,
       });
@@ -156,6 +168,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       canJoin: true,
       alreadyBooked: false,
+      spotsLeft,
       eligibleMemberships,
     });
   } catch (error) {

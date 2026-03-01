@@ -115,11 +115,21 @@ export async function GET(request: NextRequest) {
             bookings: true,
           },
         },
+        bookings: {
+          where: { status: "CONFIRMED" },
+          select: { participantCount: true },
+        },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return NextResponse.json(sessions);
+    const sessionsWithSlots = sessions.map((s) => {
+      const totalParticipantSlots = s.bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
+      const { bookings, ...rest } = s;
+      return { ...rest, totalParticipantSlots };
+    });
+
+    return NextResponse.json(sessionsWithSlots);
   } catch (error) {
     console.error("Error fetching sessions:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

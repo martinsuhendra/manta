@@ -39,6 +39,7 @@ export async function getActiveProducts() {
         description: true,
         price: true,
         validDays: true,
+        participantsPerPurchase: true,
         image: true,
         paymentUrl: true,
         whatIsIncluded: true,
@@ -90,27 +91,30 @@ export async function getUpcomingSessions() {
         },
         bookings: {
           where: { status: { not: "CANCELLED" } },
-          select: { id: true },
+          select: { id: true, participantCount: true },
         },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
       take: 10,
     });
 
-    return sessions.map((session) => ({
-      id: session.id,
-      itemId: session.itemId,
-      teacherId: session.teacherId,
-      date: session.date.toISOString().split("T")[0],
-      startTime: session.startTime,
-      endTime: session.endTime,
-      status: session.status,
-      notes: session.notes,
-      item: session.item,
-      teacher: session.teacher,
-      spotsLeft: Math.max(0, session.item.capacity - session.bookings.length),
-      capacity: session.item.capacity,
-    }));
+    return sessions.map((session) => {
+      const totalParticipantSlots = session.bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
+      return {
+        id: session.id,
+        itemId: session.itemId,
+        teacherId: session.teacherId,
+        date: session.date.toISOString().split("T")[0],
+        startTime: session.startTime,
+        endTime: session.endTime,
+        status: session.status,
+        notes: session.notes,
+        item: session.item,
+        teacher: session.teacher,
+        spotsLeft: Math.max(0, session.item.capacity - totalParticipantSlots),
+        capacity: session.item.capacity,
+      };
+    });
   } catch (error) {
     console.error("Failed to fetch sessions:", error);
     return [];

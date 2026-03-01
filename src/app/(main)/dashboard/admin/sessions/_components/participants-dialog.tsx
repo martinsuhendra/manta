@@ -37,6 +37,7 @@ interface ParticipantsDialogProps {
 interface Booking {
   id: string;
   status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW" | "WAITLISTED";
+  participantCount?: number;
   user: {
     id: string;
     name: string | null;
@@ -46,6 +47,7 @@ interface Booking {
 
 interface SessionWithBookings extends Session {
   bookings: Booking[];
+  totalParticipantSlots?: number;
 }
 
 export function ParticipantsDialog({ open, onOpenChange, session }: ParticipantsDialogProps) {
@@ -124,13 +126,17 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
               <div>
                 <p className="text-sm font-medium">Current Capacity</p>
                 <p className="text-muted-foreground text-xs">
-                  {confirmedBookings.length} of {session.item.capacity} spots filled
+                  {sessionWithBookings?.totalParticipantSlots ??
+                    confirmedBookings.reduce((s, b) => s + (b.participantCount ?? 1), 0)}{" "}
+                  of {session.item.capacity} spots filled
                 </p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold">
-                {confirmedBookings.length} / {session.item.capacity}
+                {sessionWithBookings?.totalParticipantSlots ??
+                  confirmedBookings.reduce((s, b) => s + (b.participantCount ?? 1), 0)}{" "}
+                / {session.item.capacity}
               </p>
             </div>
           </div>

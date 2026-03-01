@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface FormData {
@@ -16,6 +17,7 @@ interface FormData {
   description?: string;
   price: number;
   validDays: number;
+  participantsPerPurchase: number;
   features: string[];
   image?: string;
   paymentUrl?: string;
@@ -134,6 +136,37 @@ export function ProductFormFields({
                 <FormControl>
                   <Input type="number" placeholder="30" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="participantsPerPurchase"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Participants per purchase</FormLabel>
+                <Select
+                  value={String(field.value)}
+                  onValueChange={(v) => field.onChange(Number(v))}
+                  disabled={mutation.isPending}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-muted-foreground text-xs">
+                  Session slots consumed per booking (e.g. 2 for couple packages)
+                </p>
                 <FormMessage />
               </FormItem>
             )}

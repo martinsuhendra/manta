@@ -66,7 +66,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    return NextResponse.json(classSession);
+    const confirmedBookings = classSession.bookings.filter((b) => b.status === "CONFIRMED");
+    const totalParticipantSlots = confirmedBookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
+    const { bookings, ...rest } = classSession;
+    return NextResponse.json({ ...rest, bookings, totalParticipantSlots });
   } catch (error) {
     console.error("Error fetching session:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

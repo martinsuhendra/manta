@@ -114,7 +114,7 @@ function QuotaEditDialog({
                 <SelectItem value="SHARED" disabled={quotaPools.length === 0}>
                   Shared Quota Pool {quotaPools.length === 0 && "(No pools available)"}
                 </SelectItem>
-                <SelectItem value="FREE">Free Item</SelectItem>
+                <SelectItem value="FREE">Free Item or Unlimited </SelectItem>
               </SelectContent>
             </Select>
           </div>

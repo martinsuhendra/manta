@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         },
         bookings: {
           where: { status: { not: "CANCELLED" } },
-          select: { id: true },
+          select: { id: true, participantCount: true },
         },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
@@ -82,9 +82,9 @@ export async function GET(request: NextRequest) {
 
     const result = sessions.map((s) => {
       const { bookings, ...rest } = s;
-      const confirmedCount = bookings.length;
+      const totalParticipantSlots = bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
       const capacity = s.item.capacity;
-      const spotsLeft = Math.max(0, capacity - confirmedCount);
+      const spotsLeft = Math.max(0, capacity - totalParticipantSlots);
       return {
         ...rest,
         date: s.date.toISOString().split("T")[0],

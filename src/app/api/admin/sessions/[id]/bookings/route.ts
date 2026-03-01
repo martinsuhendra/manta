@@ -170,33 +170,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             email: true,
           },
         },
-        _count: {
-          select: {
-            bookings: {
-              where: {
-                status: {
-                  not: "CANCELLED",
-                },
-              },
-            },
-          },
-        },
       },
     });
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
-
-    // Check confirmed bookings count (not including waitlisted)
-    const confirmedBookingsCount = await prisma.booking.count({
-      where: {
-        classSessionId: sessionId,
-        status: "CONFIRMED",
-      },
-    });
-
-    const isAtCapacity = confirmedBookingsCount >= classSession.item.capacity;
 
     // Check if user exists and has MEMBER role
     const user = await prisma.user.findUnique({
@@ -269,6 +248,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Membership does not include this class type" }, { status: 400 });
     }
 
+    const participantsPerPurchase = membership.product.participantsPerPurchase ?? 1;
+    const { _sum } = await prisma.booking.aggregate({
+      where: {
+        classSessionId: sessionId,
+        status: "CONFIRMED",
+      },
+      _sum: { participantCount: true },
+    });
+    const totalSlots = _sum?.participantCount ?? 0;
+    const capacity = classSession.item.capacity;
+    const isAtCapacity = totalSlots + participantsPerPurchase > capacity;
+
     // Validate quota based on type
     if (productItem.quotaType === "INDIVIDUAL") {
       const quotaUsage = membership.quotaUsage.find((usage) => usage.productItemId === productItem.id);
@@ -300,6 +291,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           userId,
           classSessionId: sessionId,
           membershipId,
+          participantCount: participantsPerPurchase,
           status: bookingStatus,
         },
         include: {

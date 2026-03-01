@@ -103,93 +103,95 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         });
       }
 
-      // Check if there's a waitlisted member to auto-confirm
-      const confirmedCount = await tx.booking.count({
+      // Check if there's a waitlisted member to auto-confirm (use participant slots, not booking count)
+      const { _sum } = await tx.booking.aggregate({
         where: {
           classSessionId: sessionId,
           status: "CONFIRMED",
         },
+        _sum: { participantCount: true },
       });
+      const totalParticipantSlots = _sum?.participantCount ?? 0;
 
-      // If there's space and a waitlisted member, confirm the first one
-      if (confirmedCount < classSession.item.capacity) {
-        const firstWaitlisted = await tx.booking.findFirst({
-          where: {
-            classSessionId: sessionId,
-            status: "WAITLISTED",
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+      const firstWaitlisted = await tx.booking.findFirst({
+        where: {
+          classSessionId: sessionId,
+          status: "WAITLISTED",
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
-            membership: {
-              include: {
-                product: {
-                  include: {
-                    productItems: {
-                      where: {
-                        itemId: classSession.itemId,
-                        isActive: true,
-                      },
-                      include: {
-                        quotaPool: true,
-                      },
+          },
+          membership: {
+            include: {
+              product: {
+                include: {
+                  productItems: {
+                    where: {
+                      itemId: classSession.itemId,
+                      isActive: true,
+                    },
+                    include: {
+                      quotaPool: true,
                     },
                   },
                 },
-                quotaUsage: true,
               },
+              quotaUsage: true,
             },
           },
-          orderBy: {
-            createdAt: "asc", // First come, first served
+        },
+        orderBy: {
+          createdAt: "asc", // First come, first served
+        },
+      });
+
+      if (firstWaitlisted) {
+        const waitlistedProductItem = firstWaitlisted.membership.product.productItems[0];
+
+        if (!waitlistedProductItem) {
+          return { waitlistedConfirmed: null };
+        }
+
+        const slotsNeeded = firstWaitlisted.membership.product.participantsPerPurchase ?? 1;
+        const hasRoom = totalParticipantSlots + slotsNeeded <= classSession.item.capacity;
+
+        // Check quota availability and capacity before confirming
+        const hasQuota = checkQuotaAvailability({
+          productItem: {
+            id: waitlistedProductItem.id,
+            quotaType: waitlistedProductItem.quotaType,
+            quotaValue: waitlistedProductItem.quotaValue,
+            quotaPoolId: waitlistedProductItem.quotaPoolId,
+            quotaPool: waitlistedProductItem.quotaPool,
           },
+          quotaUsage: firstWaitlisted.membership.quotaUsage,
         });
 
-        if (firstWaitlisted) {
-          const waitlistedProductItem = firstWaitlisted.membership.product.productItems[0];
+        // Only confirm if quota is available and there is room (participant slots)
+        if (hasQuota && hasRoom) {
+          // Update booking status to CONFIRMED
+          await tx.booking.update({
+            where: { id: firstWaitlisted.id },
+            data: { status: "CONFIRMED" },
+          });
 
-          if (!waitlistedProductItem) {
-            return { waitlistedConfirmed: null };
-          }
-
-          // Check quota availability before confirming
-          const hasQuota = checkQuotaAvailability({
+          // Deduct quota for the newly confirmed member
+          await deductQuota({
+            tx,
+            membershipId: firstWaitlisted.membershipId,
             productItem: {
               id: waitlistedProductItem.id,
               quotaType: waitlistedProductItem.quotaType,
-              quotaValue: waitlistedProductItem.quotaValue,
               quotaPoolId: waitlistedProductItem.quotaPoolId,
-              quotaPool: waitlistedProductItem.quotaPool,
             },
-            quotaUsage: firstWaitlisted.membership.quotaUsage,
           });
 
-          // Only confirm if quota is available
-          if (hasQuota) {
-            // Update booking status to CONFIRMED
-            await tx.booking.update({
-              where: { id: firstWaitlisted.id },
-              data: { status: "CONFIRMED" },
-            });
-
-            // Deduct quota for the newly confirmed member
-            await deductQuota({
-              tx,
-              membershipId: firstWaitlisted.membershipId,
-              productItem: {
-                id: waitlistedProductItem.id,
-                quotaType: waitlistedProductItem.quotaType,
-                quotaPoolId: waitlistedProductItem.quotaPoolId,
-              },
-            });
-
-            return { waitlistedConfirmed: firstWaitlisted };
-          }
+          return { waitlistedConfirmed: firstWaitlisted };
         }
       }
 
