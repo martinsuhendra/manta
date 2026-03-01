@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -115,11 +116,20 @@ export async function GET(request: NextRequest) {
             bookings: true,
           },
         },
+        bookings: {
+          where: { status: "CONFIRMED" },
+          select: { participantCount: true },
+        },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return NextResponse.json(sessions);
+    const sessionsWithSlots = sessions.map((s) => {
+      const { bookings, ...rest } = s;
+      return { ...rest, totalParticipantSlots: sumParticipantSlots(bookings) };
+    });
+
+    return NextResponse.json(sessionsWithSlots);
   } catch (error) {
     console.error("Error fetching sessions:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -3,8 +3,6 @@ import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
-import { getMembershipStatusVariant } from "./utils";
-
 interface MembershipDetailsProps {
   membership: {
     product: {

@@ -5,8 +5,8 @@ import { requireAdmin } from "@/lib/api-utils";
 import { emailService } from "@/lib/email/service";
 import { createSessionJoinedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
-
-import { restoreQuota, checkQuotaAvailability, deductQuota } from "./quota-helpers";
+import { checkQuotaAvailability, deductQuota, restoreQuota } from "@/lib/quota-utils";
+import { sumParticipantSlots } from "@/lib/session-utils";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string; bookingId: string }> }) {
   try {
@@ -92,104 +92,75 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
       // Only restore quota if booking was CONFIRMED (not WAITLISTED)
       if (wasConfirmed && productItem) {
-        await restoreQuota({
-          tx,
-          booking: { membershipId: booking.membershipId },
-          productItem: {
-            id: productItem.id,
-            quotaType: productItem.quotaType,
-            quotaPoolId: productItem.quotaPoolId,
-          },
-        });
+        await restoreQuota({ tx, membershipId: booking.membershipId, productItem });
       }
 
-      // Check if there's a waitlisted member to auto-confirm
-      const confirmedCount = await tx.booking.count({
+      const confirmedBookings = await tx.booking.findMany({
+        where: { classSessionId: sessionId, status: "CONFIRMED" },
+        select: { participantCount: true },
+      });
+      const totalParticipantSlots = sumParticipantSlots(confirmedBookings);
+
+      const firstWaitlisted = await tx.booking.findFirst({
         where: {
           classSessionId: sessionId,
-          status: "CONFIRMED",
+          status: "WAITLISTED",
         },
-      });
-
-      // If there's space and a waitlisted member, confirm the first one
-      if (confirmedCount < classSession.item.capacity) {
-        const firstWaitlisted = await tx.booking.findFirst({
-          where: {
-            classSessionId: sessionId,
-            status: "WAITLISTED",
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
-            membership: {
-              include: {
-                product: {
-                  include: {
-                    productItems: {
-                      where: {
-                        itemId: classSession.itemId,
-                        isActive: true,
-                      },
-                      include: {
-                        quotaPool: true,
-                      },
+          },
+          membership: {
+            include: {
+              product: {
+                include: {
+                  productItems: {
+                    where: {
+                      itemId: classSession.itemId,
+                      isActive: true,
+                    },
+                    include: {
+                      quotaPool: true,
                     },
                   },
                 },
-                quotaUsage: true,
               },
+              quotaUsage: true,
             },
           },
-          orderBy: {
-            createdAt: "asc", // First come, first served
-          },
-        });
+        },
+        orderBy: {
+          createdAt: "asc", // First come, first served
+        },
+      });
 
-        if (firstWaitlisted) {
-          const waitlistedProductItem = firstWaitlisted.membership.product.productItems[0];
+      if (firstWaitlisted) {
+        const waitlistedProductItem = firstWaitlisted.membership.product.productItems[0];
 
-          if (!waitlistedProductItem) {
-            return { waitlistedConfirmed: null };
-          }
+        if (!waitlistedProductItem) {
+          return { waitlistedConfirmed: null };
+        }
 
-          // Check quota availability before confirming
-          const hasQuota = checkQuotaAvailability({
-            productItem: {
-              id: waitlistedProductItem.id,
-              quotaType: waitlistedProductItem.quotaType,
-              quotaValue: waitlistedProductItem.quotaValue,
-              quotaPoolId: waitlistedProductItem.quotaPoolId,
-              quotaPool: waitlistedProductItem.quotaPool,
-            },
-            quotaUsage: firstWaitlisted.membership.quotaUsage,
+        const slotsNeeded = firstWaitlisted.membership.product.participantsPerPurchase ?? 1;
+        const hasRoom = totalParticipantSlots + slotsNeeded <= classSession.item.capacity;
+
+        const hasQuota = checkQuotaAvailability(waitlistedProductItem, firstWaitlisted.membership.quotaUsage);
+
+        // Only confirm if quota is available and there is room (participant slots)
+        if (hasQuota && hasRoom) {
+          // Update booking status to CONFIRMED
+          await tx.booking.update({
+            where: { id: firstWaitlisted.id },
+            data: { status: "CONFIRMED" },
           });
 
-          // Only confirm if quota is available
-          if (hasQuota) {
-            // Update booking status to CONFIRMED
-            await tx.booking.update({
-              where: { id: firstWaitlisted.id },
-              data: { status: "CONFIRMED" },
-            });
+          await deductQuota({ tx, membershipId: firstWaitlisted.membershipId, productItem: waitlistedProductItem });
 
-            // Deduct quota for the newly confirmed member
-            await deductQuota({
-              tx,
-              membershipId: firstWaitlisted.membershipId,
-              productItem: {
-                id: waitlistedProductItem.id,
-                quotaType: waitlistedProductItem.quotaType,
-                quotaPoolId: waitlistedProductItem.quotaPoolId,
-              },
-            });
-
-            return { waitlistedConfirmed: firstWaitlisted };
-          }
+          return { waitlistedConfirmed: firstWaitlisted };
         }
       }
 

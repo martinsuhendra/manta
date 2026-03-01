@@ -49,7 +49,7 @@ export function DeleteProductDialog({ product, open, onOpenChange }: DeleteProdu
 
   if (!product) return null;
 
-  const hasTransactions = (product._count.transactions ?? 0) > 0;
+  const hasTransactions = (product._count.transactions || 0) > 0;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

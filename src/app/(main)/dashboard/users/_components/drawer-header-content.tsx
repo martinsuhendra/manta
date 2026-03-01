@@ -29,6 +29,7 @@ const MODE_CONFIG = {
 } as const;
 
 export function DrawerHeaderContent({ mode, canEditRoles }: DrawerHeaderContentProps) {
+  // eslint-disable-next-line security/detect-object-injection -- mode is a known key of MODE_CONFIG
   const config = MODE_CONFIG[mode];
   const Icon = config.icon;
   const description = typeof config.description === "function" ? config.description(canEditRoles) : config.description;

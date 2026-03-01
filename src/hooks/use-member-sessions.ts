@@ -45,6 +45,7 @@ export interface MemberSession {
 export interface EligibleMembershipOption {
   id: string;
   product: { name: string };
+  slotsRequired: number;
   remainingQuota: number | null;
   isEligible: true;
 }
@@ -53,6 +54,7 @@ export interface SessionEligibility {
   canJoin: boolean;
   alreadyBooked?: boolean;
   bookingId?: string;
+  spotsLeft?: number;
   eligibleMemberships: EligibleMembershipOption[];
   reason?: string;
 }

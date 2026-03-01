@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { getMembershipRemainingQuota } from "@/lib/quota-utils";
 
 import { MyAccountContent } from "./_components/my-account-content";
 
@@ -41,8 +42,19 @@ async function getAccountData() {
                 name: true,
                 price: true,
                 validDays: true,
+                productItems: {
+                  where: { isActive: true },
+                  select: {
+                    id: true,
+                    quotaType: true,
+                    quotaValue: true,
+                    quotaPoolId: true,
+                    quotaPool: { select: { totalQuota: true } },
+                  },
+                },
               },
             },
+            quotaUsage: true,
             transaction: {
               select: {
                 id: true,
@@ -118,8 +130,8 @@ async function getAccountData() {
 
     // Format the response
     const now = new Date();
-    const activeMembership = user.memberships.find((m) => m.status === "ACTIVE" && new Date(m.expiredAt) > now);
-    const frozenMembership = user.memberships.find((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
+    const activeMemberships = user.memberships.filter((m) => m.status === "ACTIVE" && new Date(m.expiredAt) > now);
+    const frozenMemberships = user.memberships.filter((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
 
     const freezeRequests = await prisma.membershipFreezeRequest.findMany({
       where: { requestedById: user.id },
@@ -135,6 +147,32 @@ async function getAccountData() {
       orderBy: { createdAt: "desc" },
     });
 
+    type MembershipWithQuota = NonNullable<typeof user>["memberships"][0];
+
+    const formatMembership = (m: MembershipWithQuota) => ({
+      id: m.id,
+      status: m.status,
+      joinDate: m.joinDate.toISOString(),
+      expiredAt: m.expiredAt.toISOString(),
+      remainingQuota: getMembershipRemainingQuota(m),
+      product: {
+        id: m.product.id,
+        name: m.product.name,
+        price: Number(m.product.price),
+        validDays: m.product.validDays,
+      },
+      transaction: m.transaction
+        ? {
+            id: m.transaction.id,
+            status: m.transaction.status,
+            amount: Number(m.transaction.amount),
+            currency: m.transaction.currency,
+            paidAt: m.transaction.paidAt?.toISOString() || null,
+            createdAt: m.transaction.createdAt.toISOString(),
+          }
+        : null,
+    });
+
     return {
       user: {
         id: user.id,
@@ -144,44 +182,8 @@ async function getAccountData() {
         role: user.role,
         createdAt: user.createdAt.toISOString(),
       },
-      activeMembership: activeMembership
-        ? {
-            id: activeMembership.id,
-            status: activeMembership.status,
-            joinDate: activeMembership.joinDate.toISOString(),
-            expiredAt: activeMembership.expiredAt.toISOString(),
-            product: {
-              id: activeMembership.product.id,
-              name: activeMembership.product.name,
-              price: Number(activeMembership.product.price),
-              validDays: activeMembership.product.validDays,
-            },
-            transaction: activeMembership.transaction
-              ? {
-                  id: activeMembership.transaction.id,
-                  status: activeMembership.transaction.status,
-                  amount: Number(activeMembership.transaction.amount),
-                  currency: activeMembership.transaction.currency,
-                  paidAt: activeMembership.transaction.paidAt?.toISOString() || null,
-                  createdAt: activeMembership.transaction.createdAt.toISOString(),
-                }
-              : null,
-          }
-        : null,
-      frozenMembership: frozenMembership
-        ? {
-            id: frozenMembership.id,
-            status: frozenMembership.status,
-            joinDate: frozenMembership.joinDate.toISOString(),
-            expiredAt: frozenMembership.expiredAt.toISOString(),
-            product: {
-              id: frozenMembership.product.id,
-              name: frozenMembership.product.name,
-              price: Number(frozenMembership.product.price),
-              validDays: frozenMembership.product.validDays,
-            },
-          }
-        : null,
+      activeMemberships: activeMemberships.map(formatMembership),
+      frozenMemberships: frozenMemberships.map(formatMembership),
       freezeRequests: freezeRequests.map((fr) => ({
         id: fr.id,
         membershipId: fr.membershipId,

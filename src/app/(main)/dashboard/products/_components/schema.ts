@@ -71,6 +71,7 @@ export const productSchema = z.object({
   image: z.string().nullable(),
   paymentUrl: z.string().nullable(),
   whatIsIncluded: z.string().nullable(),
+  participantsPerPurchase: z.number().int().min(1).max(10).optional().default(1),
   position: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),

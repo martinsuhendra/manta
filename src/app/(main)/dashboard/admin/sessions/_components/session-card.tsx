@@ -10,7 +10,6 @@ import { CancelSessionDialog } from "./cancel-session-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
-import { SessionCardActions } from "./session-card-actions";
 import { SessionCardCompact } from "./session-card-compact";
 import { SessionCardDetailed } from "./session-card-detailed";
 

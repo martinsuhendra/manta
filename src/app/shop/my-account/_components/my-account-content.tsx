@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, complexity */
 "use client";
 
 import { useState } from "react";
@@ -47,11 +48,12 @@ interface AccountData {
     role: string;
     createdAt: string;
   };
-  activeMembership: {
+  activeMemberships: Array<{
     id: string;
     status: string;
     joinDate: string;
     expiredAt: string;
+    remainingQuota: number | null;
     product: {
       id: string;
       name: string;
@@ -66,19 +68,20 @@ interface AccountData {
       paidAt: string | null;
       createdAt: string;
     } | null;
-  } | null;
-  frozenMembership: {
+  }>;
+  frozenMemberships: Array<{
     id: string;
     status: string;
     joinDate: string;
     expiredAt: string;
+    remainingQuota: number | null;
     product: {
       id: string;
       name: string;
       price: number;
       validDays: number;
     };
-  } | null;
+  }>;
   freezeRequests: Array<{
     id: string;
     membershipId: string;
@@ -290,6 +293,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
   const [isRequestFreezeOpen, setIsRequestFreezeOpen] = useState(false);
+  const [freezeMembership, setFreezeMembership] = useState<{ id: string; productName: string } | null>(null);
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
   const cancelBookingMutation = useMemberCancelBooking();
 
@@ -316,11 +320,8 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
-  const hasPendingFreeze =
-    accountData.activeMembership != null &&
-    accountData.freezeRequests.some(
-      (fr) => fr.membershipId === accountData.activeMembership?.id && fr.status === "PENDING_APPROVAL",
-    );
+  const hasPendingFreezeForMembership = (membershipId: string) =>
+    accountData.freezeRequests.some((fr) => fr.membershipId === membershipId && fr.status === "PENDING_APPROVAL");
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/shop" });
@@ -371,12 +372,13 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
           <div className="relative z-10 flex flex-col items-center gap-8 md:flex-row">
             <div className="relative">
               <div className="border-primary h-24 w-24 overflow-hidden rounded-full border-4 shadow-2xl md:h-32 md:w-32">
-                {session?.user?.image ? (
+                {session?.user.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- user avatar from OAuth */
                   <img src={session.user.image} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
                   <div className="bg-muted flex h-full w-full items-center justify-center">
                     <span className="text-foreground text-2xl font-black md:text-3xl">
-                      {accountData.user.name?.charAt(0) ?? "?"}
+                      {(accountData.user.name && accountData.user.name.charAt(0)) || "?"}
                     </span>
                   </div>
                 )}
@@ -455,53 +457,78 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
           <div className="space-y-8 lg:col-span-9">
             {activeTab === "overview" && (
               <div className="animate-fade-in-up space-y-8">
-                {/* Active Membership */}
+                {/* Active Memberships */}
                 <div className="border-border bg-card rounded-2xl border p-6 md:p-8">
-                  <SectionTitle title="Active Membership" icon={CreditCard} />
-                  {accountData.activeMembership ? (
-                    <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <Badge className="mb-2 bg-green-500/20 text-green-700 dark:text-green-300">CURRENT PLAN</Badge>
-                        <h4 className="text-foreground text-3xl font-black">
-                          {accountData.activeMembership.product.name}
-                        </h4>
-                        <p className="text-muted-foreground text-sm">
-                          Renews on {formatDate(accountData.activeMembership.expiredAt)}
-                        </p>
-                        {hasPendingFreeze ? (
-                          <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-4"
-                            onClick={() => setIsRequestFreezeOpen(true)}
-                          >
-                            Request Freeze
-                          </Button>
-                        )}
-                      </div>
-                      <div className="w-full border-t pt-6 text-center md:w-auto md:border-t-0 md:border-l md:pt-0 md:pl-10 md:text-right">
-                        <p className="text-foreground text-2xl font-black">
-                          {formatPrice(accountData.activeMembership.product.price)}
-                        </p>
-                        <p className="text-muted-foreground text-xs font-bold uppercase">
-                          per {accountData.activeMembership.product.validDays} days
-                        </p>
-                        <Button size="sm" variant="outline" className="mt-4 w-full md:w-auto" asChild>
-                          <Link href="/shop">Manage Billing</Link>
-                        </Button>
-                      </div>
+                  <SectionTitle title="Active Memberships" icon={CreditCard} />
+                  {accountData.activeMemberships.length > 0 ? (
+                    <div className="space-y-6">
+                      {accountData.activeMemberships.map((membership) => (
+                        <div
+                          key={membership.id}
+                          className="border-border bg-background/50 flex flex-col items-start gap-6 rounded-xl border p-4 md:flex-row md:items-center md:justify-between md:p-6"
+                        >
+                          <div>
+                            <Badge className="mb-2 bg-green-500/20 text-green-700 dark:text-green-300">
+                              CURRENT PLAN
+                            </Badge>
+                            <h4 className="text-foreground text-2xl font-black md:text-3xl">
+                              {membership.product.name}
+                            </h4>
+                            <p className="text-muted-foreground text-sm">
+                              Renews on {formatDate(membership.expiredAt)}
+                            </p>
+                            <p className="text-muted-foreground mt-1 text-sm">
+                              {membership.remainingQuota === null ? (
+                                <span title="Unlimited">∞ Unlimited</span>
+                              ) : (
+                                <span>{membership.remainingQuota} sessions remaining</span>
+                              )}
+                            </p>
+                            {hasPendingFreezeForMembership(membership.id) ? (
+                              <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-4"
+                                onClick={() => {
+                                  setFreezeMembership({
+                                    id: membership.id,
+                                    productName: membership.product.name,
+                                  });
+                                  setIsRequestFreezeOpen(true);
+                                }}
+                              >
+                                Request Freeze
+                              </Button>
+                            )}
+                          </div>
+                          <div className="w-full border-t pt-6 text-center md:w-auto md:border-t-0 md:border-l md:pt-0 md:pl-10 md:text-right">
+                            <p className="text-foreground text-2xl font-black">
+                              {formatPrice(membership.product.price)}
+                            </p>
+                            <p className="text-muted-foreground text-xs font-bold uppercase">
+                              per {membership.product.validDays} days
+                            </p>
+                            <Button size="sm" variant="outline" className="mt-4 w-full md:w-auto" asChild>
+                              <Link href="/shop">Manage Billing</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ) : accountData.frozenMembership ? (
-                    <div className="flex flex-col gap-4">
-                      <Badge variant="outline">FROZEN</Badge>
-                      <h4 className="text-foreground text-2xl font-black">
-                        {accountData.frozenMembership.product.name}
-                      </h4>
-                      <p className="text-muted-foreground text-sm">
-                        Expires on {formatDate(accountData.frozenMembership.expiredAt)}
-                      </p>
+                  ) : accountData.frozenMemberships.length > 0 ? (
+                    <div className="space-y-4">
+                      {accountData.frozenMemberships.map((membership) => (
+                        <div
+                          key={membership.id}
+                          className="border-border bg-background/50 flex flex-col gap-2 rounded-xl border p-4"
+                        >
+                          <Badge variant="outline">FROZEN</Badge>
+                          <h4 className="text-foreground text-xl font-black">{membership.product.name}</h4>
+                          <p className="text-muted-foreground text-sm">Expires on {formatDate(membership.expiredAt)}</p>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="py-4">
@@ -771,9 +798,12 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
 
       <RequestFreezeDialog
         open={isRequestFreezeOpen}
-        onOpenChange={setIsRequestFreezeOpen}
-        membershipId={accountData.activeMembership?.id ?? ""}
-        productName={accountData.activeMembership?.product.name ?? ""}
+        onOpenChange={(open) => {
+          setIsRequestFreezeOpen(open);
+          if (!open) setFreezeMembership(null);
+        }}
+        membershipId={freezeMembership?.id ?? ""}
+        productName={freezeMembership?.productName ?? ""}
       />
     </div>
   );

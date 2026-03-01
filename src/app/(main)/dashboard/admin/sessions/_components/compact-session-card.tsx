@@ -76,7 +76,8 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
     );
   };
 
-  const hasParticipants = (session._count?.bookings || 0) > 0;
+  const totalSlots = session.totalParticipantSlots ?? session._count?.bookings ?? 0;
+  const hasParticipants = totalSlots > 0;
   return (
     <div
       className="bg-card cursor-pointer rounded-lg border border-l-4 transition-all duration-200 hover:shadow-lg"
@@ -136,7 +137,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
               >
                 <UsersIcon className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="font-medium">
-                  {session._count?.bookings || 0} / {session.item.capacity} participants
+                  {totalSlots} / {session.item.capacity} participants
                 </span>
               </div>
             </div>

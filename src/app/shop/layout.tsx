@@ -13,7 +13,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <ShopHeaderWrapper session={session} />
-      <main className="flex min-h-0 flex-1 flex-col pt-14 sm:pt-24">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col pt-20">{children}</main>
       <footer className="border-border bg-card border-t pt-10 pb-6 sm:pt-16 sm:pb-8">
         <div className="container mx-auto px-4">
           <div className="mb-8 grid grid-cols-1 gap-8 sm:mb-12 sm:gap-12 md:grid-cols-4">

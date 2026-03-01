@@ -1,7 +1,7 @@
-/* eslint-disable complexity */
+/* eslint-disable complexity, @typescript-eslint/no-unnecessary-condition */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { format } from "date-fns";
 import { CheckCircle, Loader2 } from "lucide-react";
@@ -40,10 +40,22 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
   const bookMutation = useMemberBookSession();
   const cancelMutation = useMemberCancelBooking();
 
+  // When eligibility loads or session changes, ensure a valid membership is selected
+  useEffect(() => {
+    const list = eligibility?.eligibleMemberships ?? [];
+    if (!list.length) {
+      setSelectedMembershipId("");
+      return;
+    }
+    setSelectedMembershipId((prev) => {
+      const ids = list.map((m) => m.id);
+      return prev && ids.includes(prev) ? prev : list[0].id;
+    });
+  }, [eligibility?.eligibleMemberships, session?.id]);
+
   const handleBook = () => {
     if (!session || !eligibility?.canJoin) return;
-    const mid =
-      eligibility.eligibleMemberships.length === 1 ? eligibility.eligibleMemberships[0].id : selectedMembershipId;
+    const mid = selectedMembershipId;
     if (!mid) return;
     bookMutation.mutate(
       { sessionId: session.id, membershipId: mid },
@@ -67,11 +79,20 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
 
   if (!session) return null;
 
-  const canBook = eligibility?.canJoin && (eligibility.eligibleMemberships.length === 1 || !!selectedMembershipId);
+  const spotsLeft = eligibility && eligibility.spotsLeft != null ? eligibility.spotsLeft : (session.spotsLeft ?? 0);
+  const selectedMembership = eligibility?.eligibleMemberships.find((m) => m.id === selectedMembershipId);
+  const selectedFits = selectedMembership ? spotsLeft >= selectedMembership.slotsRequired : false;
+  const canBook = eligibility?.canJoin && !!selectedMembershipId && selectedFits;
   const isPending = bookMutation.isPending || cancelMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        onOpenChange(open);
+        if (!open) setSelectedMembershipId("");
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{session.item.name}</DialogTitle>
@@ -103,40 +124,40 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
             </div>
           ) : eligibility?.canJoin ? (
             <div className="space-y-3">
-              {eligibility.eligibleMemberships.length > 1 && <Label>Select membership</Label>}
-              {eligibility.eligibleMemberships.length > 1 ? (
-                <RadioGroup value={selectedMembershipId} onValueChange={setSelectedMembershipId}>
-                  {eligibility.eligibleMemberships.map((m) => (
-                    <div key={m.id} className="border-input flex items-start space-x-3 rounded-lg border p-3">
-                      <RadioGroupItem value={m.id} id={m.id} className="mt-1" />
+              <Label>Choose which membership to use</Label>
+              <RadioGroup value={selectedMembershipId} onValueChange={setSelectedMembershipId}>
+                {eligibility.eligibleMemberships.map((m) => {
+                  const fits = spotsLeft >= m.slotsRequired;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`border-input flex items-start space-x-3 rounded-lg border p-3 ${!fits ? "opacity-70" : ""}`}
+                    >
+                      <RadioGroupItem value={m.id} id={m.id} className="mt-1" disabled={!fits} />
                       <div className="flex-1">
-                        <Label htmlFor={m.id} className="cursor-pointer font-medium">
+                        <Label
+                          htmlFor={m.id}
+                          className={`cursor-pointer font-medium ${!fits ? "cursor-not-allowed" : ""}`}
+                        >
                           {m.product.name}
                         </Label>
-                        {m.remainingQuota !== null && (
-                          <p className="text-muted-foreground text-xs">{m.remainingQuota} sessions remaining</p>
+                        {m.slotsRequired > 1 && (
+                          <p className="text-muted-foreground my-1 text-xs">Uses {m.slotsRequired} spots</p>
                         )}
-                        {m.remainingQuota === null && <p className="text-muted-foreground text-xs">Unlimited</p>}
+                        <p className="text-muted-foreground text-xs">
+                          {m.remainingQuota === null ? "Unlimited" : `${m.remainingQuota} sessions remaining`}
+                        </p>
+                        {!fits && (
+                          <p className="text-destructive text-xs">
+                            Only {spotsLeft} spot(s) left; this membership needs {m.slotsRequired}
+                          </p>
+                        )}
                       </div>
-                      <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />
+                      {fits && <CheckCircle className="h-4 w-4 shrink-0 text-green-600" />}
                     </div>
-                  ))}
-                </RadioGroup>
-              ) : (
-                <div className="border-input flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <p className="font-medium">{eligibility.eligibleMemberships[0].product.name}</p>
-                    {eligibility.eligibleMemberships[0].remainingQuota !== null ? (
-                      <p className="text-muted-foreground text-xs">
-                        {eligibility.eligibleMemberships[0].remainingQuota} sessions remaining
-                      </p>
-                    ) : (
-                      <p className="text-muted-foreground text-xs">Unlimited</p>
-                    )}
-                  </div>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
-              )}
+                  );
+                })}
+              </RadioGroup>
               <Button className="w-full" onClick={handleBook} disabled={!canBook || isPending}>
                 {bookMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Book class

@@ -66,6 +66,7 @@ export function SessionCard({
       onClick={onCardClick}
     >
       <div className="absolute inset-0 z-0">
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative session card image */}
         <img
           src={SESSION_CARD_IMAGES[session.item.name.length % SESSION_CARD_IMAGES.length]}
           alt=""

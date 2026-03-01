@@ -1,15 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import {
-  EllipsisVertical,
-  Mail,
-  Phone,
-  Calendar,
-  UserCheck,
-  CreditCard,
-  CalendarCheck,
-  ShoppingCart,
-} from "lucide-react";
+import { EllipsisVertical, Mail, Phone, Calendar, UserCheck, CreditCard, CalendarCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
