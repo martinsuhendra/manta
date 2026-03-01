@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { handleApiError, requireAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
+import { sumParticipantSlots } from "@/lib/session-utils";
 
 import { checkForDuplicateSession } from "./duplicate-helpers";
 import { sendCancellationEmailsToBookings, sendUpdateEmailsToBookings } from "./email-helpers";
@@ -66,7 +67,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    return NextResponse.json(classSession);
+    const confirmedBookings = classSession.bookings.filter((b) => b.status === "CONFIRMED");
+    const { bookings, ...rest } = classSession;
+    return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(confirmedBookings) });
   } catch (error) {
     console.error("Error fetching session:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

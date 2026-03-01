@@ -114,7 +114,7 @@ function QuotaEditDialog({
                 <SelectItem value="SHARED" disabled={quotaPools.length === 0}>
                   Shared Quota Pool {quotaPools.length === 0 && "(No pools available)"}
                 </SelectItem>
-                <SelectItem value="FREE">Free Item</SelectItem>
+                <SelectItem value="FREE">Free Item or Unlimited </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -207,6 +207,7 @@ function QuotaTypeGroup({
       SHARED: "Shared Quota Pool",
       FREE: "Free Items",
     };
+    // eslint-disable-next-line security/detect-object-injection -- type is QuotaType
     return labels[type];
   };
 
@@ -285,6 +286,7 @@ export function SelectedItemsList({
 
     productItems.forEach((productItem, index) => {
       const quotaType = productItem.quotaType;
+      // eslint-disable-next-line security/detect-object-injection -- quotaType is QuotaType
       groups[quotaType].push({ productItem, index });
     });
 
@@ -303,13 +305,16 @@ export function SelectedItemsList({
   return (
     <div className="space-y-4">
       {(["INDIVIDUAL", "SHARED", "FREE"] as QuotaType[]).map((quotaType) => {
+        // eslint-disable-next-line security/detect-object-injection -- quotaType is QuotaType
         if (groupedItems[quotaType].length === 0) return null;
 
+        // eslint-disable-next-line security/detect-object-injection -- quotaType is QuotaType
+        const itemsForType = groupedItems[quotaType];
         return (
           <QuotaTypeGroup
             key={quotaType}
             quotaType={quotaType}
-            items={groupedItems[quotaType]}
+            items={itemsForType}
             availableItems={availableItems}
             quotaPools={quotaPools}
             existingProductItems={existingProductItems}

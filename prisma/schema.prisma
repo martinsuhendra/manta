@@ -105,10 +105,11 @@ model Product {
   features       String[] @default([])
   image          String?
   paymentUrl     String?  @map("payment_url")
-  whatIsIncluded String?  @map("what_is_included")
-  position       Int      @default(0)
-  createdAt      DateTime @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime @updatedAt @db.Timestamp(6)
+  whatIsIncluded         String?  @map("what_is_included")
+  participantsPerPurchase Int     @default(1) @map("participants_per_purchase")
+  position               Int      @default(0)
+  createdAt              DateTime @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime @updatedAt @db.Timestamp(6)
 
   memberships  Membership[]
   transactions Transaction[]
@@ -282,14 +283,15 @@ model ProductItem {
 }
 
 model Booking {
-  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String        @map("user_id") @db.Uuid
-  classSessionId String        @map("class_session_id") @db.Uuid
-  membershipId   String        @map("membership_id") @db.Uuid
-  status         BookingStatus @default(CONFIRMED)
-  notes          String?
-  createdAt      DateTime      @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime      @updatedAt @db.Timestamp(6)
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String        @map("user_id") @db.Uuid
+  classSessionId   String        @map("class_session_id") @db.Uuid
+  membershipId     String        @map("membership_id") @db.Uuid
+  participantCount Int           @default(1) @map("participant_count")
+  status           BookingStatus @default(CONFIRMED)
+  notes            String?
+  createdAt        DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime      @updatedAt @db.Timestamp(6)
   classSession   ClassSession  @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
   membership     Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)

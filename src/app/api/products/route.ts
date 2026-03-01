@@ -14,6 +14,7 @@ const createProductSchema = z.object({
   image: z.string().optional(),
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
+  participantsPerPurchase: z.number().int().min(1).max(10).optional().default(1),
   isActive: z.boolean().optional().default(true),
 });
 

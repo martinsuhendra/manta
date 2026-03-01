@@ -15,6 +15,7 @@ export function LandingHero() {
     <div className="relative flex min-h-[85dvh] items-center overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-48 lg:pb-32">
       {/* Dynamic Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
+        {/* eslint-disable-next-line @next/next/no-img-element -- hero background from config */}
         <img
           src={HERO_BG_IMAGE}
           alt="Crossfit Gym Background"
@@ -68,6 +69,7 @@ export function LandingHero() {
           <div className="perspective-1000 relative hidden lg:block lg:w-1/2">
             <div className="hero-visual-card group border-border bg-card shadow-primary/20 relative aspect-video overflow-hidden rounded-2xl border shadow-2xl">
               <div className="absolute inset-0">
+                {/* eslint-disable-next-line @next/next/no-img-element -- hero visual from config */}
                 <img
                   src={HERO_VISUAL_IMAGE}
                   alt="Athlete Training"

@@ -6,6 +6,7 @@ import { addDays, startOfDay } from "date-fns";
 
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { mapSessionWithCapacity } from "@/lib/session-utils";
 
 import { ScheduleFilters } from "../_components/schedule-filters";
 import { UpcomingSessions } from "../_components/upcoming-sessions";
@@ -63,26 +64,13 @@ async function getFullSchedule(start?: string, end?: string, itemId?: string) {
         },
         bookings: {
           where: { status: { not: "CANCELLED" } },
-          select: { id: true },
+          select: { id: true, participantCount: true },
         },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return sessions.map((session) => ({
-      id: session.id,
-      itemId: session.itemId,
-      teacherId: session.teacherId,
-      date: session.date.toISOString().split("T")[0],
-      startTime: session.startTime,
-      endTime: session.endTime,
-      status: session.status,
-      notes: session.notes,
-      item: session.item,
-      teacher: session.teacher,
-      spotsLeft: Math.max(0, session.item.capacity - session.bookings.length),
-      capacity: session.item.capacity,
-    }));
+    return sessions.map(mapSessionWithCapacity);
   } catch (error) {
     console.error("Failed to fetch full schedule:", error);
     return [];

@@ -38,7 +38,7 @@ export function UpcomingSessions({
   const [showDetails, setShowDetails] = React.useState(false);
   const [showBooking, setShowBooking] = React.useState(false);
 
-  const isMember = authSession?.user?.role === "MEMBER";
+  const isMember = authSession?.user.role === "MEMBER";
 
   const sessionsToShow = React.useMemo(() => {
     if (todayOnly) {
@@ -74,17 +74,22 @@ export function UpcomingSessions({
     return Array.from(names).sort();
   }, [sessionsToShow]);
 
-  const filteredSessions = React.useMemo(
-    () => (filter === "All" ? sessionsToShow : sessionsToShow.filter((s) => s.item.name === filter)),
-    [filter, sessionsToShow],
-  );
+  const filteredSessions = React.useMemo(() => {
+    if (filter === "All") return sessionsToShow;
+    return sessionsToShow.filter((s) => s.item.name === filter);
+  }, [filter, sessionsToShow]);
 
   const groupedSessions = React.useMemo(() => {
     const acc: Record<string, MemberSession[]> = {};
     for (const session of filteredSessions) {
       const dateKey = session.date;
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(session);
+      // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
+      const bucket = acc[dateKey];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- bucket is undefined until set
+      if (!bucket) {
+        // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
+        acc[dateKey] = [session];
+      } else bucket.push(session);
     }
     return acc;
   }, [filteredSessions]);
@@ -92,7 +97,11 @@ export function UpcomingSessions({
   const sortedDates = React.useMemo(() => Object.keys(groupedSessions).sort(), [groupedSessions]);
 
   const getSessionsForDate = React.useCallback(
-    (d: string): MemberSession[] => (Object.hasOwn(groupedSessions, d) ? groupedSessions[d] : []),
+    (d: string): MemberSession[] => {
+      // eslint-disable-next-line security/detect-object-injection -- d is date key
+      const bucket = groupedSessions[d];
+      return bucket ?? []; // eslint-disable-line @typescript-eslint/no-unnecessary-condition -- Record access can be undefined
+    },
     [groupedSessions],
   );
 

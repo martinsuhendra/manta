@@ -65,6 +65,7 @@ export function QuotaTypeSelector({ selectedType, onTypeChange }: QuotaTypeSelec
         className="grid grid-cols-1 gap-4 md:grid-cols-3"
       >
         {(Object.keys(QUOTA_TYPE_INFO) as QuotaType[]).map((type) => {
+          // eslint-disable-next-line security/detect-object-injection -- type is from QUOTA_TYPE_INFO keys
           const info = QUOTA_TYPE_INFO[type];
           const isSelected = selectedType === type;
 

@@ -9,6 +9,7 @@ interface CreateProductData {
   description?: string;
   price: number;
   validDays: number;
+  participantsPerPurchase?: number;
   features: string[];
   image?: string;
   paymentUrl?: string;

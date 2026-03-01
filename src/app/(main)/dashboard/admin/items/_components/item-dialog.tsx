@@ -4,8 +4,7 @@ import * as React from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -62,6 +61,7 @@ const STEPS = [
   { id: "success", label: "Success", description: "Completed" },
 ];
 
+/* eslint-disable complexity */
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!item;
@@ -192,11 +192,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const validateBasicStep = async () => {
     const fields = ["name", "description", "duration", "capacity", "color", "image", "isActive"] as const;
     const result = await form.trigger(fields);
-    return result;
-  };
-
-  const validateSchedulesStep = async () => {
-    const result = await form.trigger("schedules");
     return result;
   };
 

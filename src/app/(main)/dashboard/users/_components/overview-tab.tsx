@@ -19,6 +19,7 @@ interface OverviewTabProps {
   memberDetails?: MemberDetails | (MemberDetails & { classSessions?: unknown[] }) | null;
 }
 
+/* eslint-disable complexity */
 export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
   const [isSending, setIsSending] = useState(false);
 

@@ -32,6 +32,7 @@ export const sessionSchema = z.object({
       email: z.string().nullable(),
     })
     .nullable(),
+  totalParticipantSlots: z.number().optional(),
   _count: z
     .object({
       bookings: z.number(),

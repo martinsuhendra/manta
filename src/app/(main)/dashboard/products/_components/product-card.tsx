@@ -144,6 +144,7 @@ const DEFAULT_PRODUCT_DATA: ProductData = {
 function createProductData(props: ProductCardProps): ProductData {
   if (props.product) return props.product;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- intentionally omit from overrides
   const { product, isPreview, onViewProduct, onEditProduct, onDeleteProduct, ...overrides } = props;
   return { ...DEFAULT_PRODUCT_DATA, ...overrides } as ProductData;
 }

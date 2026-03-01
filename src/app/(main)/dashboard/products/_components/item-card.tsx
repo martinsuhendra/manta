@@ -47,6 +47,7 @@ function getQuotaTypeBadge(quotaType?: QuotaType) {
     },
   };
 
+  // eslint-disable-next-line security/detect-object-injection -- quotaType is a known QuotaType key
   const badge = badges[quotaType];
   return (
     <Badge variant="outline" className={`border px-2 py-0.5 text-xs font-semibold ${badge.className}`}>
@@ -81,6 +82,7 @@ function getQuotaInfo(quotaType?: QuotaType, quotaValue?: number, quotaPoolName?
   return null;
 }
 
+/* eslint-disable complexity */
 export function ItemCard({
   item,
   isSelected = false,

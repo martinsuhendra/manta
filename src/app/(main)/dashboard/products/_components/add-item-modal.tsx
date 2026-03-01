@@ -153,6 +153,7 @@ export function AddItemModal({
     },
   };
 
+  // eslint-disable-next-line security/detect-object-injection -- step is a known ModalStep key
   const currentStep = stepConfig[step];
 
   return (
@@ -181,6 +182,7 @@ export function AddItemModal({
                 className="grid grid-cols-1 gap-4"
               >
                 {(Object.keys(QUOTA_TYPE_INFO) as QuotaType[]).map((type) => {
+                  // eslint-disable-next-line security/detect-object-injection -- type is from QUOTA_TYPE_INFO keys
                   const info = QUOTA_TYPE_INFO[type];
                   const isSelected = selectedQuotaType === type;
 

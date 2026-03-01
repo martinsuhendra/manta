@@ -1,5 +1,3 @@
-import type { Prisma } from "@prisma/client";
-
 interface Item {
   id: string;
   duration: number;

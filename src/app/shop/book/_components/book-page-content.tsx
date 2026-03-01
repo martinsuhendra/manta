@@ -54,16 +54,24 @@ export function BookPageContent({ classes }: BookPageContentProps) {
     const acc: Record<string, MemberSession[]> = {};
     for (const session of sessions) {
       const dateKey = session.date;
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(session);
+      // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
+      const bucket = acc[dateKey];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- bucket is undefined until set
+      if (!bucket) {
+        // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
+        acc[dateKey] = [session];
+      } else bucket.push(session);
     }
     return acc;
   }, [sessions]);
 
   const sortedDates = useMemo(() => Object.keys(sessionsByDate).sort(), [sessionsByDate]);
 
-  const getSessionsForDate = (d: string): MemberSession[] =>
-    Object.hasOwn(sessionsByDate, d) ? sessionsByDate[d] : [];
+  const getSessionsForDate = (d: string): MemberSession[] => {
+    // eslint-disable-next-line security/detect-object-injection -- d is date key
+    const bucket = sessionsByDate[d];
+    return bucket ?? []; // eslint-disable-line @typescript-eslint/no-unnecessary-condition -- Record access can be undefined
+  };
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6 sm:py-8">
