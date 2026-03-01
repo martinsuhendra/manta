@@ -5,8 +5,8 @@ import { requireAdmin } from "@/lib/api-utils";
 import { emailService } from "@/lib/email/service";
 import { createSessionJoinedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
-
-import { restoreQuota, checkQuotaAvailability, deductQuota } from "./quota-helpers";
+import { checkQuotaAvailability, deductQuota, restoreQuota } from "@/lib/quota-utils";
+import { sumParticipantSlots } from "@/lib/session-utils";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string; bookingId: string }> }) {
   try {
@@ -92,26 +92,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
       // Only restore quota if booking was CONFIRMED (not WAITLISTED)
       if (wasConfirmed && productItem) {
-        await restoreQuota({
-          tx,
-          booking: { membershipId: booking.membershipId },
-          productItem: {
-            id: productItem.id,
-            quotaType: productItem.quotaType,
-            quotaPoolId: productItem.quotaPoolId,
-          },
-        });
+        await restoreQuota({ tx, membershipId: booking.membershipId, productItem });
       }
 
-      // Check if there's a waitlisted member to auto-confirm (use participant slots, not booking count)
-      const { _sum } = await tx.booking.aggregate({
-        where: {
-          classSessionId: sessionId,
-          status: "CONFIRMED",
-        },
-        _sum: { participantCount: true },
+      const confirmedBookings = await tx.booking.findMany({
+        where: { classSessionId: sessionId, status: "CONFIRMED" },
+        select: { participantCount: true },
       });
-      const totalParticipantSlots = _sum?.participantCount ?? 0;
+      const totalParticipantSlots = sumParticipantSlots(confirmedBookings);
 
       const firstWaitlisted = await tx.booking.findFirst({
         where: {
@@ -160,17 +148,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         const slotsNeeded = firstWaitlisted.membership.product.participantsPerPurchase ?? 1;
         const hasRoom = totalParticipantSlots + slotsNeeded <= classSession.item.capacity;
 
-        // Check quota availability and capacity before confirming
-        const hasQuota = checkQuotaAvailability({
-          productItem: {
-            id: waitlistedProductItem.id,
-            quotaType: waitlistedProductItem.quotaType,
-            quotaValue: waitlistedProductItem.quotaValue,
-            quotaPoolId: waitlistedProductItem.quotaPoolId,
-            quotaPool: waitlistedProductItem.quotaPool,
-          },
-          quotaUsage: firstWaitlisted.membership.quotaUsage,
-        });
+        const hasQuota = checkQuotaAvailability(waitlistedProductItem, firstWaitlisted.membership.quotaUsage);
 
         // Only confirm if quota is available and there is room (participant slots)
         if (hasQuota && hasRoom) {
@@ -180,16 +158,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
             data: { status: "CONFIRMED" },
           });
 
-          // Deduct quota for the newly confirmed member
-          await deductQuota({
-            tx,
-            membershipId: firstWaitlisted.membershipId,
-            productItem: {
-              id: waitlistedProductItem.id,
-              quotaType: waitlistedProductItem.quotaType,
-              quotaPoolId: waitlistedProductItem.quotaPoolId,
-            },
-          });
+          await deductQuota({ tx, membershipId: firstWaitlisted.membershipId, productItem: waitlistedProductItem });
 
           return { waitlistedConfirmed: firstWaitlisted };
         }

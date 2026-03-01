@@ -47,7 +47,7 @@ export function BasicInfoTab({ product }: BasicInfoTabProps) {
               <p className="mt-1">
                 {product.participantsPerPurchase === 2
                   ? "2 (Couple)"
-                  : `${product.participantsPerPurchase ?? 1} (Individual)`}
+                  : `${typeof product.participantsPerPurchase === "number" ? product.participantsPerPurchase : 1} (Individual)`}
               </p>
             </div>
             <div>

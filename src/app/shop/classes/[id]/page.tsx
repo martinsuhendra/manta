@@ -5,9 +5,9 @@ import { addDays } from "date-fns";
 import { ArrowLeft, Dumbbell, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { mapSessionWithCapacity } from "@/lib/session-utils";
 
 import { UpcomingSessions } from "../../_components/upcoming-sessions";
 
@@ -85,23 +85,7 @@ async function getUpcomingSessionsForClass(itemId: string) {
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    return sessions.map((session) => {
-      const totalParticipantSlots = session.bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
-      return {
-        id: session.id,
-        itemId: session.itemId,
-        teacherId: session.teacherId,
-        date: session.date.toISOString().split("T")[0],
-        startTime: session.startTime,
-        endTime: session.endTime,
-        status: session.status,
-        notes: session.notes,
-        item: session.item,
-        teacher: session.teacher,
-        spotsLeft: Math.max(0, session.item.capacity - totalParticipantSlots),
-        capacity: session.item.capacity,
-      };
-    });
+    return sessions.map(mapSessionWithCapacity);
   } catch {
     return [];
   }
@@ -141,6 +125,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
             <div className="bg-muted aspect-video w-full max-w-md shrink-0 overflow-hidden rounded-xl md:aspect-square">
               {item.image ? (
+                /* eslint-disable-next-line @next/next/no-img-element -- item image from CMS */
                 <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
               ) : (
                 <div

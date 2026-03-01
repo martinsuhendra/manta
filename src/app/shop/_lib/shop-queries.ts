@@ -1,6 +1,7 @@
 import { addDays } from "date-fns";
 
 import { prisma } from "@/lib/generated/prisma";
+import { mapSessionWithCapacity } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
 
 export async function getClasses() {
@@ -98,23 +99,7 @@ export async function getUpcomingSessions() {
       take: 10,
     });
 
-    return sessions.map((session) => {
-      const totalParticipantSlots = session.bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
-      return {
-        id: session.id,
-        itemId: session.itemId,
-        teacherId: session.teacherId,
-        date: session.date.toISOString().split("T")[0],
-        startTime: session.startTime,
-        endTime: session.endTime,
-        status: session.status,
-        notes: session.notes,
-        item: session.item,
-        teacher: session.teacher,
-        spotsLeft: Math.max(0, session.item.capacity - totalParticipantSlots),
-        capacity: session.item.capacity,
-      };
-    });
+    return sessions.map(mapSessionWithCapacity);
   } catch (error) {
     console.error("Failed to fetch sessions:", error);
     return [];

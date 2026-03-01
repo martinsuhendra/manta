@@ -83,10 +83,7 @@ export function SessionCardCompact({
               >
                 <UsersIcon className="h-4 w-4 flex-shrink-0" />
                 <span>
-                  {(session as { totalParticipantSlots?: number }).totalParticipantSlots ??
-                    session._count?.bookings ??
-                    0}
-                  /{session.item.capacity}
+                  {session.totalParticipantSlots ?? session._count?.bookings ?? 0}/{session.item.capacity}
                 </span>
               </div>
               {showDate && (

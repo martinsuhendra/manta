@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -82,16 +83,12 @@ export async function GET(request: NextRequest) {
 
     const result = sessions.map((s) => {
       const { bookings, ...rest } = s;
-      const totalParticipantSlots = bookings.reduce((sum, b) => sum + (b.participantCount ?? 1), 0);
-      const capacity = s.item.capacity;
-      const spotsLeft = Math.max(0, capacity - totalParticipantSlots);
+      const totalSlots = sumParticipantSlots(bookings);
       return {
         ...rest,
         date: s.date.toISOString().split("T")[0],
-        item: s.item,
-        teacher: s.teacher,
-        spotsLeft,
-        capacity,
+        spotsLeft: Math.max(0, s.item.capacity - totalSlots),
+        capacity: s.item.capacity,
       };
     });
 

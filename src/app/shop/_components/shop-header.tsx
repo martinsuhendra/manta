@@ -9,7 +9,6 @@ import { Calendar, LogIn, LogOut, User, UserPlus } from "lucide-react";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +29,7 @@ interface ShopHeaderProps {
   session: Session | null;
 }
 
+/* eslint-disable complexity */
 export function ShopHeader({ session }: ShopHeaderProps) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);

@@ -74,7 +74,7 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
       header: ({ column }) => <DataTableColumnHeader column={column} title="Reason" />,
       cell: ({ row }) => {
         const r = row.original;
-        const label = FREEZE_REASON_LABELS[r.reason as keyof typeof FREEZE_REASON_LABELS] ?? r.reason;
+        const label = FREEZE_REASON_LABELS[r.reason as keyof typeof FREEZE_REASON_LABELS] || r.reason;
         return (
           <div className="flex flex-col">
             <span>{label}</span>

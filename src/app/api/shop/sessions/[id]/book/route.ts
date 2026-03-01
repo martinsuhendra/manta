@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { checkQuotaAvailability, deductQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
 
 const bookSchema = z.object({
@@ -130,20 +131,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
-    if (productItem.quotaType === "INDIVIDUAL") {
-      const quotaUsage = membership.quotaUsage.find((u) => u.productItemId === productItem.id);
-      const usedCount = quotaUsage?.usedCount ?? 0;
-      const quotaValue = productItem.quotaValue ?? 0;
-      if (usedCount >= quotaValue) {
-        return NextResponse.json({ error: "No remaining quota for this class" }, { status: 400 });
-      }
-    } else if (productItem.quotaType === "SHARED" && productItem.quotaPoolId) {
-      const quotaUsage = membership.quotaUsage.find((u) => u.quotaPoolId === productItem.quotaPoolId);
-      const usedCount = quotaUsage?.usedCount ?? 0;
-      const totalQuota = productItem.quotaPool?.totalQuota ?? 0;
-      if (usedCount >= totalQuota) {
-        return NextResponse.json({ error: "No remaining quota in pool" }, { status: 400 });
-      }
+    if (!checkQuotaAvailability(productItem, membership.quotaUsage)) {
+      return NextResponse.json({ error: "No remaining quota for this class" }, { status: 400 });
     }
 
     const booking = await prisma.$transaction(async (tx) => {
@@ -178,41 +167,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       });
 
-      if (productItem.quotaType === "INDIVIDUAL") {
-        await tx.membershipQuotaUsage.upsert({
-          where: {
-            membershipId_productItemId: {
-              membershipId,
-              productItemId: productItem.id,
-            },
-          },
-          create: {
-            membershipId,
-            productItemId: productItem.id,
-            usedCount: 1,
-          },
-          update: {
-            usedCount: { increment: 1 },
-          },
-        });
-      } else if (productItem.quotaType === "SHARED" && productItem.quotaPoolId) {
-        await tx.membershipQuotaUsage.upsert({
-          where: {
-            membershipId_quotaPoolId: {
-              membershipId,
-              quotaPoolId: productItem.quotaPoolId,
-            },
-          },
-          create: {
-            membershipId,
-            quotaPoolId: productItem.quotaPoolId,
-            usedCount: 1,
-          },
-          update: {
-            usedCount: { increment: 1 },
-          },
-        });
-      }
+      await deductQuota({ tx, membershipId, productItem });
 
       return b;
     });

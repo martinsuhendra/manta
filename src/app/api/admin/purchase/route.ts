@@ -15,6 +15,7 @@ const adminPurchaseSchema = z.object({
   customerPhone: z.string().optional(),
 });
 
+/* eslint-disable complexity */
 export async function POST(request: NextRequest) {
   try {
     const { error: authError } = await requireAdmin();

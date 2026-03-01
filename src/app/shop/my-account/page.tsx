@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { prisma } from "@/lib/generated/prisma";
+import { getMembershipRemainingQuota } from "@/lib/quota-utils";
 
 import { MyAccountContent } from "./_components/my-account-content";
 
@@ -147,34 +148,13 @@ async function getAccountData() {
     });
 
     type MembershipWithQuota = NonNullable<typeof user>["memberships"][0];
-    function getRemainingQuota(m: MembershipWithQuota): number | null {
-      const items = m.product.productItems ?? [];
-      if (items.length === 0) return null; // no items = unlimited
-      let minRemaining: number | null = null;
-      for (const item of items) {
-        if (item.quotaType === "FREE") return null; // any FREE = unlimited
-        if (item.quotaType === "INDIVIDUAL" && item.quotaValue != null) {
-          const usage = m.quotaUsage.find((u) => u.productItemId === item.id);
-          const used = usage?.usedCount ?? 0;
-          const remaining = item.quotaValue - used;
-          if (minRemaining === null || remaining < minRemaining) minRemaining = remaining;
-        }
-        if (item.quotaType === "SHARED" && item.quotaPoolId != null && item.quotaPool) {
-          const usage = m.quotaUsage.find((u) => u.quotaPoolId === item.quotaPoolId);
-          const used = usage?.usedCount ?? 0;
-          const remaining = item.quotaPool.totalQuota - used;
-          if (minRemaining === null || remaining < minRemaining) minRemaining = remaining;
-        }
-      }
-      return minRemaining;
-    }
 
     const formatMembership = (m: MembershipWithQuota) => ({
       id: m.id,
       status: m.status,
       joinDate: m.joinDate.toISOString(),
       expiredAt: m.expiredAt.toISOString(),
-      remainingQuota: getRemainingQuota(m),
+      remainingQuota: getMembershipRemainingQuota(m),
       product: {
         id: m.product.id,
         name: m.product.name,

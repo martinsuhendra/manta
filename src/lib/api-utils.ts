@@ -10,7 +10,7 @@ import { USER_ROLES } from "@/lib/types";
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user.id) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), session: null };
   }
 

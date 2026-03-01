@@ -1,4 +1,4 @@
-/* eslint-disable complexity */
+/* eslint-disable complexity, @typescript-eslint/no-unnecessary-condition */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -79,7 +79,7 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
 
   if (!session) return null;
 
-  const spotsLeft = eligibility?.spotsLeft ?? session.spotsLeft ?? 0;
+  const spotsLeft = eligibility && eligibility.spotsLeft != null ? eligibility.spotsLeft : (session.spotsLeft ?? 0);
   const selectedMembership = eligibility?.eligibleMemberships.find((m) => m.id === selectedMembershipId);
   const selectedFits = selectedMembership ? spotsLeft >= selectedMembership.slotsRequired : false;
   const canBook = eligibility?.canJoin && !!selectedMembershipId && selectedFits;
@@ -144,10 +144,9 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
                         {m.slotsRequired > 1 && (
                           <p className="text-muted-foreground my-1 text-xs">Uses {m.slotsRequired} spots</p>
                         )}
-                        {m.remainingQuota !== null && (
-                          <p className="text-muted-foreground text-xs">{m.remainingQuota} sessions remaining</p>
-                        )}
-                        {m.remainingQuota === null && <p className="text-muted-foreground text-xs">Unlimited</p>}
+                        <p className="text-muted-foreground text-xs">
+                          {m.remainingQuota === null ? "Unlimited" : `${m.remainingQuota} sessions remaining`}
+                        </p>
                         {!fits && (
                           <p className="text-destructive text-xs">
                             Only {spotsLeft} spot(s) left; this membership needs {m.slotsRequired}

@@ -347,11 +347,7 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
           onOpenChange={setShowEditConfirmation}
           onConfirm={handleEditConfirm}
           isUpdating={updateSessionMutation.isPending}
-          participantCount={
-            (editingSession as { totalParticipantSlots?: number })?.totalParticipantSlots ??
-            editingSession?._count?.bookings ??
-            0
-          }
+          participantCount={editingSession?.totalParticipantSlots ?? editingSession?._count?.bookings ?? 0}
         />
       </DialogContent>
     </Dialog>

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { calculateRemainingQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -111,33 +112,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const productItem = membership.product.productItems[0] ?? null;
 
       if (!productItem) {
-        if (user.memberships.length === 1) {
-          reason = "Your membership does not include this class type";
-        }
+        if (user.memberships.length === 1) reason = "Your membership does not include this class type";
         continue;
       }
 
-      let remainingQuota: number = Infinity;
-      let isEligible = true;
+      const remaining = calculateRemainingQuota(productItem, membership.quotaUsage);
 
-      if (productItem.quotaType === "FREE") {
-        remainingQuota = Infinity;
-      } else if (productItem.quotaType === "INDIVIDUAL") {
-        const quotaUsage = membership.quotaUsage.find((u) => u.productItemId === productItem.id);
-        const usedCount = quotaUsage?.usedCount ?? 0;
-        remainingQuota = (productItem.quotaValue ?? 0) - usedCount;
-        isEligible = remainingQuota > 0;
-      } else if (productItem.quotaType === "SHARED" && productItem.quotaPoolId) {
-        const quotaUsage = membership.quotaUsage.find((u) => u.quotaPoolId === productItem.quotaPoolId);
-        const usedCount = quotaUsage?.usedCount ?? 0;
-        remainingQuota = (productItem.quotaPool?.totalQuota ?? 0) - usedCount;
-        isEligible = remainingQuota > 0;
-      }
-
-      if (!isEligible) {
-        if (user.memberships.length === 1) {
-          reason = "No remaining quota for this class";
-        }
+      if (remaining <= 0) {
+        if (user.memberships.length === 1) reason = "No remaining quota for this class";
         continue;
       }
 
@@ -145,7 +127,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: membership.id,
         product: { name: membership.product.name },
         slotsRequired: membership.product.participantsPerPurchase ?? 1,
-        remainingQuota: remainingQuota === Infinity ? null : remainingQuota,
+        remainingQuota: remaining === Infinity ? null : remaining,
         isEligible: true,
       });
     }

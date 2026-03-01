@@ -128,8 +128,7 @@ export function createSessionColumns(actions: SessionActions): ColumnDef<Session
           <div className="flex items-center gap-1.5">
             <Users className="text-muted-foreground h-3.5 w-3.5" />
             <span className="text-sm">
-              {(session as { totalParticipantSlots?: number }).totalParticipantSlots ?? session._count?.bookings ?? 0}/
-              {session.item.capacity}
+              {session.totalParticipantSlots ?? session._count?.bookings ?? 0}/{session.item.capacity}
             </span>
           </div>
         );

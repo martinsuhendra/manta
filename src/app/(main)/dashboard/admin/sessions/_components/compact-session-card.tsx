@@ -76,8 +76,7 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
     );
   };
 
-  const totalSlots =
-    (session as { totalParticipantSlots?: number }).totalParticipantSlots ?? session._count?.bookings ?? 0;
+  const totalSlots = session.totalParticipantSlots ?? session._count?.bookings ?? 0;
   const hasParticipants = totalSlots > 0;
   return (
     <div

@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { format } from "date-fns";
-import { Calendar, Clock, User, Users } from "lucide-react";
+import { Clock, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export function SessionDetailsDialog({ session, open, onOpenChange, onJoinSessio
 
   const handleJoinClick = () => {
     if (status === "loading" || !session) return;
-    if (authSession?.user?.role === "MEMBER") {
+    if (authSession?.user.role === "MEMBER") {
       onJoinSession?.(session);
       onOpenChange(false);
     }
@@ -40,7 +40,7 @@ export function SessionDetailsDialog({ session, open, onOpenChange, onJoinSessio
 
   if (!session) return null;
 
-  const isMember = authSession?.user?.role === "MEMBER";
+  const isMember = authSession?.user.role === "MEMBER";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

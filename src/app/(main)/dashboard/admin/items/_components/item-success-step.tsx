@@ -94,13 +94,16 @@ export function ItemSuccessStep({ item, onClose }: ItemSuccessStepProps) {
                   <span className="text-sm font-medium">Schedules</span>
                 </div>
                 <div className="space-y-2">
-                  {scheduleGroups.map((group, index) => {
+                  {scheduleGroups.map((group) => {
                     const daysText =
                       group.days.length === 7
                         ? "Everyday"
-                        : group.days.map((day) => DAY_OF_WEEK_LABELS[day]).join(", ");
+                        : group.days
+                            .map((day) => DAY_OF_WEEK_LABELS[day as keyof typeof DAY_OF_WEEK_LABELS])
+                            .join(", ");
+                    const groupKey = `${group.startTime}-${group.endTime}-${group.days.join(",")}`;
                     return (
-                      <div key={index} className="bg-muted rounded-md p-3 text-sm">
+                      <div key={groupKey} className="bg-muted rounded-md p-3 text-sm">
                         <p className="font-medium">{daysText}</p>
                         <p className="text-muted-foreground text-xs">
                           {group.startTime} - {group.endTime}
