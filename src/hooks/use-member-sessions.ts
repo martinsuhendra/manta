@@ -54,6 +54,8 @@ export interface SessionEligibility {
   canJoin: boolean;
   alreadyBooked?: boolean;
   bookingId?: string;
+  canCancel?: boolean;
+  cancelDeadline?: string;
   spotsLeft?: number;
   eligibleMemberships: EligibleMembershipOption[];
   reason?: string;

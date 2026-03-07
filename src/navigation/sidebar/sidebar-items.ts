@@ -5,6 +5,8 @@ import {
   Banknote,
   Package,
   Calendar,
+  CalendarClock,
+  Settings,
   Snowflake,
   UserCircle2,
   Users,
@@ -107,6 +109,19 @@ export const sidebarItems: NavGroup[] = [
         title: "Sessions",
         url: "/dashboard/admin/sessions",
         icon: Calendar,
+        comingSoon: false,
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+      },
+    ],
+  },
+  {
+    id: 3,
+    label: "Settings",
+    items: [
+      {
+        title: "Booking",
+        url: "/dashboard/settings/booking",
+        icon: CalendarClock,
         comingSoon: false,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
       },

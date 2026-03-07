@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
+import { canMemberCancel, getBookingSettings, getCancelDeadline, getSessionStartAt } from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
 import { getMembershipRemainingQuota } from "@/lib/quota-utils";
 
@@ -232,23 +233,36 @@ async function getAccountData() {
           price: Number(t.product.price),
         },
       })),
-      upcomingBookings: [...user.bookings]
-        .sort((a, b) => a.classSession.date.getTime() - b.classSession.date.getTime())
-        .map((b) => ({
-          id: b.id,
-          classSession: {
-            id: b.classSession.id,
-            date: b.classSession.date.toISOString().split("T")[0],
-            startTime: b.classSession.startTime,
-            endTime: b.classSession.endTime,
-            item: b.classSession.item,
-            teacher: b.classSession.teacher,
-          },
-          membership: {
-            id: b.membership.id,
-            product: b.membership.product,
-          },
-        })),
+      upcomingBookings: await (async () => {
+        const settings = await getBookingSettings();
+        return [...user.bookings]
+          .sort((a, b) => a.classSession.date.getTime() - b.classSession.date.getTime())
+          .map((b) => {
+            const sessionStartAt = getSessionStartAt({
+              date: b.classSession.date,
+              startTime: b.classSession.startTime,
+            });
+            const canCancel = canMemberCancel(sessionStartAt, settings.cancellationDeadlineHours);
+            const cancelDeadline = getCancelDeadline(sessionStartAt, settings.cancellationDeadlineHours);
+            return {
+              id: b.id,
+              canCancel,
+              cancelDeadline: cancelDeadline.toISOString(),
+              classSession: {
+                id: b.classSession.id,
+                date: b.classSession.date.toISOString().split("T")[0],
+                startTime: b.classSession.startTime,
+                endTime: b.classSession.endTime,
+                item: b.classSession.item,
+                teacher: b.classSession.teacher,
+              },
+              membership: {
+                id: b.membership.id,
+                product: b.membership.product,
+              },
+            };
+          });
+      })(),
     };
   } catch (error) {
     console.error("Failed to fetch account data:", error);

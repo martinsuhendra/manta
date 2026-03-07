@@ -35,6 +35,7 @@ export function ShopHeader({ session }: ShopHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
 
   // Pages that start with a dark section where we want transparent header
   const isDarkHeroPage = pathname === "/shop" || pathname === "/shop/schedule";
@@ -116,15 +117,14 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             </>
           ) : (
             <>
-              <SignInDialog>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("transition-colors", isTransparent && "text-white hover:bg-white/10 hover:text-white")}
-                >
-                  Sign In
-                </Button>
-              </SignInDialog>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn("transition-colors", isTransparent && "text-white hover:bg-white/10 hover:text-white")}
+                onClick={() => setSignInOpen(true)}
+              >
+                Sign In
+              </Button>
               <SignUpDialog>
                 <Button size="sm" variant={isTransparent ? "secondary" : "default"}>
                   Sign Up
@@ -209,12 +209,17 @@ export function ShopHeader({ session }: ShopHeaderProps) {
                 </DropdownMenuGroup>
               ) : (
                 <DropdownMenuGroup>
-                  <SignInDialog>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <LogIn className="mr-2 h-4 w-4" />
-                      <span>Sign In</span>
-                    </DropdownMenuItem>
-                  </SignInDialog>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setIsOpen(false);
+                      setSignInOpen(true);
+                    }}
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    <span>Sign In</span>
+                  </DropdownMenuItem>
                   <SignUpDialog>
                     <DropdownMenuItem className="cursor-pointer">
                       <UserPlus className="mr-2 h-4 w-4" />
@@ -226,6 +231,8 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />
       </div>
     </header>
   );

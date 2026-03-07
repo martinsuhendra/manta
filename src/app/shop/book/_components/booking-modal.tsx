@@ -109,14 +109,18 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
           ) : eligibility?.alreadyBooked ? (
             <div className="bg-muted/50 rounded-lg border p-4">
               <p className="text-muted-foreground text-sm">
-                You&apos;re booked for this class. You can cancel your booking below.
+                {eligibility.canCancel === false
+                  ? "Cancellation is no longer allowed for this session."
+                  : eligibility.cancelDeadline
+                    ? `You're booked for this class. You can cancel until ${format(new Date(eligibility.cancelDeadline), "PPp")}.`
+                    : "You're booked for this class. You can cancel your booking below."}
               </p>
               <Button
                 variant="destructive"
                 size="sm"
                 className="mt-3"
                 onClick={handleCancelBooking}
-                disabled={isPending}
+                disabled={isPending || eligibility.canCancel === false}
               >
                 {cancelMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Cancel booking

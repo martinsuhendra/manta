@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { getBookingSettings, getSessionStartAt, isPastBookingCutoff } from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
 import { checkQuotaAvailability, deductQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -41,6 +42,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     if (classSession.status !== "SCHEDULED") {
       return NextResponse.json({ error: "Session is not available for booking" }, { status: 400 });
+    }
+
+    const settings = await getBookingSettings();
+    const sessionStartAt = getSessionStartAt({
+      date: classSession.date,
+      startTime: classSession.startTime,
+    });
+    if (isPastBookingCutoff(sessionStartAt, settings.endBookingPeriodHours)) {
+      return NextResponse.json(
+        {
+          error:
+            settings.endBookingPeriodHours === 0
+              ? "Booking has closed for this session."
+              : `Booking has closed for this session (closes ${settings.endBookingPeriodHours} hour(s) before start).`,
+        },
+        { status: 400 },
+      );
     }
 
     const user = await prisma.user.findUnique({

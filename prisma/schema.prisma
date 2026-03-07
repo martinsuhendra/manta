@@ -369,3 +369,13 @@ enum QuotaType {
   SHARED      // Items share from a quota pool
   FREE        // Items don't consume quota
 }
+
+model BookingSettings {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  endBookingPeriodHours     Int      @default(0) @map("end_booking_period_hours")
+  cancellationDeadlineHours Int      @default(24) @map("cancellation_deadline_hours")
+  createdAt                 DateTime @default(now()) @db.Timestamp(6)
+  updatedAt                 DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("booking_settings")
+}

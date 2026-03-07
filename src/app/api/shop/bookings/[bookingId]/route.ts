@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { canMemberCancel, getBookingSettings, getSessionStartAt } from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -24,7 +25,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
-        classSession: { select: { itemId: true } },
+        classSession: {
+          select: { itemId: true, date: true, startTime: true },
+        },
         membership: {
           include: {
             product: {
@@ -46,6 +49,15 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     if (booking.userId !== userId) {
       return NextResponse.json({ error: "You can only cancel your own bookings" }, { status: 403 });
+    }
+
+    const settings = await getBookingSettings();
+    const sessionStartAt = getSessionStartAt({
+      date: booking.classSession.date,
+      startTime: booking.classSession.startTime,
+    });
+    if (!canMemberCancel(sessionStartAt, settings.cancellationDeadlineHours)) {
+      return NextResponse.json({ error: "Cancellation is no longer allowed for this session." }, { status: 400 });
     }
 
     const itemId = booking.classSession.itemId;
