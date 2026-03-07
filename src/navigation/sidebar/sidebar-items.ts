@@ -1,15 +1,16 @@
 import {
   BadgeCheck,
-  LayoutDashboard,
-  ChartBar,
   Banknote,
-  Package,
+  BarChart3,
   Calendar,
   CalendarClock,
-  Settings,
+  ChartBar,
+  LayoutDashboard,
+  Package,
   Snowflake,
   UserCircle2,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,11 +56,6 @@ export const sidebarItems: NavGroup[] = [
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
-      },
-      {
-        title: "Finance",
-        url: "/dashboard/finance",
-        icon: Banknote,
       },
     ],
   },
@@ -116,6 +112,24 @@ export const sidebarItems: NavGroup[] = [
   },
   {
     id: 3,
+    label: "Finance",
+    items: [
+      {
+        title: "Overview",
+        url: "/dashboard/finance",
+        icon: BarChart3,
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+      },
+      {
+        title: "Payroll",
+        url: "/dashboard/finance/payroll",
+        icon: Wallet,
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+      },
+    ],
+  },
+  {
+    id: 4,
     label: "Settings",
     items: [
       {

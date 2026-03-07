@@ -213,6 +213,7 @@ model TeacherItem {
   teacherId            String   @map("teacher_id") @db.Uuid
   itemId               String   @map("item_id") @db.Uuid
   teacherProfitPercent Decimal  @default(60) @map("teacher_profit_percent") @db.Decimal(5, 2)
+  feeAmount             Int      @default(0) @map("fee_amount")
   isActive             Boolean  @default(true) @map("is_active")
   createdAt            DateTime @default(now()) @db.Timestamp(6)
   item                 Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
