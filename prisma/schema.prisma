@@ -375,8 +375,8 @@ model BookingSettings {
   id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   endBookingPeriodHours     Int      @default(0) @map("end_booking_period_hours")
   cancellationDeadlineHours Int      @default(24) @map("cancellation_deadline_hours")
-  createdAt                 DateTime @default(now()) @db.Timestamp(6)
-  updatedAt                 DateTime @updatedAt @db.Timestamp(6)
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("booking_settings")
 }
