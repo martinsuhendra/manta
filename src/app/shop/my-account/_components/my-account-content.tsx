@@ -130,6 +130,8 @@ interface AccountData {
   }>;
   upcomingBookings: Array<{
     id: string;
+    canCancel: boolean;
+    cancelDeadline: string;
     classSession: {
       id: string;
       date: string;
@@ -617,7 +619,8 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                                   onSuccess: () => router.refresh(),
                                 })
                               }
-                              disabled={cancelBookingMutation.isPending}
+                              disabled={cancelBookingMutation.isPending || !item.canCancel}
+                              title={item.canCancel ? undefined : "Cancellation is no longer allowed for this session."}
                             >
                               {cancelBookingMutation.isPending ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

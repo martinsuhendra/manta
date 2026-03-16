@@ -213,6 +213,7 @@ model TeacherItem {
   teacherId            String   @map("teacher_id") @db.Uuid
   itemId               String   @map("item_id") @db.Uuid
   teacherProfitPercent Decimal  @default(60) @map("teacher_profit_percent") @db.Decimal(5, 2)
+  feeAmount             Int      @default(0) @map("fee_amount")
   isActive             Boolean  @default(true) @map("is_active")
   createdAt            DateTime @default(now()) @db.Timestamp(6)
   item                 Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -368,4 +369,14 @@ enum QuotaType {
   INDIVIDUAL  // Each item has its own quota allocation
   SHARED      // Items share from a quota pool
   FREE        // Items don't consume quota
+}
+
+model BookingSettings {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  endBookingPeriodHours     Int      @default(0) @map("end_booking_period_hours")
+  cancellationDeadlineHours Int      @default(24) @map("cancellation_deadline_hours")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("booking_settings")
 }

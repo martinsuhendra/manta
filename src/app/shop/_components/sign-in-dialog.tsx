@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,12 +30,23 @@ const FormSchema = z.object({
 });
 
 interface SignInDialogProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  /** When provided, dialog is controlled by parent (use when trigger is outside, e.g. dropdown item) */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SignInDialog({ children }: SignInDialogProps) {
+export function SignInDialog({
+  children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: SignInDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  const setIsOpen = isControlled ? controlledOnOpenChange : setInternalOpen;
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -74,9 +86,9 @@ export function SignInDialog({ children }: SignInDialogProps) {
     }
   };
 
-  return (
+  const dialogContent = (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children != null ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sign in to your account</DialogTitle>
@@ -116,6 +128,15 @@ export function SignInDialog({ children }: SignInDialogProps) {
                 </FormItem>
               )}
             />
+            <div className="text-center">
+              <Link
+                href="/forgot-password"
+                className="muted-foreground hover:text-primary text-sm"
+                onClick={() => setIsOpen(false)}
+              >
+                Forgot your password?
+              </Link>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                 Cancel
@@ -129,4 +150,6 @@ export function SignInDialog({ children }: SignInDialogProps) {
       </DialogContent>
     </Dialog>
   );
+
+  return dialogContent;
 }

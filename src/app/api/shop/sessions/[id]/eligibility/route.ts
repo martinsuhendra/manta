@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import {
+  canMemberCancel,
+  getBookingSettings,
+  getCancelDeadline,
+  getSessionStartAt,
+  isPastBookingCutoff,
+} from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
 import { calculateRemainingQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -49,12 +56,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const bookingId = alreadyBooked ? existingBooking.id : undefined;
 
     if (alreadyBooked) {
+      const settings = await getBookingSettings();
+      const sessionStartAt = getSessionStartAt({
+        date: classSession.date,
+        startTime: classSession.startTime,
+      });
+      const canCancel = canMemberCancel(sessionStartAt, settings.cancellationDeadlineHours);
+      const cancelDeadline = getCancelDeadline(sessionStartAt, settings.cancellationDeadlineHours);
       return NextResponse.json({
         canJoin: false,
         alreadyBooked: true,
         bookingId,
+        canCancel,
+        cancelDeadline: cancelDeadline.toISOString(),
         eligibleMemberships: [],
         reason: "You are already booked for this session",
+      });
+    }
+
+    const settings = await getBookingSettings();
+    const sessionStartAt = getSessionStartAt({
+      date: classSession.date,
+      startTime: classSession.startTime,
+    });
+    if (isPastBookingCutoff(sessionStartAt, settings.endBookingPeriodHours)) {
+      return NextResponse.json({
+        canJoin: false,
+        alreadyBooked: false,
+        eligibleMemberships: [],
+        reason: "Booking for this session has closed.",
       });
     }
 
