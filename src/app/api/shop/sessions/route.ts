@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
     if (session.user.role !== USER_ROLES.MEMBER) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const whereBrand = getBrandFilterFromRequest(request, brandIds);
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
@@ -55,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const sessions = await prisma.classSession.findMany({
-      where: whereConditions,
+      where: { ...whereConditions, ...whereBrand },
       include: {
         item: {
           select: {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { prisma } from "@/lib/generated/prisma";
 import { createSnapTransaction, MEMBERSHIP_STATUS, TRANSACTION_STATUS, type TransactionMetadata } from "@/lib/midtrans";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = purchaseSchema.parse(body);
+    const activeBrandId = await resolveActiveBrandIdFromCookie();
 
     // Validate product exists and is active
     const product = await prisma.product.findUnique({
@@ -24,6 +26,9 @@ export async function POST(request: NextRequest) {
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    if (activeBrandId && product.brandId !== activeBrandId) {
+      return NextResponse.json({ error: "Product not available for selected brand" }, { status: 400 });
     }
 
     if (!product.isActive) {
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
+        brandId: product.brandId,
         amount: product.price,
         currency: "IDR", // Midtrans requires IDR
         status: TRANSACTION_STATUS.PENDING,
@@ -71,6 +77,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
+        brandId: product.brandId,
         expiredAt,
         transactionId: transaction.id,
         status: MEMBERSHIP_STATUS.PENDING,

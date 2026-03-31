@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Clock, Eye, Edit, Trash2, MoreHorizontal, Calendar, Users } from "lucide-react";
+import { Building2, Clock, Eye, Edit, Trash2, MoreHorizontal, Calendar, Users } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,28 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
     size: 200,
     minSize: 180,
     maxSize: 220,
+  },
+  {
+    id: "stores",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Stores" />,
+    cell: ({ row }) => {
+      const item = row.original as Item & {
+        itemBrands?: { brand: { name: string } }[];
+        brandIds?: string[];
+      };
+      const label =
+        item.itemBrands?.map((ib) => ib.brand.name).join(", ") ||
+        (item.brandIds?.length ? `${item.brandIds.length} stores` : "—");
+      return (
+        <div className="text-muted-foreground flex max-w-[220px] items-start gap-1 text-sm">
+          <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 leading-snug break-words" title={label}>
+            {label}
+          </span>
+        </div>
+      );
+    },
+    meta: { className: "whitespace-normal" },
   },
   {
     accessorKey: "duration",

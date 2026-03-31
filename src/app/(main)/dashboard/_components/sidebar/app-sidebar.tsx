@@ -14,6 +14,7 @@ import {
 import { APP_CONFIG } from "@/config/app-config";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
+import { BrandSwitcher } from "./brand-switcher";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 
@@ -39,6 +40,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <BrandSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={sidebarItems} />

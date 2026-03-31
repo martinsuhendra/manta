@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -17,9 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const whereBrand = getBrandFilterFromRequest(request, brandIds);
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
@@ -93,7 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     const sessions = await prisma.classSession.findMany({
-      where: whereConditions as Prisma.ClassSessionWhereInput,
+      where: { ...whereBrand, ...whereConditions } as Prisma.ClassSessionWhereInput,
       include: {
         item: {
           select: {
@@ -144,7 +149,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -207,9 +212,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const brandId = request.headers.get("x-brand-id");
+    if (!brandId || brandId === "ALL") {
+      return NextResponse.json({ error: "Select a single brand to create a session" }, { status: 400 });
+    }
+
+    const itemAtStore = await prisma.itemBrand.findFirst({
+      where: { itemId, brandId },
+    });
+    if (!itemAtStore) {
+      return NextResponse.json({ error: "This class is not offered at the selected store" }, { status: 400 });
+    }
+
     const newSession = await prisma.classSession.create({
       data: {
         itemId,
+        brandId,
         teacherId: teacherId || null,
         date: new Date(date),
         startTime,

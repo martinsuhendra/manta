@@ -12,7 +12,7 @@ export default function Page() {
   if (error) throw new Error(error.message);
 
   return (
-    <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]}>
+    <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]}>
       <div className="@container/main flex flex-col gap-4 md:gap-6">
         <MembersTable data={users} isLoading={isLoading} />
       </div>

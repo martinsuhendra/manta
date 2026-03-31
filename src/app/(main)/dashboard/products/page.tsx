@@ -16,7 +16,7 @@ export default function Page() {
     const isAuthError = error.message.includes("401") || error.message.includes("Unauthorized");
 
     return (
-      <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN]}>
+      <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]}>
         <div className="@container/main flex flex-col gap-4 md:gap-6">
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -59,7 +59,7 @@ export default function Page() {
   }
 
   return (
-    <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN]}>
+    <RoleGuard allowedRoles={[USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]}>
       <div className="@container/main flex flex-col gap-4 md:gap-6">
         <ProductsTable data={products || []} isLoading={isLoading} />
       </div>

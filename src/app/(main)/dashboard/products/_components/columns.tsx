@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { EllipsisVertical, Calendar, Banknote, Clock, Package } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -100,6 +101,20 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
     size: 200,
     minSize: 180,
     maxSize: 220,
+  },
+  {
+    accessorKey: "brand",
+    header: "Brand",
+    cell: ({ row }) => {
+      const brand = row.original.brand;
+      if (!brand) return null;
+      return (
+        <Badge variant="outline" className="font-normal">
+          {brand.name}
+        </Badge>
+      );
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "price",

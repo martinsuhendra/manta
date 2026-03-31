@@ -4,10 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 import { Item } from "@/app/(main)/dashboard/admin/items/_components/schema";
+import { useBrandStore } from "@/stores/brand/brand-provider";
 
 export function useItems(params?: { includeSchedules?: boolean; includeTeachers?: boolean }) {
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
   return useQuery<Item[]>({
-    queryKey: ["items", params],
+    queryKey: ["items", params, activeBrandId],
     queryFn: async () => {
       try {
         const searchParams = new URLSearchParams();
@@ -26,8 +28,9 @@ export function useItems(params?: { includeSchedules?: boolean; includeTeachers?
 }
 
 export function useItemTeachers(itemId: string, enabled = true) {
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
   return useQuery({
-    queryKey: ["items", itemId, "teachers"],
+    queryKey: ["items", itemId, "teachers", activeBrandId],
     queryFn: async () => {
       try {
         const response = await axios.get(`/api/admin/items/${itemId}/teachers`);

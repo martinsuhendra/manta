@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest) {
       select: { role: true },
     });
 
-    if (user?.role !== USER_ROLES.SUPERADMIN) {
+    if (!user || ![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

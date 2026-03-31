@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { requireBrandAccess } from "@/lib/api-utils";
 import {
   canMemberCancel,
   getBookingSettings,
@@ -27,6 +28,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const selectedBrandId = request.headers.get("x-brand-id") ?? brandIds?.[0] ?? null;
+    if (!selectedBrandId) {
+      return NextResponse.json({ error: "No active brand selected" }, { status: 400 });
+    }
+    if (brandIds && !brandIds.includes(selectedBrandId)) {
+      return NextResponse.json({ error: "Forbidden for this brand" }, { status: 403 });
+    }
+
     const userId = session.user.id;
     const { id: sessionId } = await params;
 
@@ -37,6 +48,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+    if (classSession.brandId !== selectedBrandId) {
+      return NextResponse.json({ error: "Session not available for selected brand" }, { status: 404 });
     }
 
     if (classSession.status !== "SCHEDULED") {
@@ -56,7 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const bookingId = alreadyBooked ? existingBooking.id : undefined;
 
     if (alreadyBooked) {
-      const settings = await getBookingSettings();
+      const settings = await getBookingSettings(selectedBrandId);
       const sessionStartAt = getSessionStartAt({
         date: classSession.date,
         startTime: classSession.startTime,
@@ -74,7 +88,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    const settings = await getBookingSettings();
+    const settings = await getBookingSettings(selectedBrandId);
     const sessionStartAt = getSessionStartAt({
       date: classSession.date,
       startTime: classSession.startTime,
@@ -104,6 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: true,
         memberships: {
           where: {
+            brandId: selectedBrandId,
             status: "ACTIVE",
             expiredAt: { gt: new Date() },
           },

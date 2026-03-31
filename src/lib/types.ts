@@ -11,6 +11,7 @@ export type MembershipStatus = (typeof MEMBERSHIP_STATUS)[keyof typeof MEMBERSHI
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   SUPERADMIN: "SUPERADMIN",
+  DEVELOPER: "DEVELOPER",
   MEMBER: "MEMBER",
   TEACHER: "TEACHER",
 } as const;
@@ -20,6 +21,7 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: "Admin",
   [USER_ROLES.SUPERADMIN]: "Super Admin",
+  [USER_ROLES.DEVELOPER]: "Developer",
   [USER_ROLES.MEMBER]: "Member",
   [USER_ROLES.TEACHER]: "Teacher",
 };
@@ -30,6 +32,8 @@ export type RoleBadgeVariant = "destructive" | "default" | "secondary" | "outlin
 
 export function getRoleVariant(role: string): RoleBadgeVariant {
   switch (role) {
+    case USER_ROLES.DEVELOPER:
+      return "destructive";
     case USER_ROLES.SUPERADMIN:
       return "destructive";
     case USER_ROLES.ADMIN:

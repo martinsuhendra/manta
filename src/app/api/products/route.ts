@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
 
-import { handleApiError, requireAuth, requireSuperAdmin } from "@/lib/api-utils";
+import { getBrandFilterFromRequest, handleApiError, requireBrandAccess, requireSuperAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 
 const createProductSchema = z.object({
@@ -18,14 +18,18 @@ const createProductSchema = z.object({
   isActive: z.boolean().optional().default(true),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireAuth();
+    const { error, brandIds } = await requireBrandAccess(request);
     if (error) return error;
 
+    const whereBrand = getBrandFilterFromRequest(request, brandIds);
+
     const products = await prisma.product.findMany({
+      where: whereBrand,
       orderBy: { position: "asc" },
       include: {
+        brand: { select: { id: true, name: true } },
         _count: {
           select: { memberships: true, transactions: true },
         },
@@ -43,11 +47,16 @@ export async function POST(request: NextRequest) {
     const { error } = await requireSuperAdmin();
     if (error) return error;
 
+    const brandId = request.headers.get("x-brand-id");
+    if (!brandId || brandId === "ALL") {
+      return NextResponse.json({ error: "Select a single brand to create a product" }, { status: 400 });
+    }
+
     const body = await request.json();
     const validatedData = createProductSchema.parse(body);
 
     const product = await prisma.product.create({
-      data: validatedData,
+      data: { ...validatedData, brandId },
     });
 
     return NextResponse.json(product, { status: 201 });

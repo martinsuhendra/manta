@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     let whereCondition = {};
 
-    if (userId && session.user.role === USER_ROLES.SUPERADMIN) {
+    if (userId && [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       whereCondition = { userId };
     } else {
       whereCondition = { userId: session.user.id };
@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         productId: validatedData.productId,
+        brandId: product.brandId,
         expiredAt,
         transactionId: validatedData.transactionId,
         status: membershipStatus,

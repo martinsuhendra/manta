@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
 import { canMemberCancel, getBookingSettings, getCancelDeadline, getSessionStartAt } from "@/lib/booking-settings";
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { prisma } from "@/lib/generated/prisma";
 import { getMembershipRemainingQuota } from "@/lib/quota-utils";
 
@@ -25,6 +26,11 @@ async function getAccountData() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const activeBrandId = await resolveActiveBrandIdFromCookie();
+    if (!activeBrandId) {
+      redirect("/shop");
+    }
+
     // Get user with memberships, transactions, and upcoming bookings
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -36,6 +42,7 @@ async function getAccountData() {
         role: true,
         createdAt: true,
         memberships: {
+          where: { brandId: activeBrandId },
           include: {
             product: {
               select: {
@@ -72,6 +79,7 @@ async function getAccountData() {
           },
         },
         transactions: {
+          where: { brandId: activeBrandId },
           include: {
             product: {
               select: {
@@ -87,6 +95,7 @@ async function getAccountData() {
         },
         bookings: {
           where: {
+            brandId: activeBrandId,
             status: { not: "CANCELLED" },
             classSession: {
               date: { gte: today },
@@ -135,7 +144,7 @@ async function getAccountData() {
     const frozenMemberships = user.memberships.filter((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
 
     const freezeRequests = await prisma.membershipFreezeRequest.findMany({
-      where: { requestedById: user.id },
+      where: { requestedById: user.id, membership: { brandId: activeBrandId } },
       include: {
         membership: {
           select: {
@@ -234,7 +243,7 @@ async function getAccountData() {
         },
       })),
       upcomingBookings: await (async () => {
-        const settings = await getBookingSettings();
+        const settings = await getBookingSettings(activeBrandId);
         return [...user.bookings]
           .sort((a, b) => a.classSession.date.getTime() - b.classSession.date.getTime())
           .map((b) => {

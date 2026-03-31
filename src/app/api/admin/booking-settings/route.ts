@@ -11,12 +11,17 @@ const updateSchema = z.object({
   cancellationDeadlineHours: z.number().int().min(0).max(720),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { error } = await requireAdmin();
     if (error) return error;
 
-    const settings = await getBookingSettings();
+    const brandId = request.headers.get("x-brand-id");
+    if (!brandId || brandId === "ALL") {
+      return NextResponse.json({ error: "Select a single brand to view booking settings" }, { status: 400 });
+    }
+
+    const settings = await getBookingSettings(brandId);
     return NextResponse.json(settings);
   } catch (err) {
     return handleApiError(err, "Failed to fetch booking settings");
@@ -28,10 +33,16 @@ export async function PATCH(request: NextRequest) {
     const { error } = await requireAdmin();
     if (error) return error;
 
+    const brandId = request.headers.get("x-brand-id");
+    if (!brandId || brandId === "ALL") {
+      return NextResponse.json({ error: "Select a single brand to update booking settings" }, { status: 400 });
+    }
+
     const body = await request.json();
     const validated = updateSchema.parse(body);
 
     const existing = await prisma.bookingSettings.findFirst({
+      where: { brandId },
       orderBy: { createdAt: "asc" },
     });
 
@@ -46,13 +57,14 @@ export async function PATCH(request: NextRequest) {
     } else {
       await prisma.bookingSettings.create({
         data: {
+          brandId,
           endBookingPeriodHours: validated.endBookingPeriodHours,
           cancellationDeadlineHours: validated.cancellationDeadlineHours,
         },
       });
     }
 
-    const settings = await getBookingSettings();
+    const settings = await getBookingSettings(brandId);
     return NextResponse.json(settings);
   } catch (err) {
     return handleApiError(err, "Failed to update booking settings");

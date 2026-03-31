@@ -32,6 +32,7 @@ import { OverviewTab } from "./overview-tab";
 import { Member, MemberDetails } from "./schema";
 import { TabTriggers } from "./tab-triggers";
 import { AttendanceTab } from "./tabs/attendance-tab";
+import { BrandsTab } from "./tabs/brands-tab";
 import { MembershipsTab } from "./tabs/memberships-tab";
 import { TeacherSessionsTab } from "./tabs/teacher-sessions-tab";
 import { TransactionsTab } from "./tabs/transactions-tab";
@@ -48,8 +49,8 @@ interface MemberDetailDrawerProps {
 
 const useDeletePermissions = (member: Member | null, session: ReturnType<typeof useSession>["data"]) => {
   const currentUserRole = session?.user.role;
-  const canDeleteSuperAdmin = currentUserRole === USER_ROLES.SUPERADMIN;
-  const isTargetSuperAdmin = member?.role === USER_ROLES.SUPERADMIN;
+  const canDeleteSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
+  const isTargetSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(member?.role ?? "");
   const isSelfDelete = member?.id === session?.user.id;
   const canDelete = !isSelfDelete && (!isTargetSuperAdmin || canDeleteSuperAdmin);
 
@@ -80,7 +81,9 @@ const WarningMessages = ({
             <p className="text-destructive text-sm font-medium">Cannot Delete Member</p>
             <p className="text-muted-foreground text-sm">
               {isSelfDelete && "You cannot delete your own account."}
-              {isTargetSuperAdmin && !canDeleteSuperAdmin && "Only SUPERADMIN users can delete SUPERADMIN accounts."}
+              {isTargetSuperAdmin &&
+                !canDeleteSuperAdmin &&
+                "Only SUPERADMIN or DEVELOPER users can delete SUPERADMIN/DEVELOPER accounts."}
             </p>
           </div>
         </div>
@@ -115,8 +118,8 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
   const [isEditModeReady, setIsEditModeReady] = React.useState(false);
 
   const currentUserRole = session?.user.role;
-  const canCreateSuperAdmin = currentUserRole === USER_ROLES.SUPERADMIN;
-  const canEditRoles = currentUserRole === USER_ROLES.SUPERADMIN;
+  const canCreateSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
+  const canEditRoles = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
   const { canDelete, isSelfDelete, isTargetSuperAdmin, canDeleteSuperAdmin } = useDeletePermissions(member, session);
 
   // Fetch detailed member data when in view mode
@@ -203,20 +206,27 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 <LoadingSpinner />
               ) : (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col justify-start gap-6">
-                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} />
+                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} showBrandsTab={canEditRoles} />
 
                   <TabsContent value="overview" className="relative flex flex-col gap-4 overflow-auto">
                     <OverviewTab member={member} memberDetails={memberDetails} />
                   </TabsContent>
 
                   {member.role === USER_ROLES.TEACHER ? (
-                    <TabsContent value="sessions" className="flex flex-col">
-                      {memberDetails && "classSessions" in memberDetails ? (
-                        <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
-                      ) : (
-                        <LoadingSpinner />
+                    <>
+                      <TabsContent value="sessions" className="flex flex-col">
+                        {memberDetails && "classSessions" in memberDetails ? (
+                          <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
+                        ) : (
+                          <LoadingSpinner />
+                        )}
+                      </TabsContent>
+                      {canEditRoles && (
+                        <TabsContent value="brands" className="flex flex-col">
+                          <BrandsTab userId={member.id} />
+                        </TabsContent>
                       )}
-                    </TabsContent>
+                    </>
                   ) : (
                     <>
                       <TabsContent value="memberships" className="flex flex-col">
@@ -246,6 +256,12 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                           <LoadingSpinner />
                         )}
                       </TabsContent>
+
+                      {canEditRoles && (
+                        <TabsContent value="brands" className="flex flex-col">
+                          <BrandsTab userId={member.id} />
+                        </TabsContent>
+                      )}
                     </>
                   )}
                 </Tabs>

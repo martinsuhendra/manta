@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+import { useBrandStore } from "@/stores/brand/brand-provider";
+
 interface Membership {
   id: string;
   licenseCode: string;
@@ -34,8 +36,9 @@ interface Membership {
 }
 
 export function useMemberships(userId?: string) {
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
   return useQuery<Membership[]>({
-    queryKey: ["memberships", userId],
+    queryKey: ["memberships", userId, activeBrandId],
     queryFn: async () => {
       const params = userId ? { userId } : {};
       const response = await axios.get("/api/memberships", { params });

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import { APP_CONFIG } from "@/config/app-config";
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 
 import { AboutSection } from "./_components/about-section";
 import { ClassesSection } from "./_components/classes-section";
@@ -18,7 +19,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ShopPage() {
-  const { products, sessions, classes, instructors } = await getShopPageData();
+  const activeBrandId = await resolveActiveBrandIdFromCookie();
+  const { products, sessions, classes, instructors } = await getShopPageData(activeBrandId ?? undefined);
 
   return (
     <>

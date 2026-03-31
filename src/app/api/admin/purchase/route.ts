@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
+        brandId: product.brandId,
         amount: product.price,
         currency: "IDR", // Midtrans requires IDR
         status: TRANSACTION_STATUS.PENDING,
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
+        brandId: product.brandId,
         expiredAt,
         transactionId: transaction.id,
         status: MEMBERSHIP_STATUS.PENDING,

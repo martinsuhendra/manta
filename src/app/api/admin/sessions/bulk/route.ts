@@ -42,12 +42,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Start date must be before end date" }, { status: 400 });
     }
 
+    const brandIdHeader = request.headers.get("x-brand-id");
+    if (!brandIdHeader || brandIdHeader === "ALL") {
+      return NextResponse.json(
+        { error: "Select a single brand in the header to generate sessions for that store" },
+        { status: 400 },
+      );
+    }
+
     // Fetch items with their schedules
     const items = await prisma.item.findMany({
       where: { id: { in: itemIds } },
       include: {
         schedules: {
           where: { isActive: true },
+        },
+        itemBrands: {
+          select: { brandId: true },
         },
       },
     });
@@ -56,9 +67,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No valid items found" }, { status: 404 });
     }
 
+    for (const row of items) {
+      const ok = row.itemBrands.some((ib) => ib.brandId === brandIdHeader);
+      if (!ok) {
+        return NextResponse.json(
+          {
+            error: `Class "${row.name}" is not offered at the selected store. Add the store to the class or switch brand.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const itemIdToBrandId = new Map(items.map((i) => [i.id, brandIdHeader]));
+
     // Generate sessions based on mode
     let sessionsToCreate: Array<{
       itemId: string;
+      brandId: string;
       teacherId: string | null;
       date: Date;
       startTime: string;
@@ -68,13 +94,19 @@ export async function POST(request: NextRequest) {
     }> = [];
 
     if (mode === "AUTOMATIC") {
-      sessionsToCreate = generateAutomaticSessions(items, start, end, calculateEndTime);
+      sessionsToCreate = generateAutomaticSessions(items, start, end, calculateEndTime).map((s) => ({
+        ...s,
+        brandId: itemIdToBrandId.get(s.itemId)!,
+      }));
     } else {
       // Manual mode - use provided sessions
       if (!manualSessions || manualSessions.length === 0) {
         return NextResponse.json({ error: "Manual sessions are required in manual mode" }, { status: 400 });
       }
-      sessionsToCreate = generateManualSessions(manualSessions, items, start, end, calculateEndTime);
+      sessionsToCreate = generateManualSessions(manualSessions, items, start, end, calculateEndTime).map((s) => ({
+        ...s,
+        brandId: itemIdToBrandId.get(s.itemId)!,
+      }));
     }
 
     if (sessionsToCreate.length === 0) {

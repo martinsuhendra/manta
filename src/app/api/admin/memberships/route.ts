@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -14,7 +15,7 @@ const createMembershipSchema = z.object({
   joinDate: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -22,11 +23,16 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const whereBrand = getBrandFilterFromRequest(request, brandIds);
+
     const memberships = await prisma.membership.findMany({
+      where: whereBrand,
       include: {
         user: {
           select: {
@@ -73,7 +79,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN].includes(session.user.role as "ADMIN" | "SUPERADMIN")) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -107,6 +113,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: validatedData.userId,
         productId: validatedData.productId,
+        brandId: product.brandId,
         status: validatedData.status,
         joinDate: validatedData.joinDate ? new Date(validatedData.joinDate) : undefined,
         expiredAt,

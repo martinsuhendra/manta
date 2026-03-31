@@ -44,6 +44,18 @@ export type TeacherItem = z.infer<typeof teacherItemSchema>;
 // Item schemas
 export const itemSchema = z.object({
   id: z.string(),
+  brandIds: z.array(z.string()).optional(),
+  itemBrands: z
+    .array(
+      z.object({
+        brandId: z.string(),
+        brand: z.object({
+          id: z.string(),
+          name: z.string(),
+        }),
+      }),
+    )
+    .optional(),
   name: z.string(),
   description: z.string().nullable(),
   duration: z.number(),
@@ -67,6 +79,7 @@ export const itemSchema = z.object({
 export type Item = z.infer<typeof itemSchema>;
 
 export const createItemSchema = z.object({
+  brandIds: z.array(z.string().uuid()).min(1, "Select at least one store"),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   duration: z.number().min(1, "Duration must be at least 1 minute"),
@@ -124,6 +137,7 @@ export const createItemSchema = z.object({
 export type CreateItemForm = z.infer<typeof createItemSchema>;
 
 export const updateItemSchema = z.object({
+  brandIds: z.array(z.string().uuid()).min(1).optional(),
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   duration: z.number().min(1, "Duration must be at least 1 minute").optional(),
