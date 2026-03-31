@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES, DEFAULT_USER_ROLE } from "@/lib/types";
 
@@ -19,6 +21,7 @@ const createUserSchema = z.object({
     .max(15, "Phone number must be at most 15 digits")
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
   image: z.string().nullable().optional(),
+  avatarAsset: z.unknown().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
 });
 
@@ -43,6 +46,7 @@ export async function GET(request: NextRequest) {
         role: true,
         phoneNo: true,
         image: true,
+        avatarAsset: true,
         bio: true,
         createdAt: true,
         updatedAt: true,
@@ -59,7 +63,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(users);
+    return NextResponse.json(
+      users.map((user) => ({
+        ...user,
+        avatarAsset: parseCloudinaryAsset(user.avatarAsset),
+        image: resolveAssetUrl(user.avatarAsset, user.image),
+      })),
+    );
   } catch (error) {
     console.error("Failed to fetch users:", error);
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
@@ -76,6 +86,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = createUserSchema.parse(body);
+    const avatarAsset = parseCloudinaryAsset(validatedData.avatarAsset);
 
     // Check if only SUPERADMIN can create SUPERADMIN users
     if (
@@ -104,7 +115,8 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
-        image: validatedData.image ?? undefined,
+        avatarAsset: avatarAsset ?? Prisma.JsonNull,
+        image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,
         bio: validatedData.bio ?? undefined,
       },
       include: {

@@ -82,11 +82,7 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
     cell: ({ row }) => {
       const role = row.original.role;
 
-      return (
-        <StatusBadge variant={getRoleVariant(role)}>
-          {USER_ROLE_LABELS[role as keyof typeof USER_ROLE_LABELS] || role}
-        </StatusBadge>
-      );
+      return <StatusBadge variant={getRoleVariant(role)}>{USER_ROLE_LABELS[role] || role}</StatusBadge>;
     },
   },
   {

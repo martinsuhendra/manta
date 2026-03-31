@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { handleApiError, requireAuth, requireSuperAdmin } from "@/lib/api-utils";
+import { deleteCloudinaryAsset } from "@/lib/cloudinary";
+import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
 const updateProductSchema = z.object({
@@ -13,6 +16,7 @@ const updateProductSchema = z.object({
   quota: z.number().positive("Quota must be positive").optional(),
   features: z.array(z.string()).optional(),
   image: z.string().optional(),
+  imageAsset: z.unknown().nullable().optional(),
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
   participantsPerPurchase: z.number().int().min(1).max(10).optional(),
@@ -38,7 +42,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json({
+      ...product,
+      imageAsset: parseCloudinaryAsset(product.imageAsset),
+      image: resolveAssetUrl(product.imageAsset, product.image),
+    });
   } catch (error) {
     return handleApiError(error, "Failed to fetch membership product");
   }
@@ -52,11 +60,43 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const validatedData = updateProductSchema.parse(body);
+    const { imageAsset: _imageAsset, ...updateData } = validatedData;
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { imageAsset: true },
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const previousAsset = parseCloudinaryAsset(existingProduct.imageAsset);
+    const nextAsset =
+      validatedData.imageAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.imageAsset);
+    const nextAssetForDb = validatedData.imageAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const shouldDeletePrevious =
+      !!previousAsset &&
+      (!nextAsset ||
+        previousAsset.publicId !== nextAsset.publicId ||
+        validatedData.imageAsset === null ||
+        validatedData.image === "");
 
     const product = await prisma.product.update({
       where: { id },
-      data: validatedData,
+      data: {
+        ...updateData,
+        ...(validatedData.imageAsset !== undefined && {
+          imageAsset: nextAssetForDb,
+          image: resolveAssetUrl(nextAsset, validatedData.image),
+        }),
+      },
     });
+
+    if (shouldDeletePrevious && previousAsset) {
+      deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete previous Cloudinary product image:", error);
+      });
+    }
 
     return NextResponse.json(product);
   } catch (error) {
@@ -83,9 +123,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       );
     }
 
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { imageAsset: true },
+    });
+
     await prisma.product.delete({
       where: { id },
     });
+
+    const imageAsset = parseCloudinaryAsset(product?.imageAsset);
+    if (imageAsset) {
+      deleteCloudinaryAsset({ publicId: imageAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete Cloudinary product image on delete:", error);
+      });
+    }
 
     return NextResponse.json({ message: "Membership product deleted successfully" });
   } catch (error) {

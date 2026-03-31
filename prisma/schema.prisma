@@ -12,6 +12,7 @@ model Brand {
   slug        String   @unique
   address     String?
   logo        String?
+  logoAsset   Json?
 
   // Theme / styleguide
   primaryColor String  @default("#6366f1")
@@ -89,6 +90,7 @@ model User {
   email         String?        @unique(map: "user_email_idx")
   emailVerified DateTime?      @db.Timestamp(6)
   image         String?
+  avatarAsset   Json?
   bio           String?        // Teacher profile description
   password      String?
   role          String         @default("MEMBER")
@@ -149,6 +151,7 @@ model Product {
   isActive       Boolean  @default(true) @map("is_active")
   features       String[] @default([])
   image          String?
+  imageAsset     Json?
   paymentUrl     String?  @map("payment_url")
   whatIsIncluded         String?  @map("what_is_included")
   participantsPerPurchase Int     @default(1) @map("participants_per_purchase")

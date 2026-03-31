@@ -9,6 +9,8 @@ export interface User {
   email: string | null;
   role: "ADMIN" | "SUPERADMIN" | "DEVELOPER" | "MEMBER" | "TEACHER";
   phoneNo: string | null;
+  image?: string | null;
+  avatarAsset?: unknown;
   createdAt: string;
   updatedAt: string;
   _count: {

@@ -12,6 +12,8 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cloudinaryAssetSchema } from "@/lib/cloudinary-asset";
+import { CLOUDINARY_UPLOAD_TARGETS } from "@/lib/cloudinary-validation";
 import { USER_ROLES, USER_ROLE_LABELS, DEFAULT_USER_ROLE } from "@/lib/types";
 
 import { getAvailableRoles } from "./member-detail-drawer-utils";
@@ -30,6 +32,7 @@ const formSchema = z.object({
     .max(15, "Phone number must be at most 15 digits")
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
   image: z.string().nullable().optional(),
+  avatarAsset: cloudinaryAssetSchema.nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
 });
 
@@ -54,6 +57,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
       role: member?.role ?? DEFAULT_USER_ROLE,
       phoneNo: member?.phoneNo ?? "",
       image: memberWithExtras?.image ?? null,
+      avatarAsset: (memberWithExtras as Member & { avatarAsset?: unknown })?.avatarAsset ?? null,
       bio: memberWithExtras?.bio ?? null,
     },
   });
@@ -68,6 +72,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         role: member.role,
         phoneNo: member.phoneNo ?? "",
         image: m.image ?? null,
+        avatarAsset: m.avatarAsset ?? null,
         bio: m.bio ?? null,
       });
     } else if (mode === "add") {
@@ -77,17 +82,19 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         role: DEFAULT_USER_ROLE,
         phoneNo: "",
         image: null,
+        avatarAsset: null,
         bio: null,
       });
     }
   }, [mode, member, form]);
 
   const availableRoles = getAvailableRoles(mode, canCreateSuperAdmin, canEditRoles, member?.role);
+  const [isUploading, setIsUploading] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isPending) {
+    if (!isPending && !isUploading) {
       form.handleSubmit(onSubmit)(e);
     }
   };
@@ -199,6 +206,10 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
                     <ImageUpload
                       value={field.value ?? undefined}
                       onChange={(v) => field.onChange(v ?? null)}
+                      onAssetChange={(asset) => form.setValue("avatarAsset", asset ?? null)}
+                      onUploadStateChange={setIsUploading}
+                      uploadTarget={CLOUDINARY_UPLOAD_TARGETS.USER_AVATAR}
+                      disabled={isPending || isUploading}
                       aspectRatio="square"
                       className="max-w-[200px]"
                     />

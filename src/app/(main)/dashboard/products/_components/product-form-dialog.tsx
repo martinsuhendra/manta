@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCreateProduct, useUpdateProduct } from "@/hooks/use-products-mutation";
+import { cloudinaryAssetSchema } from "@/lib/cloudinary-asset";
 
 import { ProductPreview } from "./product-card";
 import { ProductFormFields } from "./product-form-fields";
@@ -30,6 +31,7 @@ const formSchema = z.object({
   participantsPerPurchase: z.coerce.number().int().min(1).max(10),
   features: z.array(z.string()).default([]),
   image: z.string().optional(),
+  imageAsset: cloudinaryAssetSchema.nullable().optional(),
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
   isActive: z.boolean().default(true),
@@ -45,6 +47,7 @@ const DEFAULT_FORM_VALUES: FormData = {
   participantsPerPurchase: 1,
   features: [],
   image: "",
+  imageAsset: null,
   paymentUrl: "",
   whatIsIncluded: "",
   isActive: true,
@@ -143,6 +146,7 @@ export function ProductFormDialog({
           typeof product.participantsPerPurchase === "number" ? product.participantsPerPurchase : 1,
         features: product.features,
         image: product.image || "",
+        imageAsset: (product as Product & { imageAsset?: unknown }).imageAsset ?? null,
         paymentUrl: product.paymentUrl || "",
         whatIsIncluded: product.whatIsIncluded || "",
         isActive: product.isActive,

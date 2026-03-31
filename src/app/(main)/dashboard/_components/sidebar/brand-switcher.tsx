@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+import Image from "next/image";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Building2, Check, ChevronsUpDown } from "lucide-react";
+import { Building2, Check, ChevronsUpDown, ImageIcon } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -17,6 +19,37 @@ import { useAccessibleBrands } from "@/hooks/use-brands-query";
 import { useBrandStore } from "@/stores/brand/brand-provider";
 
 const ALL_ID = "ALL" as const;
+
+function BrandLogo({ logo, name, className }: { logo?: string | null; name: string; className?: string }) {
+  const [isImageBroken, setIsImageBroken] = useState(false);
+  const shouldShowImage = !!logo && !isImageBroken;
+
+  if (!shouldShowImage) {
+    return (
+      <span
+        className={`bg-muted text-muted-foreground inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${className ?? ""}`}
+        aria-hidden="true"
+      >
+        <ImageIcon className="h-4 w-4" />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`bg-muted relative inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-md border ${className ?? ""}`}
+    >
+      <Image
+        src={logo}
+        alt={`${name} logo`}
+        fill
+        sizes="32px"
+        className="object-cover"
+        onError={() => setIsImageBroken(true)}
+      />
+    </span>
+  );
+}
 
 export function BrandSwitcher() {
   const queryClient = useQueryClient();
@@ -34,12 +67,11 @@ export function BrandSwitcher() {
     queryClient.invalidateQueries();
   };
 
-  if (isLoading || brands.length === 0) return null;
-
   const showAllOption = brands.length >= 2;
-  const currentLabel =
-    activeBrandId === ALL_ID ? "All Brands" : (brands.find((b) => b.id === activeBrandId)?.name ?? "Select brand");
-  const currentColor = activeBrandId !== ALL_ID ? brands.find((b) => b.id === activeBrandId)?.primaryColor : undefined;
+  const activeBrand = brands.find((b) => b.id === activeBrandId);
+  const currentLabel = activeBrandId === ALL_ID ? "All Brands" : (activeBrand?.name ?? "Select brand");
+
+  if (isLoading || brands.length === 0) return null;
 
   return (
     <SidebarMenu>
@@ -50,10 +82,7 @@ export function BrandSwitcher() {
               {activeBrandId === ALL_ID ? (
                 <Building2 className="h-4 w-4 shrink-0" />
               ) : (
-                <span
-                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full border"
-                  style={{ backgroundColor: currentColor ?? "#6366f1" }}
-                />
+                <BrandLogo logo={activeBrand?.logo} name={currentLabel} />
               )}
               <span className="truncate group-data-[collapsible=icon]:hidden">{currentLabel}</span>
               <ChevronsUpDown className="ml-auto h-4 w-4 flex-shrink-0 opacity-50 group-data-[collapsible=icon]:hidden" />
@@ -72,10 +101,7 @@ export function BrandSwitcher() {
             )}
             {brands.map((b) => (
               <DropdownMenuItem key={b.id} onClick={() => handleSelect(b.id)}>
-                <span
-                  className="mr-2 h-2.5 w-2.5 flex-shrink-0 rounded-full border"
-                  style={{ backgroundColor: b.primaryColor ?? "#6366f1" }}
-                />
+                <BrandLogo logo={b.logo} name={b.name} className="mr-2" />
                 <span className="truncate">{b.name}</span>
                 {activeBrandId === b.id && <Check className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>

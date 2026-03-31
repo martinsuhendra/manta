@@ -22,11 +22,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { error, brandIds } = await requireBrandAccess(request);
     if (error) return error;
-    const selectedBrandId = request.headers.get("x-brand-id") || brandIds[0] || null;
+    const selectedBrandId = request.headers.get("x-brand-id") ?? brandIds?.[0] ?? null;
     if (!selectedBrandId) {
       return NextResponse.json({ error: "No active brand selected" }, { status: 400 });
     }
-    if (!brandIds.includes(selectedBrandId)) {
+    if (!brandIds?.includes(selectedBrandId)) {
       return NextResponse.json({ error: "Forbidden for this brand" }, { status: 403 });
     }
 

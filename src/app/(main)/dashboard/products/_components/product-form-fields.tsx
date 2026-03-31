@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import { UseFormReturn } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
+import { CLOUDINARY_UPLOAD_TARGETS } from "@/lib/cloudinary-validation";
 
 interface FormData {
   name: string;
@@ -20,6 +24,7 @@ interface FormData {
   participantsPerPurchase: number;
   features: string[];
   image?: string;
+  imageAsset?: CloudinaryAssetPayload | null;
   paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;
@@ -42,6 +47,8 @@ export function ProductFormFields({
   onCancel,
   hideButtons = false,
 }: ProductFormFieldsProps) {
+  const [isUploading, setIsUploading] = React.useState(false);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-1">
@@ -82,7 +89,14 @@ export function ProductFormFields({
             <FormItem>
               <FormLabel>Product Image</FormLabel>
               <FormControl>
-                <ImageUpload value={field.value} onChange={field.onChange} disabled={mutation.isPending} />
+                <ImageUpload
+                  value={field.value}
+                  onChange={field.onChange}
+                  onAssetChange={(asset) => form.setValue("imageAsset", asset ?? null)}
+                  onUploadStateChange={setIsUploading}
+                  uploadTarget={CLOUDINARY_UPLOAD_TARGETS.PRODUCT_IMAGE}
+                  disabled={mutation.isPending}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -192,14 +206,16 @@ export function ProductFormFields({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || isUploading}>
               {mutation.isPending
                 ? isEdit
                   ? "Updating..."
                   : "Creating..."
-                : isEdit
-                  ? "Update Product"
-                  : "Create Product"}
+                : isUploading
+                  ? "Uploading..."
+                  : isEdit
+                    ? "Update Product"
+                    : "Create Product"}
             </Button>
           </div>
         )}

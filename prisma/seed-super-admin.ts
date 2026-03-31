@@ -1,7 +1,20 @@
+import "dotenv/config";
+
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to seed super admin users");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaNeon({
+    connectionString: databaseUrl,
+  }),
+});
 
 async function seedSuperAdmin() {
   try {

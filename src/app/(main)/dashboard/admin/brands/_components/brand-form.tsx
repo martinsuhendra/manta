@@ -1,13 +1,18 @@
 "use client";
 
+import * as React from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { cloudinaryAssetSchema } from "@/lib/cloudinary-asset";
+import { CLOUDINARY_UPLOAD_TARGETS } from "@/lib/cloudinary-validation";
 
 const brandFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -17,6 +22,7 @@ const brandFormSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers and hyphens only"),
   address: z.string().optional(),
   logo: z.string().optional(),
+  logoAsset: cloudinaryAssetSchema.nullable().optional(),
   primaryColor: z.string().min(1).default("#6366f1"),
   accentColor: z.string().min(1).default("#8b5cf6"),
   isActive: z.boolean().default(true),
@@ -32,6 +38,7 @@ interface BrandFormProps {
 }
 
 export function BrandForm({ defaultValues, onSubmit, isPending = false, submitLabel = "Save" }: BrandFormProps) {
+  const [isUploading, setIsUploading] = React.useState(false);
   const form = useForm<BrandFormValues>({
     resolver: zodResolver(brandFormSchema),
     defaultValues: {
@@ -39,6 +46,7 @@ export function BrandForm({ defaultValues, onSubmit, isPending = false, submitLa
       slug: "",
       address: "",
       logo: "",
+      logoAsset: null,
       primaryColor: "#6366f1",
       accentColor: "#8b5cf6",
       isActive: true,
@@ -94,9 +102,18 @@ export function BrandForm({ defaultValues, onSubmit, isPending = false, submitLa
           name="logo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Logo URL (optional)</FormLabel>
+              <FormLabel>Logo (optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://…" {...field} value={field.value ?? ""} />
+                <ImageUpload
+                  value={field.value}
+                  onChange={field.onChange}
+                  uploadTarget={CLOUDINARY_UPLOAD_TARGETS.BRAND_LOGO}
+                  onAssetChange={(asset) => form.setValue("logoAsset", asset ?? null)}
+                  onUploadStateChange={setIsUploading}
+                  disabled={isPending}
+                  aspectRatio="square"
+                  className="max-w-[240px]"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -161,8 +178,8 @@ export function BrandForm({ defaultValues, onSubmit, isPending = false, submitLa
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : submitLabel}
+        <Button type="submit" disabled={isPending || isUploading}>
+          {isUploading ? "Uploading..." : isPending ? "Saving…" : submitLabel}
         </Button>
       </form>
     </Form>
