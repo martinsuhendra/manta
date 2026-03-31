@@ -41,6 +41,7 @@ declare module "next-auth/jwt" {
     role?: string;
     emailVerified?: Date | null;
     phoneNo?: string | null;
+    defaultBrandId?: string;
   }
 }
 

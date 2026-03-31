@@ -6,6 +6,7 @@ import { ArrowLeft, Dumbbell, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { APP_CONFIG } from "@/config/app-config";
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { prisma } from "@/lib/generated/prisma";
 import { mapSessionWithCapacity } from "@/lib/session-utils";
 
@@ -17,8 +18,9 @@ interface ClassDetailPageProps {
 
 export async function generateMetadata({ params }: ClassDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const item = await prisma.item.findUnique({
-    where: { id, isActive: true },
+  const activeBrandId = await resolveActiveBrandIdFromCookie();
+  const item = await prisma.item.findFirst({
+    where: { id, isActive: true, ...(activeBrandId ? { itemBrands: { some: { brandId: activeBrandId } } } : {}) },
     select: { name: true, description: true },
   });
   if (!item) return { title: "Class Not Found" };
@@ -28,10 +30,10 @@ export async function generateMetadata({ params }: ClassDetailPageProps): Promis
   };
 }
 
-async function getClassById(id: string) {
+async function getClassById(id: string, brandId?: string) {
   try {
-    const item = await prisma.item.findUnique({
-      where: { id, isActive: true },
+    const item = await prisma.item.findFirst({
+      where: { id, isActive: true, ...(brandId ? { itemBrands: { some: { brandId } } } : {}) },
       select: {
         id: true,
         name: true,
@@ -48,7 +50,7 @@ async function getClassById(id: string) {
   }
 }
 
-async function getUpcomingSessionsForClass(itemId: string) {
+async function getUpcomingSessionsForClass(itemId: string, brandId?: string) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -57,6 +59,7 @@ async function getUpcomingSessionsForClass(itemId: string) {
     const sessions = await prisma.classSession.findMany({
       where: {
         itemId,
+        ...(brandId ? { brandId } : {}),
         date: { gte: today, lte: nextMonth },
         status: "SCHEDULED",
       },
@@ -93,7 +96,11 @@ async function getUpcomingSessionsForClass(itemId: string) {
 
 export default async function ClassDetailPage({ params }: ClassDetailPageProps) {
   const { id } = await params;
-  const [item, sessions] = await Promise.all([getClassById(id), getUpcomingSessionsForClass(id)]);
+  const activeBrandId = await resolveActiveBrandIdFromCookie();
+  const [item, sessions] = await Promise.all([
+    getClassById(id, activeBrandId ?? undefined),
+    getUpcomingSessionsForClass(id, activeBrandId ?? undefined),
+  ]);
 
   if (!item) {
     return (

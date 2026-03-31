@@ -4,6 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-accent: var(--brand-accent);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -41,8 +43,10 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Tangerine theme applied as default */
+/* Brand theme overridden by BrandThemeInjector when a brand is selected */
 :root {
+  --brand-primary: #6366f1;
+  --brand-accent: #8b5cf6;
   --radius: 0.625rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.32 0 0);

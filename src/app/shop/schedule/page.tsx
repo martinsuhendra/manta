@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import { addDays, startOfDay } from "date-fns";
 
 import { APP_CONFIG } from "@/config/app-config";
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { prisma } from "@/lib/generated/prisma";
 import { mapSessionWithCapacity } from "@/lib/session-utils";
 
@@ -16,10 +17,13 @@ export const metadata: Metadata = {
   description: "View our upcoming class schedule.",
 };
 
-async function getClasses() {
+async function getClasses(brandId?: string) {
   try {
     const items = await prisma.item.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(brandId ? { itemBrands: { some: { brandId } } } : {}),
+      },
       select: { id: true, name: true },
     });
     return items;
@@ -28,7 +32,7 @@ async function getClasses() {
   }
 }
 
-async function getFullSchedule(start?: string, end?: string, itemId?: string) {
+async function getFullSchedule(start?: string, end?: string, itemId?: string, brandId?: string) {
   try {
     const today = startOfDay(new Date());
     const defaultEnd = addDays(today, 30);
@@ -43,6 +47,7 @@ async function getFullSchedule(start?: string, end?: string, itemId?: string) {
           lte: endDate,
         },
         status: "SCHEDULED",
+        ...(brandId ? { brandId } : {}),
         ...(itemId && itemId !== "all" ? { itemId } : {}),
       },
       include: {
@@ -87,7 +92,11 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
   const end = typeof params.end === "string" ? params.end : undefined;
   const itemId = typeof params.item === "string" ? params.item : undefined;
 
-  const [sessions, classes] = await Promise.all([getFullSchedule(start, end, itemId), getClasses()]);
+  const activeBrandId = await resolveActiveBrandIdFromCookie();
+  const [sessions, classes] = await Promise.all([
+    getFullSchedule(start, end, itemId, activeBrandId ?? undefined),
+    getClasses(activeBrandId ?? undefined),
+  ]);
 
   return (
     <>

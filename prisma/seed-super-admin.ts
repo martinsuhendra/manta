@@ -5,41 +5,51 @@ const prisma = new PrismaClient();
 
 async function seedSuperAdmin() {
   try {
-    const email = "superadmin@example.com";
-    const password = "password123";
-    const role = "SUPERADMIN";
-
-    // Check if superadmin already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      console.log(`SUPERADMIN with email ${email} already exists`);
-      return;
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create the superadmin user
-    const superAdmin = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role,
+    const seedUsers = [
+      {
+        email: "superadmin@example.com",
+        password: "password123",
+        role: "SUPERADMIN",
         name: "Super Admin",
-        emailVerified: new Date(),
       },
-    });
+      {
+        email: "developer@example.com",
+        password: "password123",
+        role: "DEVELOPER",
+        name: "Developer",
+      },
+    ];
 
-    console.log(`✅ SUPERADMIN created successfully:`);
-    console.log(`   Email: ${superAdmin.email}`);
-    console.log(`   Role: ${superAdmin.role}`);
-    console.log(`   ID: ${superAdmin.id}`);
-    console.log(`   Password: ${password}`);
+    for (const seedUser of seedUsers) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: seedUser.email },
+      });
+
+      if (existingUser) {
+        console.log(`${seedUser.role} with email ${seedUser.email} already exists`);
+        continue;
+      }
+
+      const hashedPassword = await bcrypt.hash(seedUser.password, 12);
+
+      const createdUser = await prisma.user.create({
+        data: {
+          email: seedUser.email,
+          password: hashedPassword,
+          role: seedUser.role,
+          name: seedUser.name,
+          emailVerified: new Date(),
+        },
+      });
+
+      console.log(`✅ ${seedUser.role} created successfully:`);
+      console.log(`   Email: ${createdUser.email}`);
+      console.log(`   Role: ${createdUser.role}`);
+      console.log(`   ID: ${createdUser.id}`);
+      console.log(`   Password: ${seedUser.password}`);
+    }
   } catch (error) {
-    console.error("❌ Error creating SUPERADMIN:", error);
+    console.error("❌ Error seeding privileged users:", error);
     throw error;
   } finally {
     await prisma.$disconnect();

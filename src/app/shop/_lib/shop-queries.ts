@@ -4,11 +4,12 @@ import { prisma } from "@/lib/generated/prisma";
 import { mapSessionWithCapacity } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
 
-export async function getClasses() {
+export async function getClasses(brandId?: string) {
   try {
     const classes = await prisma.item.findMany({
       where: {
         isActive: true,
+        ...(brandId ? { itemBrands: { some: { brandId } } } : {}),
       },
       select: {
         id: true,
@@ -27,11 +28,12 @@ export async function getClasses() {
   }
 }
 
-export async function getActiveProducts() {
+export async function getActiveProducts(brandId?: string) {
   try {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        ...(brandId ? { brandId } : {}),
       },
       orderBy: { position: "asc" },
       select: {
@@ -59,7 +61,7 @@ export async function getActiveProducts() {
   }
 }
 
-export async function getUpcomingSessions() {
+export async function getUpcomingSessions(brandId?: string) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -72,6 +74,7 @@ export async function getUpcomingSessions() {
           lte: nextWeek,
         },
         status: "SCHEDULED",
+        ...(brandId ? { brandId } : {}),
       },
       include: {
         item: {
@@ -106,11 +109,12 @@ export async function getUpcomingSessions() {
   }
 }
 
-export async function getInstructors() {
+export async function getInstructors(brandId?: string) {
   try {
     const users = await prisma.user.findMany({
       where: {
         role: USER_ROLES.TEACHER,
+        ...(brandId ? { brandUsers: { some: { brandId } } } : {}),
       },
       select: {
         id: true,
@@ -128,12 +132,12 @@ export async function getInstructors() {
   }
 }
 
-export async function getShopPageData() {
+export async function getShopPageData(brandId?: string) {
   const [products, sessions, classes, instructors] = await Promise.all([
-    getActiveProducts(),
-    getUpcomingSessions(),
-    getClasses(),
-    getInstructors(),
+    getActiveProducts(brandId),
+    getUpcomingSessions(brandId),
+    getClasses(brandId),
+    getInstructors(brandId),
   ]);
   return { products, sessions, classes, instructors };
 }

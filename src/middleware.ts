@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthPage) {
-    const redirectPath = token.role === "SUPERADMIN" ? "/dashboard/home" : "/shop";
+    const redirectPath = ["SUPERADMIN", "DEVELOPER"].includes(String(token.role)) ? "/dashboard/home" : "/shop";
     return NextResponse.redirect(new URL(redirectPath, nextUrl));
   }
 
@@ -31,6 +31,16 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   // Expose pathname so root layout can force dark theme for shop (customer) pages
   response.headers.set("x-pathname", nextUrl.pathname);
+
+  // On dashboard, ensure active_brand_id cookie is set (default from JWT if missing)
+  if (isLoggedIn && isProtectedRoute) {
+    const activeBrandId = request.cookies.get("active_brand_id")?.value;
+    const defaultBrandId = (token as { defaultBrandId?: string }).defaultBrandId;
+    if (!activeBrandId && defaultBrandId) {
+      response.cookies.set("active_brand_id", defaultBrandId, { path: "/" });
+    }
+  }
+
   return response;
 }
 

@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 import { Session, SessionFilter } from "@/app/(main)/dashboard/admin/sessions/_components/schema";
+import { useBrandStore } from "@/stores/brand/brand-provider";
 
 export function useSessions(filters?: SessionFilter) {
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
   const params = new URLSearchParams();
 
   if (filters) {
@@ -18,7 +20,7 @@ export function useSessions(filters?: SessionFilter) {
   }
 
   return useQuery<Session[]>({
-    queryKey: ["sessions", filters],
+    queryKey: ["sessions", filters, activeBrandId],
     queryFn: async () => {
       try {
         const response = await axios.get("/api/admin/sessions", { params });
@@ -33,8 +35,9 @@ export function useSessions(filters?: SessionFilter) {
 }
 
 export function useSession(sessionId: string, enabled = true) {
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
   return useQuery<Session>({
-    queryKey: ["sessions", sessionId],
+    queryKey: ["sessions", sessionId, activeBrandId],
     queryFn: async () => {
       try {
         const response = await axios.get(`/api/admin/sessions/${sessionId}`);

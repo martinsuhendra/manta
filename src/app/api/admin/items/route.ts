@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { getItemWhereForBrandAccess, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -28,16 +29,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const whereBrand = getItemWhereForBrandAccess(request, brandIds);
 
     const { searchParams } = new URL(request.url);
     const includeTeachers = searchParams.get("includeTeachers") === "true";
     const includeSchedules = searchParams.get("includeSchedules") === "true";
 
     const items = await prisma.item.findMany({
+      where: whereBrand,
       include: {
+        itemBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         teacherItems: includeTeachers
           ? {
               select: {
@@ -71,7 +83,12 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(items);
+    const payload = items.map((row) => ({
+      ...row,
+      brandIds: row.itemBrands.map((ib) => ib.brandId),
+    }));
+
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Error fetching items:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -86,7 +103,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -94,12 +111,31 @@ export async function POST(request: NextRequest) {
     const validatedData = createItemSchema.parse(body);
 
     // Extract schedules from validated data
-    const { schedules, ...itemData } = validatedData;
+    const { schedules, brandIds, ...itemData } = validatedData;
+
+    const brands = await prisma.brand.findMany({
+      where: { id: { in: brandIds } },
+      select: { id: true },
+    });
+    if (brands.length !== brandIds.length) {
+      return NextResponse.json({ error: "One or more stores not found" }, { status: 400 });
+    }
 
     const item = await prisma.item.create({
-      data: itemData,
+      data: {
+        ...itemData,
+        itemBrands: {
+          create: brandIds.map((brandId) => ({ brandId })),
+        },
+      },
       include: {
         schedules: true,
+        itemBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         _count: {
           select: {
             teacherItems: true,
@@ -126,6 +162,12 @@ export async function POST(request: NextRequest) {
         where: { id: item.id },
         include: {
           schedules: true,
+          itemBrands: {
+            select: {
+              brandId: true,
+              brand: { select: { id: true, name: true } },
+            },
+          },
           _count: {
             select: {
               teacherItems: true,
@@ -136,10 +178,26 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return NextResponse.json(updatedItem, { status: 201 });
+      if (!updatedItem) {
+        return NextResponse.json({ error: "Failed to load created item" }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        {
+          ...updatedItem,
+          brandIds: updatedItem.itemBrands.map((ib) => ib.brandId),
+        },
+        { status: 201 },
+      );
     }
 
-    return NextResponse.json(item, { status: 201 });
+    return NextResponse.json(
+      {
+        ...item,
+        brandIds: item.itemBrands.map((ib) => ib.brandId),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Error creating item:", error);
 

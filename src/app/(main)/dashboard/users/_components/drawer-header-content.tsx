@@ -18,7 +18,7 @@ const MODE_CONFIG = {
   edit: {
     title: "Edit User",
     description: (canEditRoles: boolean) =>
-      `Update user information and settings.${!canEditRoles ? " (Role editing requires SUPERADMIN privileges)" : ""}`,
+      `Update user information and settings.${!canEditRoles ? " (Role editing requires SUPERADMIN or DEVELOPER privileges)" : ""}`,
     icon: Pencil,
   },
   view: {

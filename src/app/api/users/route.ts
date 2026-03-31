@@ -10,7 +10,7 @@ const createUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email is required"),
   role: z
-    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
+    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
     .default(DEFAULT_USER_ROLE),
   phoneNo: z
     .string()
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
 
-    const whereCondition: { role?: string } = {};
+    const whereCondition: { role?: string | { not: string } } = { role: { not: USER_ROLES.DEVELOPER } };
 
     // Add role filter if provided
-    if (role && Object.values(USER_ROLES).includes(role as (typeof USER_ROLES)[keyof typeof USER_ROLES])) {
+    if (role && role !== USER_ROLES.DEVELOPER && Object.values(USER_ROLES).includes(role)) {
       whereCondition.role = role;
     }
 
@@ -78,8 +78,14 @@ export async function POST(request: NextRequest) {
     const validatedData = createUserSchema.parse(body);
 
     // Check if only SUPERADMIN can create SUPERADMIN users
-    if (validatedData.role === USER_ROLES.SUPERADMIN && session.user.role !== USER_ROLES.SUPERADMIN) {
-      return NextResponse.json({ error: "Only SUPERADMIN users can create SUPERADMIN accounts" }, { status: 403 });
+    if (
+      [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(validatedData.role) &&
+      session.user.role !== USER_ROLES.DEVELOPER
+    ) {
+      return NextResponse.json(
+        { error: "Only DEVELOPER users can create SUPERADMIN or DEVELOPER accounts" },
+        { status: 403 },
+      );
     }
 
     // Check if user with this email already exists

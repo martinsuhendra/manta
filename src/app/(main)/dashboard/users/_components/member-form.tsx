@@ -21,7 +21,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email is required"),
   role: z
-    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
+    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
     .default(DEFAULT_USER_ROLE),
   phoneNo: z
     .string()
@@ -167,7 +167,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
               </Select>
               <FormMessage />
               {mode === "edit" && !canEditRoles && (
-                <p className="text-muted-foreground text-xs">Only SUPERADMIN users can edit roles</p>
+                <p className="text-muted-foreground text-xs">Only SUPERADMIN or DEVELOPER users can edit roles</p>
               )}
             </FormItem>
           )}

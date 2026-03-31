@@ -7,6 +7,8 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import axios from "axios";
 import { toast } from "sonner";
 
+import { useBrandStore } from "@/stores/brand/brand-provider";
+
 export interface MemberSessionFilters {
   startDate?: string;
   endDate?: string;
@@ -62,6 +64,7 @@ export interface SessionEligibility {
 }
 
 export function useMemberSessions(filters?: MemberSessionFilters) {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const params = new URLSearchParams();
   if (filters) {
     if (filters.startDate) params.set("startDate", filters.startDate);
@@ -70,7 +73,7 @@ export function useMemberSessions(filters?: MemberSessionFilters) {
   }
 
   return useQuery<MemberSession[]>({
-    queryKey: ["member-sessions", filters],
+    queryKey: ["member-sessions", activeBrandId, filters],
     queryFn: async () => {
       const { data } = await axios.get<MemberSession[]>("/api/shop/sessions", { params });
       return data;
@@ -80,8 +83,9 @@ export function useMemberSessions(filters?: MemberSessionFilters) {
 }
 
 export function useSessionEligibility(sessionId: string | null, enabled: boolean) {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   return useQuery<SessionEligibility>({
-    queryKey: ["session-eligibility", sessionId],
+    queryKey: ["session-eligibility", activeBrandId, sessionId],
     queryFn: async () => {
       if (!sessionId) throw new Error("No session ID");
       const { data } = await axios.get<SessionEligibility>(`/api/shop/sessions/${sessionId}/eligibility`);
@@ -93,9 +97,10 @@ export function useSessionEligibility(sessionId: string | null, enabled: boolean
 }
 
 export function useSessionEligibilityBatch(sessionIds: string[], enabled: boolean) {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const results = useQueries({
     queries: sessionIds.map((id) => ({
-      queryKey: ["session-eligibility", id] as const,
+      queryKey: ["session-eligibility", activeBrandId, id] as const,
       queryFn: async () => {
         const { data } = await axios.get<SessionEligibility>(`/api/shop/sessions/${id}/eligibility`);
         return data;
@@ -121,6 +126,7 @@ export function useSessionEligibilityBatch(sessionIds: string[], enabled: boolea
 }
 
 export function useMemberBookSession() {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -129,11 +135,11 @@ export function useMemberBookSession() {
       return data;
     },
     onSuccess: (_, { sessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["member-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["member-sessions", activeBrandId] });
       queryClient.invalidateQueries({
-        queryKey: ["session-eligibility", sessionId],
+        queryKey: ["session-eligibility", activeBrandId, sessionId],
       });
-      queryClient.invalidateQueries({ queryKey: ["my-account"] });
+      queryClient.invalidateQueries({ queryKey: ["my-account", activeBrandId] });
       toast.success("You're booked!");
     },
     onError: (err: unknown) => {
@@ -145,6 +151,7 @@ export function useMemberBookSession() {
 }
 
 export function useMemberCancelBooking() {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -152,9 +159,9 @@ export function useMemberCancelBooking() {
       await axios.delete(`/api/shop/bookings/${bookingId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["member-sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["session-eligibility"] });
-      queryClient.invalidateQueries({ queryKey: ["my-account"] });
+      queryClient.invalidateQueries({ queryKey: ["member-sessions", activeBrandId] });
+      queryClient.invalidateQueries({ queryKey: ["session-eligibility", activeBrandId] });
+      queryClient.invalidateQueries({ queryKey: ["my-account", activeBrandId] });
       toast.success("Booking cancelled");
     },
     onError: (err: unknown) => {

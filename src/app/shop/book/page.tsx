@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { APP_CONFIG } from "@/config/app-config";
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { USER_ROLES } from "@/lib/types";
 
 import { SectionWithPattern } from "../_components/section-with-pattern";
@@ -26,7 +27,8 @@ export default async function BookPage() {
     redirect("/shop");
   }
 
-  const classes = await getClasses();
+  const activeBrandId = await resolveActiveBrandIdFromCookie();
+  const classes = await getClasses(activeBrandId ?? undefined);
   return (
     <SectionWithPattern as="div" className="bg-muted/20 sporty-section-fill min-h-[60vh]">
       <BookPageContent classes={classes} />

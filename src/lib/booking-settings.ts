@@ -12,11 +12,13 @@ export type BookingSettingsRecord = {
 };
 
 /**
- * Returns current booking settings from DB, or defaults if no row exists.
+ * Returns current booking settings from DB for the given brand, or defaults if no row exists.
  * Used by enforcement (member book/cancel, eligibility) and by Settings UI.
  */
-export async function getBookingSettings(): Promise<BookingSettingsRecord> {
+export async function getBookingSettings(brandId?: string): Promise<BookingSettingsRecord> {
+  const where = brandId ? { brandId } : {};
   const row = await prisma.bookingSettings.findFirst({
+    where,
     orderBy: { createdAt: "asc" },
   });
   if (!row) {

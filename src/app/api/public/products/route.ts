@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { resolveActiveBrandIdFromCookie } from "@/lib/brand-cookie";
 import { prisma } from "@/lib/generated/prisma";
 
 export async function GET() {
   try {
+    const activeBrandId = await resolveActiveBrandIdFromCookie();
+
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        ...(activeBrandId ? { brandId: activeBrandId } : {}),
       },
       orderBy: { position: "asc" },
       select: {

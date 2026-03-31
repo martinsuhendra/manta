@@ -2,22 +2,78 @@ import * as React from "react";
 
 import { UseFormReturn } from "react-hook-form";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useAccessibleBrands } from "@/hooks/use-brands-query";
+import type { BrandSummary } from "@/stores/brand/brand-store";
 
 import { CreateItemForm, ITEM_COLORS } from "./schema";
+
+const EMPTY_BRANDS: BrandSummary[] = [];
 
 interface ItemDialogBasicTabProps {
   form: UseFormReturn<CreateItemForm>;
 }
 
 export function ItemDialogBasicTab({ form }: ItemDialogBasicTabProps) {
+  const { data: brandsData, isPending: isBrandsLoading } = useAccessibleBrands();
+  const brands = brandsData ?? EMPTY_BRANDS;
+
   return (
     <div className="space-y-6">
+      <FormField
+        control={form.control}
+        name="brandIds"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Stores</FormLabel>
+            {isBrandsLoading ? (
+              <Skeleton className="h-10 w-full" />
+            ) : brands.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No active stores available. Create a brand under Organization first.
+              </p>
+            ) : (
+              <div className="border-input max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
+                {brands.map((b) => {
+                  const selected = field.value.includes(b.id);
+                  return (
+                    <label
+                      key={b.id}
+                      className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1.5"
+                    >
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={(checked) => {
+                          const cur = field.value;
+                          if (checked === true) {
+                            field.onChange([...cur, b.id]);
+                          } else {
+                            field.onChange(cur.filter((id: string) => id !== b.id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{b.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-muted-foreground text-sm">
+              Pick every branch where this class is offered. Sessions are still created per store (use the brand
+              switcher).
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormField
           control={form.control}

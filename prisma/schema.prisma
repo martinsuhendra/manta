@@ -4,7 +4,50 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+model Brand {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String   @unique
+  address     String?
+  logo        String?
+
+  // Theme / styleguide
+  primaryColor String  @default("#6366f1")
+  accentColor  String  @default("#8b5cf6")
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations (all scoped models point here)
+  users           BrandUser[]
+  products        Product[]
+  itemBrands      ItemBrand[]
+  classSessions   ClassSession[]
+  memberships     Membership[]
+  transactions    Transaction[]
+  bookings        Booking[]
+  bookingSettings BookingSettings[]
+  quotaPools      QuotaPool[]
+
+  @@map("brands")
+}
+
+model BrandUser {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandId   String   @db.Uuid
+  userId    String   @db.Uuid
+  role      String   // role within this brand (ADMIN, TEACHER, MEMBER)
+  isDefault Boolean  @default(false) // default brand for this user
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, userId])
+  @@map("brand_users")
 }
 
 model Account {
@@ -62,6 +105,7 @@ model User {
   transactions  Transaction[]
   freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
+  brandUsers              BrandUser[]
 
   @@map("users")
 }
@@ -97,6 +141,7 @@ model PasswordResetToken {
 
 model Product {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandId        String   @db.Uuid
   name           String
   description    String?
   price          Decimal  @db.Decimal(10, 2)
@@ -115,6 +160,7 @@ model Product {
   transactions Transaction[]
   productItems ProductItem[]
   quotaPools   QuotaPool[]
+  brand        Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@index([isActive, position]) // Index for active products with ordering
   @@index([isActive, createdAt]) // Index for active products by creation date
@@ -125,6 +171,7 @@ model Transaction {
   id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String            @map("user_id") @db.Uuid
   productId       String            @map("product_id") @db.Uuid
+  brandId         String            @db.Uuid
   amount          Decimal           @db.Decimal(10, 2)
   currency        String            @default("USD")
   status          TransactionStatus @default(PENDING)
@@ -138,6 +185,7 @@ model Transaction {
   memberships     Membership[]
   product         Product           @relation(fields: [productId], references: [id])
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand           Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
 }
@@ -146,6 +194,7 @@ model Membership {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String   @map("user_id") @db.Uuid
   productId     String   @map("product_id") @db.Uuid
+  brandId       String   @db.Uuid
   status        String   @default("ACTIVE")
   joinDate      DateTime @default(now()) @map("join_date") @db.Timestamp(6)
   expiredAt     DateTime @map("expired_at") @db.Timestamp(6)
@@ -159,6 +208,7 @@ model Membership {
   bookings   Booking[]
   quotaUsage MembershipQuotaUsage[]
   freezeRequests MembershipFreezeRequest[]
+  brand      Brand                  @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("memberships")
 }
@@ -204,8 +254,22 @@ model Item {
   schedules     ItemSchedule[]
   productItems  ProductItem[]
   teacherItems  TeacherItem[]
+  itemBrands    ItemBrand[]
 
   @@map("items")
+}
+
+model ItemBrand {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  brandId   String   @map("brand_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  item  Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, brandId])
+  @@map("item_brands")
 }
 
 model TeacherItem {
@@ -241,6 +305,7 @@ model ClassSession {
   id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   itemId    String        @map("item_id") @db.Uuid
   teacherId String?       @map("teacher_id") @db.Uuid
+  brandId   String        @db.Uuid
   date      DateTime      @db.Date
   startTime String        @map("start_time")
   endTime   String        @map("end_time")
@@ -251,6 +316,7 @@ model ClassSession {
   bookings  Booking[]
   item      Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
   teacher   User?         @relation("SessionTeacher", fields: [teacherId], references: [id])
+  brand     Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, date, startTime])
   @@map("class_sessions")
@@ -288,14 +354,16 @@ model Booking {
   userId           String        @map("user_id") @db.Uuid
   classSessionId   String        @map("class_session_id") @db.Uuid
   membershipId     String        @map("membership_id") @db.Uuid
+  brandId          String        @db.Uuid
   participantCount Int           @default(1) @map("participant_count")
   status           BookingStatus @default(CONFIRMED)
   notes            String?
   createdAt        DateTime      @default(now()) @db.Timestamp(6)
   updatedAt        DateTime      @updatedAt @db.Timestamp(6)
-  classSession   ClassSession  @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
-  membership     Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classSession     ClassSession  @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+  membership       Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand            Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([classSessionId, userId])
   @@map("bookings")
@@ -304,6 +372,7 @@ model Booking {
 model QuotaPool {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId   String   @map("product_id") @db.Uuid
+  brandId     String   @db.Uuid
   name        String   // e.g., "Beginner Classes", "All Group Classes"
   description String?
   totalQuota  Int      @map("total_quota")
@@ -314,6 +383,7 @@ model QuotaPool {
   product              Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
   productItems         ProductItem[]
   membershipQuotaUsage MembershipQuotaUsage[]
+  brand                Brand                   @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([productId, name]) // Prevent duplicate pool names within the same product
   @@index([productId, isActive]) // Index for active pools by product
@@ -373,10 +443,12 @@ enum QuotaType {
 
 model BookingSettings {
   id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandId                   String   @db.Uuid
   endBookingPeriodHours     Int      @default(0) @map("end_booking_period_hours")
   cancellationDeadlineHours Int      @default(24) @map("cancellation_deadline_hours")
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  brand                     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("booking_settings")
 }

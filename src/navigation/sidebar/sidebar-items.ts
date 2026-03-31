@@ -1,7 +1,7 @@
 import {
   BadgeCheck,
-  Banknote,
   BarChart3,
+  Building2,
   Calendar,
   CalendarClock,
   ChartBar,
@@ -68,7 +68,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/users",
         icon: Users,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
         subItems: [
           {
             title: "Users",
@@ -92,21 +92,21 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/admin/items",
         icon: Calendar,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
       {
         title: "Products",
         url: "/dashboard/products",
         icon: Package,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
       {
         title: "Sessions",
         url: "/dashboard/admin/sessions",
         icon: Calendar,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
     ],
   },
@@ -118,18 +118,31 @@ export const sidebarItems: NavGroup[] = [
         title: "Overview",
         url: "/dashboard/finance",
         icon: BarChart3,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
       {
         title: "Payroll",
         url: "/dashboard/finance/payroll",
         icon: Wallet,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
     ],
   },
   {
     id: 4,
+    label: "Organization",
+    items: [
+      {
+        title: "Brands",
+        url: "/dashboard/admin/brands",
+        icon: Building2,
+        comingSoon: false,
+        requiredRoles: [USER_ROLES.DEVELOPER],
+      },
+    ],
+  },
+  {
+    id: 5,
     label: "Settings",
     items: [
       {
@@ -137,7 +150,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/settings/booking",
         icon: CalendarClock,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
     ],
   },

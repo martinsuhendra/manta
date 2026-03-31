@@ -46,6 +46,27 @@ export async function POST(request: Request) {
       },
     });
 
+    // Assign to default brand (first active brand) so they can access the dashboard
+    try {
+      const defaultBrand = await prisma.brand.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      if (defaultBrand) {
+        await prisma.brandUser.create({
+          data: {
+            userId: user.id,
+            brandId: defaultBrand.id,
+            role: DEFAULT_USER_ROLE,
+            isDefault: true,
+          },
+        });
+      }
+    } catch {
+      // Ignore if brands table not yet migrated
+    }
+
     // Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;

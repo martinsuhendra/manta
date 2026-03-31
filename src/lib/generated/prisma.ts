@@ -10,6 +10,7 @@
  */
 
 import { PrismaClient as BasePrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
 declare global {
   // Allow the `prisma` object to survive Hot Module Replacement in dev.
@@ -17,9 +18,18 @@ declare global {
   var prisma: BasePrismaClient | undefined;
 }
 
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required to initialize PrismaClient");
+}
+
 const prisma =
   global.prisma ??
   new BasePrismaClient({
+    adapter: new PrismaNeon({
+      connectionString: databaseUrl,
+    }),
     log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"],
   });
 

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { requireBrandAccess } from "@/lib/api-utils";
 import { getBookingSettings, getSessionStartAt, isPastBookingCutoff } from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
 import { checkQuotaAvailability, deductQuota } from "@/lib/quota-utils";
@@ -26,6 +27,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { error, brandIds } = await requireBrandAccess(request);
+    if (error) return error;
+    const selectedBrandId = request.headers.get("x-brand-id") ?? brandIds?.[0] ?? null;
+    if (!selectedBrandId) {
+      return NextResponse.json({ error: "No active brand selected" }, { status: 400 });
+    }
+    if (brandIds && !brandIds.includes(selectedBrandId)) {
+      return NextResponse.json({ error: "Forbidden for this brand" }, { status: 403 });
+    }
+
     const userId = session.user.id;
     const { id: sessionId } = await params;
     const body = await request.json();
@@ -39,12 +50,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
+    if (classSession.brandId !== selectedBrandId) {
+      return NextResponse.json({ error: "Session not available for selected brand" }, { status: 404 });
+    }
 
     if (classSession.status !== "SCHEDULED") {
       return NextResponse.json({ error: "Session is not available for booking" }, { status: 400 });
     }
 
-    const settings = await getBookingSettings();
+    const settings = await getBookingSettings(selectedBrandId);
     const sessionStartAt = getSessionStartAt({
       date: classSession.date,
       startTime: classSession.startTime,
@@ -107,6 +121,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!membership) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
+    if (membership.brandId !== selectedBrandId) {
+      return NextResponse.json({ error: "Membership does not belong to selected brand" }, { status: 400 });
+    }
 
     if (membership.userId !== userId) {
       return NextResponse.json({ error: "Membership does not belong to you" }, { status: 400 });
@@ -159,6 +176,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           userId,
           classSessionId: sessionId,
           membershipId,
+          brandId: classSession.brandId,
           participantCount: participantsPerPurchase,
           status: "CONFIRMED",
         },

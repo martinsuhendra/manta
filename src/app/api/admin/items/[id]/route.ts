@@ -11,13 +11,16 @@ import { updateItemSchema } from "../../../../(main)/dashboard/admin/items/_comp
 
 // Helper function to validate request data for updates
 function validateUpdateData(body: unknown): {
-  data: z.infer<typeof updateItemSchema>;
+  data: Omit<z.infer<typeof updateItemSchema>, "brandIds">;
+  brandIds?: string[];
   schedules?: Array<{ dayOfWeek: number; startTime: string; endTime?: string; isActive: boolean }>;
 } {
   const { schedules, ...itemData } = body as Record<string, unknown>;
-  const data = updateItemSchema.parse(itemData);
+  const parsed = updateItemSchema.parse(itemData);
+  const { brandIds, ...data } = parsed;
   return {
     data,
+    brandIds,
     schedules: Array.isArray(schedules)
       ? (schedules as Array<{ dayOfWeek: number; startTime: string; endTime?: string; isActive: boolean }>)
       : undefined,
@@ -49,7 +52,7 @@ async function updateItemSchedules(
 }
 
 // Helper function to update item data
-async function updateItemData(itemId: string, data: z.infer<typeof updateItemSchema>) {
+async function updateItemData(itemId: string, data: Omit<z.infer<typeof updateItemSchema>, "brandIds">) {
   return await prisma.item.update({
     where: { id: itemId },
     data,
@@ -67,7 +70,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -77,6 +80,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       where: { id },
       include: {
         schedules: true,
+        itemBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -84,7 +93,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
-    return NextResponse.json(item);
+    return NextResponse.json({
+      ...item,
+      brandIds: item.itemBrands.map((ib) => ib.brandId),
+    });
   } catch (error) {
     console.error("Error fetching item:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -99,17 +111,38 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
     const body = await request.json();
 
-    const { data, schedules } = validateUpdateData(body);
+    const { data, schedules, brandIds } = validateUpdateData(body);
+
+    if (brandIds !== undefined) {
+      const brands = await prisma.brand.findMany({
+        where: { id: { in: brandIds } },
+        select: { id: true },
+      });
+      if (brands.length !== brandIds.length) {
+        return NextResponse.json({ error: "One or more stores not found" }, { status: 400 });
+      }
+    }
 
     // Update the item
     await updateItemData(id, data);
+
+    if (brandIds !== undefined) {
+      await prisma.$transaction(async (tx) => {
+        await tx.itemBrand.deleteMany({ where: { itemId: id } });
+        if (brandIds.length > 0) {
+          await tx.itemBrand.createMany({
+            data: brandIds.map((brandId) => ({ itemId: id, brandId })),
+          });
+        }
+      });
+    }
 
     // Update schedules if provided
     if (schedules) {
@@ -121,10 +154,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       include: {
         schedules: true,
+        itemBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
-    return NextResponse.json(finalItem);
+    if (!finalItem) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ...finalItem,
+      brandIds: finalItem.itemBrands.map((ib) => ib.brandId),
+    });
   } catch (error) {
     console.error("Error updating item:", error);
 
@@ -144,7 +190,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== USER_ROLES.SUPERADMIN) {
+    if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -20,6 +20,9 @@ import {
 import { Form } from "@/components/ui/form";
 import { Stepper } from "@/components/ui/stepper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAccessibleBrands } from "@/hooks/use-brands-query";
+import { useBrandStore } from "@/stores/brand/brand-provider";
+import type { BrandSummary } from "@/stores/brand/brand-store";
 
 import { ItemDialogBasicTab } from "./item-dialog-basic-tab";
 import { ItemDialogSchedulesTab } from "./item-dialog-schedules-tab";
@@ -39,6 +42,7 @@ interface TabErrors {
 
 function getTabErrors(errors: Record<string, unknown>): TabErrors {
   const basicErrors = !!(
+    errors.brandIds ||
     errors.name ||
     errors.description ||
     errors.duration ||
@@ -61,16 +65,23 @@ const STEPS = [
   { id: "success", label: "Success", description: "Completed" },
 ];
 
+/** Stable fallback — `= []` in useQuery destructuring is a new array every render and breaks useEffect deps. */
+const EMPTY_ACCESSIBLE_BRANDS: BrandSummary[] = [];
+
 /* eslint-disable complexity */
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!item;
   const [currentStep, setCurrentStep] = React.useState(1);
   const [createdItem, setCreatedItem] = React.useState<Item | null>(null);
+  const { data: brandsQueryData } = useAccessibleBrands();
+  const accessibleBrands = brandsQueryData ?? EMPTY_ACCESSIBLE_BRANDS;
+  const activeBrandId = useBrandStore((s) => s.activeBrandId);
 
   const form = useForm<CreateItemForm>({
     resolver: zodResolver(createItemSchema),
     defaultValues: {
+      brandIds: [],
       name: "",
       description: "",
       duration: 60,
@@ -135,13 +146,16 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
     },
   });
 
-  // Reset form and step when dialog opens/closes or item changes
+  // Reset form and step when dialog opens/closes or item changes.
   React.useEffect(() => {
     if (open) {
       setCurrentStep(1);
       setCreatedItem(null);
-      if (isEditMode) {
+      if (item) {
+        const ids =
+          item.brandIds && item.brandIds.length > 0 ? item.brandIds : (item.itemBrands?.map((ib) => ib.brandId) ?? []);
         form.reset({
+          brandIds: ids,
           name: item.name,
           description: item.description || "",
           duration: item.duration,
@@ -152,7 +166,14 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           schedules: item.schedules || [],
         });
       } else {
+        const defaultBrandIds =
+          accessibleBrands.length === 0
+            ? []
+            : activeBrandId !== "ALL" && accessibleBrands.some((b) => b.id === activeBrandId)
+              ? [activeBrandId]
+              : [accessibleBrands[0].id];
         form.reset({
+          brandIds: defaultBrandIds,
           name: "",
           description: "",
           duration: 60,
@@ -164,7 +185,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
         });
       }
     }
-  }, [open, isEditMode, item, form]);
+  }, [open, isEditMode, item, accessibleBrands, activeBrandId, form]);
 
   const onSubmit = async (data: CreateItemForm) => {
     // Ensure all numeric fields are converted to numbers
@@ -190,7 +211,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
 
   // Validation helpers
   const validateBasicStep = async () => {
-    const fields = ["name", "description", "duration", "capacity", "color", "image", "isActive"] as const;
+    const fields = ["brandIds", "name", "description", "duration", "capacity", "color", "image", "isActive"] as const;
     const result = await form.trigger(fields);
     return result;
   };
@@ -219,6 +240,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
         setCurrentStep(2);
         return;
       }
+
       toast.error("Please fix the errors in Basic Info before proceeding");
       return;
     }

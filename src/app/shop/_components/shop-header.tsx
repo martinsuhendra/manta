@@ -22,6 +22,7 @@ import {
 import { APP_CONFIG } from "@/config/app-config";
 import { cn } from "@/lib/utils";
 
+import { ShopBrandSwitcher } from "./shop-brand-switcher";
 import { SignInDialog } from "./sign-in-dialog";
 import { SignUpDialog } from "./sign-up-dialog";
 
@@ -88,6 +89,7 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             <div className="bg-muted h-9 w-24 animate-pulse rounded-md" />
           ) : session ? (
             <>
+              <ShopBrandSwitcher />
               {session.user.role === "MEMBER" && (
                 <Link href="/shop/book">
                   <Button
@@ -184,6 +186,9 @@ export function ShopHeader({ session }: ShopHeaderProps) {
                 </div>
               ) : session ? (
                 <DropdownMenuGroup>
+                  <div className="px-2 pb-2">
+                    <ShopBrandSwitcher mobile />
+                  </div>
                   {session.user.role === "MEMBER" && (
                     <Link href="/shop/book">
                       <DropdownMenuItem className="cursor-pointer">

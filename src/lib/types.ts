@@ -11,15 +11,17 @@ export type MembershipStatus = (typeof MEMBERSHIP_STATUS)[keyof typeof MEMBERSHI
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   SUPERADMIN: "SUPERADMIN",
+  DEVELOPER: "DEVELOPER",
   MEMBER: "MEMBER",
   TEACHER: "TEACHER",
-} as const;
+};
 
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export type UserRole = string;
 
-export const USER_ROLE_LABELS: Record<UserRole, string> = {
+export const USER_ROLE_LABELS: Record<string, string> = {
   [USER_ROLES.ADMIN]: "Admin",
   [USER_ROLES.SUPERADMIN]: "Super Admin",
+  [USER_ROLES.DEVELOPER]: "Developer",
   [USER_ROLES.MEMBER]: "Member",
   [USER_ROLES.TEACHER]: "Teacher",
 };
@@ -30,6 +32,8 @@ export type RoleBadgeVariant = "destructive" | "default" | "secondary" | "outlin
 
 export function getRoleVariant(role: string): RoleBadgeVariant {
   switch (role) {
+    case USER_ROLES.DEVELOPER:
+      return "destructive";
     case USER_ROLES.SUPERADMIN:
       return "destructive";
     case USER_ROLES.ADMIN:
@@ -40,5 +44,22 @@ export function getRoleVariant(role: string): RoleBadgeVariant {
       return "secondary";
     default:
       return "outline";
+  }
+}
+
+export function getUserRoleLabel(role: string): string {
+  switch (role) {
+    case USER_ROLES.ADMIN:
+      return USER_ROLE_LABELS[USER_ROLES.ADMIN];
+    case USER_ROLES.SUPERADMIN:
+      return USER_ROLE_LABELS[USER_ROLES.SUPERADMIN];
+    case USER_ROLES.DEVELOPER:
+      return USER_ROLE_LABELS[USER_ROLES.DEVELOPER];
+    case USER_ROLES.MEMBER:
+      return USER_ROLE_LABELS[USER_ROLES.MEMBER];
+    case USER_ROLES.TEACHER:
+      return USER_ROLE_LABELS[USER_ROLES.TEACHER];
+    default:
+      return role;
   }
 }

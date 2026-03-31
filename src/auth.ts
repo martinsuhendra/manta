@@ -7,15 +7,15 @@
  *  • `signOut`   – `signOut()` helper (client & server)
  */
 import bcrypt from "bcryptjs";
-import type { User, Session } from "next-auth";
+import { getServerSession, type User, type Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { getServerSession } from "next-auth/next";
 import Credentials from "next-auth/providers/credentials";
 
 import { prisma } from "@/lib/generated/prisma";
 import { signInFormSchema } from "@/lib/validators";
 
 export const authOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       name: "Credentials",
@@ -66,15 +66,25 @@ export const authOptions = {
         token.phoneNo = user.phoneNo;
       }
 
-      if (trigger === "update") {
+      if (trigger === "update" || user) {
         const refreshedUser = await prisma.user.findUnique({
           where: { email: token.email as string },
-          select: { emailVerified: true, role: true, phoneNo: true },
+          select: { emailVerified: true, role: true, phoneNo: true, id: true },
         });
         if (refreshedUser) {
           token.emailVerified = refreshedUser.emailVerified;
           token.role = refreshedUser.role;
           token.phoneNo = refreshedUser.phoneNo;
+          try {
+            const defaultBrand = await prisma.brandUser.findFirst({
+              where: { userId: refreshedUser.id },
+              orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+              select: { brandId: true },
+            });
+            token.defaultBrandId = defaultBrand?.brandId ?? "ALL";
+          } catch {
+            token.defaultBrandId = "ALL";
+          }
         }
       }
 
