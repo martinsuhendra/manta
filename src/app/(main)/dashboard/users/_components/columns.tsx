@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
+import { getRoleVariant, getUserRoleLabel } from "@/lib/types";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
@@ -82,7 +82,7 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
     cell: ({ row }) => {
       const role = row.original.role;
 
-      return <StatusBadge variant={getRoleVariant(role)}>{USER_ROLE_LABELS[role] || role}</StatusBadge>;
+      return <StatusBadge variant={getRoleVariant(role)}>{getUserRoleLabel(role)}</StatusBadge>;
     },
   },
   {
