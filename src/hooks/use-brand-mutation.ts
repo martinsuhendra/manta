@@ -4,6 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
+import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
+
 import type { BrandAdmin } from "./use-brands-query";
 
 interface CreateBrandInput {
@@ -11,6 +13,7 @@ interface CreateBrandInput {
   slug: string;
   address?: string;
   logo?: string;
+  logoAsset?: CloudinaryAssetPayload | null;
   primaryColor?: string;
   accentColor?: string;
   isActive?: boolean;
@@ -19,6 +22,7 @@ interface CreateBrandInput {
 type UpdateBrandInput = Partial<Omit<CreateBrandInput, "address" | "logo">> & {
   address?: string | null;
   logo?: string | null;
+  logoAsset?: CloudinaryAssetPayload | null;
 };
 
 interface DeleteBrandErrorPayload {

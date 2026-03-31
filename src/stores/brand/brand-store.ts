@@ -11,6 +11,7 @@ export interface BrandSummary {
   id: string;
   name: string;
   slug: string;
+  logo?: string | null;
   primaryColor?: string;
   accentColor?: string;
   isActive?: boolean;

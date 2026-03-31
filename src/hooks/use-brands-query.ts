@@ -11,6 +11,7 @@ export interface BrandAdmin {
   slug: string;
   address: string | null;
   logo: string | null;
+  logoAsset?: unknown;
   primaryColor: string;
   accentColor: string;
   isActive: boolean;

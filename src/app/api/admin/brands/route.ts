@@ -2,9 +2,11 @@ import { randomUUID } from "crypto";
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { handleApiError, requireSuperAdmin } from "@/lib/api-utils";
+import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
 const createBrandSchema = z.object({
@@ -15,6 +17,7 @@ const createBrandSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric and hyphens only"),
   address: z.string().optional(),
   logo: z.string().optional(),
+  logoAsset: z.unknown().nullable().optional(),
   primaryColor: z.string().optional().default("#6366f1"),
   accentColor: z.string().optional().default("#8b5cf6"),
   isActive: z.boolean().optional().default(true),
@@ -33,6 +36,7 @@ export async function GET() {
         slug: true,
         address: true,
         logo: true,
+        logoAsset: true,
         primaryColor: true,
         accentColor: true,
         isActive: true,
@@ -41,7 +45,13 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(brands);
+    return NextResponse.json(
+      brands.map((brand) => ({
+        ...brand,
+        logoAsset: parseCloudinaryAsset(brand.logoAsset),
+        logo: resolveAssetUrl(brand.logoAsset, brand.logo),
+      })),
+    );
   } catch (err) {
     return handleApiError(err, "Failed to fetch brands");
   }
@@ -60,13 +70,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Brand with this slug already exists" }, { status: 400 });
     }
 
+    const logoAsset = parseCloudinaryAsset(validated.logoAsset);
     const brand = await prisma.brand.create({
       data: {
         id: randomUUID(),
         name: validated.name,
         slug: validated.slug,
         address: validated.address ?? null,
-        logo: validated.logo ?? null,
+        logoAsset: logoAsset ?? Prisma.JsonNull,
+        logo: resolveAssetUrl(logoAsset, validated.logo) ?? null,
         primaryColor: validated.primaryColor,
         accentColor: validated.accentColor,
         isActive: validated.isActive,

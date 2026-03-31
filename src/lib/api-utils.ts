@@ -60,6 +60,14 @@ export async function requireBrandAccess(request: NextRequest) {
     };
   }
 
+  if ([USER_ROLES.DEVELOPER, USER_ROLES.SUPERADMIN].includes(session.user.role ?? "")) {
+    return {
+      error: null,
+      brandIds: null,
+      session,
+    };
+  }
+
   const activeBrandId = request.headers.get("x-brand-id");
 
   const brandUsers = await prisma.brandUser.findMany({

@@ -4,6 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
+import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
+
 interface CreateProductData {
   name: string;
   description?: string;
@@ -12,6 +14,7 @@ interface CreateProductData {
   participantsPerPurchase?: number;
   features: string[];
   image?: string;
+  imageAsset?: CloudinaryAssetPayload | null;
   paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;

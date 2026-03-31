@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { RoleGuard } from "@/components/role-guard";
 import { Button } from "@/components/ui/button";
 import { useUpdateBrand } from "@/hooks/use-brand-mutation";
+import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
 import { USER_ROLES } from "@/lib/types";
 
 import { BrandForm, type BrandFormValues } from "../_components/brand-form";
@@ -20,6 +21,7 @@ interface BrandResponse {
   slug: string;
   address: string | null;
   logo: string | null;
+  logoAsset?: CloudinaryAssetPayload | null;
   primaryColor: string;
   accentColor: string;
   isActive: boolean;
@@ -50,6 +52,7 @@ export default function EditBrandPage() {
         slug: values.slug,
         address: values.address || null,
         logo: values.logo || null,
+        logoAsset: values.logoAsset ?? null,
         primaryColor: values.primaryColor,
         accentColor: values.accentColor,
         isActive: values.isActive,
@@ -90,6 +93,7 @@ export default function EditBrandPage() {
             slug: brand.slug,
             address: brand.address ?? "",
             logo: brand.logo ?? "",
+            logoAsset: brand.logoAsset ?? null,
             primaryColor: brand.primaryColor,
             accentColor: brand.accentColor,
             isActive: brand.isActive,

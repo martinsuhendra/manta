@@ -5,12 +5,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 
+import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
+
 interface CreateUserData {
   name: string;
   email: string;
   role: string;
   phoneNo?: string;
   image?: string | null;
+  avatarAsset?: CloudinaryAssetPayload | null;
   bio?: string | null;
 }
 
@@ -20,6 +23,7 @@ interface UpdateUserData {
   role?: string;
   phoneNo?: string;
   image?: string | null;
+  avatarAsset?: CloudinaryAssetPayload | null;
   bio?: string | null;
 }
 

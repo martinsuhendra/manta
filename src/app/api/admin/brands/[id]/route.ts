@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { handleApiError, requireSuperAdmin } from "@/lib/api-utils";
+import { deleteCloudinaryAsset } from "@/lib/cloudinary";
+import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
 const updateBrandSchema = z.object({
@@ -14,6 +17,7 @@ const updateBrandSchema = z.object({
     .optional(),
   address: z.string().nullable().optional(),
   logo: z.string().nullable().optional(),
+  logoAsset: z.unknown().nullable().optional(),
   primaryColor: z.string().optional(),
   accentColor: z.string().optional(),
   isActive: z.boolean().optional(),
@@ -110,6 +114,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         slug: true,
         address: true,
         logo: true,
+        logoAsset: true,
         primaryColor: true,
         accentColor: true,
         isActive: true,
@@ -122,7 +127,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    return NextResponse.json(brand);
+    return NextResponse.json({
+      ...brand,
+      logoAsset: parseCloudinaryAsset(brand.logoAsset),
+      logo: resolveAssetUrl(brand.logoAsset, brand.logo),
+    });
   } catch (err) {
     return handleApiError(err, "Failed to fetch brand");
   }
@@ -146,6 +155,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     }
 
+    const existingBrand = await prisma.brand.findUnique({
+      where: { id },
+      select: { logoAsset: true },
+    });
+
+    if (!existingBrand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+
+    const previousAsset = parseCloudinaryAsset(existingBrand.logoAsset);
+    const nextAsset = validated.logoAsset === undefined ? previousAsset : parseCloudinaryAsset(validated.logoAsset);
+    const nextAssetForDb = validated.logoAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const shouldDeletePrevious =
+      !!previousAsset &&
+      (!nextAsset ||
+        previousAsset.publicId !== nextAsset.publicId ||
+        validated.logo === null ||
+        validated.logoAsset === null);
+
     const brand = await prisma.brand.update({
       where: { id },
       data: {
@@ -153,11 +181,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         ...(validated.slug != null && { slug: validated.slug }),
         ...(validated.address !== undefined && { address: validated.address }),
         ...(validated.logo !== undefined && { logo: validated.logo }),
+        ...(validated.logoAsset !== undefined && {
+          logoAsset: nextAssetForDb,
+          logo: resolveAssetUrl(nextAsset, validated.logo),
+        }),
         ...(validated.primaryColor != null && { primaryColor: validated.primaryColor }),
         ...(validated.accentColor != null && { accentColor: validated.accentColor }),
         ...(validated.isActive != null && { isActive: validated.isActive }),
       },
     });
+
+    if (shouldDeletePrevious && previousAsset) {
+      deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete previous Cloudinary brand logo:", error);
+      });
+    }
 
     return NextResponse.json(brand);
   } catch (err) {
@@ -174,7 +212,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     const brand = await prisma.brand.findUnique({
       where: { id },
-      select: { id: true, isActive: true },
+      select: { id: true, isActive: true, logoAsset: true },
     });
     if (!brand) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
@@ -202,6 +240,13 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     await prisma.brand.delete({
       where: { id },
     });
+
+    const logoAsset = parseCloudinaryAsset(brand.logoAsset);
+    if (logoAsset) {
+      deleteCloudinaryAsset({ publicId: logoAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete Cloudinary brand logo on delete:", error);
+      });
+    }
 
     return new NextResponse(null, { status: 204 });
   } catch (err) {

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { deleteCloudinaryAsset } from "@/lib/cloudinary";
+import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -20,6 +23,7 @@ const updateUserSchema = z.object({
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format")
     .optional(),
   image: z.string().nullable().optional(),
+  avatarAsset: z.unknown().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
 });
 
@@ -36,6 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         role: true,
         phoneNo: true,
         image: true,
+        avatarAsset: true,
         bio: true,
         createdAt: true,
         updatedAt: true,
@@ -51,7 +56,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({
+      ...user,
+      avatarAsset: parseCloudinaryAsset(user.avatarAsset),
+      image: resolveAssetUrl(user.avatarAsset, user.image),
+    });
   } catch (error) {
     console.error("Failed to fetch user:", error);
     return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
@@ -69,16 +78,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateUserSchema.parse(body);
+    const { avatarAsset: _avatarAsset, ...updateData } = validatedData;
 
     // Get the target user
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      select: { role: true },
+      select: { role: true, avatarAsset: true },
     });
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const previousAsset = parseCloudinaryAsset(targetUser.avatarAsset);
+    const nextAsset =
+      validatedData.avatarAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.avatarAsset);
+    const nextAssetForDb =
+      validatedData.avatarAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const shouldDeletePrevious =
+      !!previousAsset &&
+      (!nextAsset ||
+        previousAsset.publicId !== nextAsset.publicId ||
+        validatedData.avatarAsset === null ||
+        validatedData.image === null);
 
     // Check if trying to update role and if user has permission
     if (validatedData.role && session.user.role !== USER_ROLES.DEVELOPER) {
@@ -102,7 +124,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Update the user
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: validatedData,
+      data: {
+        ...updateData,
+        ...(validatedData.avatarAsset !== undefined && {
+          avatarAsset: nextAssetForDb,
+          image: resolveAssetUrl(nextAsset, validatedData.image),
+        }),
+      },
       include: {
         _count: {
           select: {
@@ -111,6 +139,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         },
       },
     });
+
+    if (shouldDeletePrevious && previousAsset) {
+      deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete previous Cloudinary user avatar:", error);
+      });
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {
@@ -136,7 +170,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     // Get the target user
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      select: { role: true },
+      select: { role: true, avatarAsset: true },
     });
 
     if (!targetUser) {
@@ -163,6 +197,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.user.delete({
       where: { id },
     });
+
+    const avatarAsset = parseCloudinaryAsset(targetUser.avatarAsset);
+    if (avatarAsset) {
+      deleteCloudinaryAsset({ publicId: avatarAsset.publicId }).catch((error: unknown) => {
+        console.warn("Failed to delete Cloudinary avatar during user deletion:", error);
+      });
+    }
 
     return NextResponse.json({ message: "User deleted successfully" });
   } catch (error) {
