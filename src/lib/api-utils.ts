@@ -103,7 +103,7 @@ export async function requireBrandAccess(request: NextRequest) {
 export function getBrandFilterFromRequest(request: NextRequest, brandIds: string[] | null) {
   const headerBrandId = request.headers.get("x-brand-id");
 
-  if (headerBrandId) return { brandId: headerBrandId };
+  if (headerBrandId && headerBrandId !== "ALL") return { brandId: headerBrandId };
   if (brandIds && brandIds.length === 1) return { brandId: brandIds[0] };
   if (brandIds && brandIds.length > 1) return { brandId: { in: brandIds } };
 
