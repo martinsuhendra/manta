@@ -46,3 +46,20 @@ export function getRoleVariant(role: string): RoleBadgeVariant {
       return "outline";
   }
 }
+
+export function getUserRoleLabel(role: string): string {
+  switch (role) {
+    case USER_ROLES.ADMIN:
+      return USER_ROLE_LABELS[USER_ROLES.ADMIN];
+    case USER_ROLES.SUPERADMIN:
+      return USER_ROLE_LABELS[USER_ROLES.SUPERADMIN];
+    case USER_ROLES.DEVELOPER:
+      return USER_ROLE_LABELS[USER_ROLES.DEVELOPER];
+    case USER_ROLES.MEMBER:
+      return USER_ROLE_LABELS[USER_ROLES.MEMBER];
+    case USER_ROLES.TEACHER:
+      return USER_ROLE_LABELS[USER_ROLES.TEACHER];
+    default:
+      return role;
+  }
+}
