@@ -30,11 +30,7 @@ export async function GET(request: NextRequest) {
     const whereCondition: { role?: string | { not: string } } = { role: { not: USER_ROLES.DEVELOPER } };
 
     // Add role filter if provided
-    if (
-      role &&
-      role !== USER_ROLES.DEVELOPER &&
-      Object.values(USER_ROLES).includes(role as (typeof USER_ROLES)[keyof typeof USER_ROLES])
-    ) {
+    if (role && role !== USER_ROLES.DEVELOPER && Object.values(USER_ROLES).includes(role)) {
       whereCondition.role = role;
     }
 

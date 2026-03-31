@@ -93,9 +93,9 @@ export function RegisterForm() {
         // Wait a bit for session to be available, then get it to check user role
         await new Promise((resolve) => setTimeout(resolve, 100));
         const session = await getSession();
-        const redirectPath = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session?.user.role ?? "")
-          ? "/dashboard/home"
-          : "/shop";
+        const role = session?.user.role;
+        const isDashboardRole = role === USER_ROLES.SUPERADMIN || role === USER_ROLES.DEVELOPER;
+        const redirectPath = isDashboardRole ? "/dashboard/home" : "/shop";
         router.push(redirectPath);
         router.refresh();
       }

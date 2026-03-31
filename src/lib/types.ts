@@ -14,11 +14,11 @@ export const USER_ROLES = {
   DEVELOPER: "DEVELOPER",
   MEMBER: "MEMBER",
   TEACHER: "TEACHER",
-} as const;
+};
 
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export type UserRole = string;
 
-export const USER_ROLE_LABELS: Record<UserRole, string> = {
+export const USER_ROLE_LABELS: Record<string, string> = {
   [USER_ROLES.ADMIN]: "Admin",
   [USER_ROLES.SUPERADMIN]: "Super Admin",
   [USER_ROLES.DEVELOPER]: "Developer",

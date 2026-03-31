@@ -47,10 +47,14 @@ interface MemberDetailDrawerProps {
   onModeChange: (mode: DrawerMode) => void;
 }
 
+function isPrivilegedRole(role?: string) {
+  return role === USER_ROLES.SUPERADMIN || role === USER_ROLES.DEVELOPER;
+}
+
 const useDeletePermissions = (member: Member | null, session: ReturnType<typeof useSession>["data"]) => {
   const currentUserRole = session?.user.role;
-  const canDeleteSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
-  const isTargetSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(member?.role ?? "");
+  const canDeleteSuperAdmin = isPrivilegedRole(currentUserRole);
+  const isTargetSuperAdmin = isPrivilegedRole(member?.role);
   const isSelfDelete = member?.id === session?.user.id;
   const canDelete = !isSelfDelete && (!isTargetSuperAdmin || canDeleteSuperAdmin);
 
@@ -118,8 +122,8 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
   const [isEditModeReady, setIsEditModeReady] = React.useState(false);
 
   const currentUserRole = session?.user.role;
-  const canCreateSuperAdmin = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
-  const canEditRoles = [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(currentUserRole ?? "");
+  const canCreateSuperAdmin = isPrivilegedRole(currentUserRole);
+  const canEditRoles = isPrivilegedRole(currentUserRole);
   const { canDelete, isSelfDelete, isTargetSuperAdmin, canDeleteSuperAdmin } = useDeletePermissions(member, session);
 
   // Fetch detailed member data when in view mode

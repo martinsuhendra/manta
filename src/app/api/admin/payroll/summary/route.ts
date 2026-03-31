@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const teacherItemPairs = pairKeys
       .map((key) => {
         const [tid, iid] = key.split(":");
-        return { teacherId: tid ?? "", itemId: iid ?? "" };
+        return { teacherId: tid, itemId: iid };
       })
       .filter((p) => p.teacherId && p.itemId);
 
