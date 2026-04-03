@@ -2,12 +2,12 @@
 
 import * as React from "react";
 
-import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { useItems } from "@/hooks/use-items-query";
 
 import { createItemColumns } from "./columns";
 import { DeleteItemDialog } from "./delete-item-dialog";
@@ -16,20 +16,15 @@ import { ItemsTableSkeleton } from "./items-table-skeleton";
 import { Item } from "./schema";
 import { ViewItemDialog } from "./view-item-dialog";
 
+const ITEM_LIST_PARAMS = { includeSchedules: true, includeTeachers: true } as const;
+
 export function ItemsTable() {
   const [selectedItems] = React.useState<Item[]>([]);
   const [itemToView, setItemToView] = React.useState<Item | null>(null);
   const [itemDialogState, setItemDialogState] = React.useState<Item | "new" | null>(null);
   const [itemToDelete, setItemToDelete] = React.useState<Item | null>(null);
 
-  const { data: items = [], isLoading } = useQuery<Item[]>({
-    queryKey: ["admin-items"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/items?includeSchedules=true&includeTeachers=true");
-      if (!response.ok) throw new Error("Failed to fetch items");
-      return response.json();
-    },
-  });
+  const { data: items = [], isLoading } = useItems(ITEM_LIST_PARAMS);
 
   const actions = {
     onViewItem: setItemToView,

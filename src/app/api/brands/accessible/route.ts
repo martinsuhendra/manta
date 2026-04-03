@@ -22,7 +22,7 @@ export async function GET() {
     if ([USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user.role)) {
       const brands = await prisma.brand.findMany({
         where: { isActive: true },
-        orderBy: { name: "asc" },
+        orderBy: { createdAt: "asc" },
         select: {
           id: true,
           name: true,
@@ -60,6 +60,7 @@ export async function GET() {
             primaryColor: true,
             accentColor: true,
             isActive: true,
+            createdAt: true,
           },
         },
       },
@@ -68,6 +69,7 @@ export async function GET() {
     const brands = brandUsers
       .map((bu) => bu.brand)
       .filter((b) => b.isActive)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .map((b) => ({
         id: b.id,
         name: b.name,
