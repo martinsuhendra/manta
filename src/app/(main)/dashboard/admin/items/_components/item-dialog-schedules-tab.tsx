@@ -51,6 +51,23 @@ function calculateEndTime(startTime: string, duration: number): string {
   return endMinutes < MINUTES_PER_DAY ? minutesToTime(endMinutes) : "23:59";
 }
 
+/** When duration grows (or changes), keep a start time that still fits in the day (same rules as TIME_SLOTS filter). */
+function clampStartTimeForDuration(startTime: string, duration: number): string {
+  const durationToUse = duration > 0 ? duration : DEFAULT_DURATION;
+  if (timeToMinutes(startTime) + durationToUse < MINUTES_PER_DAY) return startTime;
+
+  const validSlots = TIME_SLOTS.filter((t) => timeToMinutes(t) + durationToUse < MINUTES_PER_DAY);
+  if (validSlots.length === 0) return DEFAULT_START_TIME;
+
+  const startMinutes = timeToMinutes(startTime);
+  let best = validSlots[0];
+  for (const slot of validSlots) {
+    if (timeToMinutes(slot) <= startMinutes) best = slot;
+    else break;
+  }
+  return best;
+}
+
 function convertSchedulesToGroups(schedules: Schedule[]): ScheduleGroup[] {
   if (!schedules || schedules.length === 0) return [];
 
@@ -310,12 +327,26 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync schedules to form whenever groups change
+  // Clamp start times to fit duration, then sync to form (single pass avoids stale form when duration changes on step 1)
   React.useEffect(() => {
     if (!isInitialized) return;
 
-    const schedules = convertGroupsToSchedules(scheduleGroups, duration);
-    replace(schedules);
+    const durationToUse = duration > 0 ? duration : DEFAULT_DURATION;
+    const nextGroups = scheduleGroups.map((group) => {
+      const clamped = clampStartTimeForDuration(group.startTime, durationToUse);
+      return clamped === group.startTime ? group : { ...group, startTime: clamped };
+    });
+    const groupsMatch =
+      nextGroups.length === scheduleGroups.length &&
+      nextGroups.every(
+        (g, i) =>
+          g.startTime === scheduleGroups[i].startTime &&
+          g.days.length === scheduleGroups[i].days.length &&
+          g.days.every((d, j) => d === scheduleGroups[i].days[j]),
+      );
+
+    replace(convertGroupsToSchedules(nextGroups, duration));
+    if (!groupsMatch) setScheduleGroups(nextGroups);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleGroups, duration, isInitialized]);
 

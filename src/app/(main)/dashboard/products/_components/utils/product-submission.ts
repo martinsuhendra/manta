@@ -31,34 +31,36 @@ export async function handleProductSubmission({
   onOpenChange,
   resetForm,
   showSuccessStep = false,
-}: SubmissionParams) {
+}: SubmissionParams): Promise<Product> {
   try {
     if (isEdit && product) {
-      await updateProduct.mutateAsync({ id: product.id, data });
+      const updated = await updateProduct.mutateAsync({ id: product.id, data });
       toast.success("Product updated successfully");
-    } else {
-      const createdProduct = await createProduct.mutateAsync(data);
-      await createQuotaPoolsAndItems(createdProduct, quotaPools, productItems);
-      toast.success("Product created successfully");
+      if (!showSuccessStep) {
+        onOpenChange(false);
+      }
+      return updated;
     }
 
-    // Only close dialog if not showing success step
+    const createdProduct = await createProduct.mutateAsync(data);
+    await createQuotaPoolsAndItems(createdProduct, quotaPools, productItems);
+    toast.success("Product created successfully");
+
     if (!showSuccessStep) {
       onOpenChange(false);
       if (!isEdit) {
         resetForm();
       }
-    } else {
-      // Reset form but keep dialog open for success step
-      if (!isEdit) {
-        resetForm();
-      }
+    } else if (!isEdit) {
+      resetForm();
     }
+
+    return createdProduct;
   } catch (error) {
     console.error(`Failed to ${isEdit ? "update" : "create"} product:`, error);
     const errorMessage = error instanceof Error ? error.message : `Failed to ${isEdit ? "update" : "create"} product`;
     toast.error(errorMessage);
-    throw error; // Re-throw so caller knows submission failed
+    throw error;
   }
 }
 

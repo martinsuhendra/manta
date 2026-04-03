@@ -2,11 +2,12 @@
 
 import * as React from "react";
 
-import { Clock, Users, Plus, X, Edit2 } from "lucide-react";
+import { Clock, Users, X, Edit2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import { Item } from "../../admin/items/_components/schema";
 
@@ -96,18 +97,40 @@ export function ItemCard({
   variant = "available",
   disabled = false,
 }: ItemCardProps) {
+  const pressableToAdd = variant === "available" && !isSelected && Boolean(onAdd) && !disabled;
+
   return (
     <Card
-      className={`group hover:border-primary/20 relative overflow-hidden transition-all duration-200 hover:shadow-sm ${
-        isSelected ? "ring-primary ring-1" : ""
-      } ${variant === "selected" ? "from-primary/5 border-l bg-gradient-to-r to-transparent" : ""} ${
-        disabled ? "opacity-60" : ""
-      }`}
+      className={cn(
+        "group relative overflow-hidden border shadow-sm transition-[background-color,border-color,box-shadow] duration-500 ease-out",
+        pressableToAdd &&
+          "hover:border-primary/30 hover:bg-primary/[0.07] focus-visible:ring-ring dark:hover:bg-primary/[0.11] cursor-pointer rounded-xl select-none hover:shadow-md focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.998]",
+        !pressableToAdd &&
+          variant === "available" &&
+          "hover:border-primary/20 transition-[border-color,box-shadow] duration-300 hover:shadow-sm",
+        isSelected && "ring-primary ring-1",
+        variant === "selected" && "from-primary/5 border-l bg-gradient-to-r to-transparent",
+        disabled && "cursor-not-allowed opacity-60",
+      )}
       style={
         variant === "selected" && item.color
           ? {
               borderLeftColor: item.color,
               borderLeftWidth: "3px",
+            }
+          : undefined
+      }
+      role={pressableToAdd ? "button" : undefined}
+      tabIndex={pressableToAdd ? 0 : undefined}
+      aria-label={pressableToAdd ? `Add ${item.name} to product` : undefined}
+      onClick={pressableToAdd ? () => onAdd?.() : undefined}
+      onKeyDown={
+        pressableToAdd
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onAdd?.();
+              }
             }
           : undefined
       }
@@ -149,51 +172,32 @@ export function ItemCard({
             </div>
           </div>
 
-          {/* Actions */}
-          {showActions && (
-            <div
-              className={`flex-shrink-0 transition-opacity duration-200 ${
-                variant === "available" ? "opacity-0 group-hover:opacity-100" : "opacity-100"
-              }`}
-            >
-              {variant === "available" && !isSelected && onAdd && (
+          {/* Actions (selected only — available items are added by clicking the card) */}
+          {showActions && variant === "selected" && (
+            <div className="flex flex-shrink-0 gap-0.5">
+              {onEdit && (
                 <Button
                   size="sm"
-                  onClick={onAdd}
+                  variant="outline"
+                  onClick={onEdit}
                   disabled={disabled}
-                  className="h-6 w-6 rounded-md p-0 shadow-sm transition-all duration-200 hover:shadow"
-                  title="Add item"
+                  className="hover:border-primary/50 h-6 w-6 rounded-md border p-0 transition-all duration-200"
+                  title="Edit quota settings"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Edit2 className="h-3 w-3" />
                 </Button>
               )}
-              {variant === "selected" && (
-                <div className="flex gap-0.5">
-                  {onEdit && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onEdit}
-                      disabled={disabled}
-                      className="hover:border-primary/50 h-6 w-6 rounded-md border p-0 transition-all duration-200"
-                      title="Edit quota settings"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {onRemove && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onRemove}
-                      disabled={disabled}
-                      className="text-destructive hover:bg-destructive/10 hover:border-destructive/50 h-6 w-6 rounded-md border p-0 transition-all duration-200"
-                      title="Remove item"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
+              {onRemove && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRemove}
+                  disabled={disabled}
+                  className="text-destructive hover:bg-destructive/10 hover:border-destructive/50 h-6 w-6 rounded-md border p-0 transition-all duration-200"
+                  title="Remove item"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               )}
             </div>
           )}

@@ -32,12 +32,12 @@ export function ItemDialogBasicTab({ form }: ItemDialogBasicTabProps) {
         name="brandIds"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Stores</FormLabel>
+            <FormLabel>Brands</FormLabel>
             {isBrandsLoading ? (
               <Skeleton className="h-10 w-full" />
             ) : brands.length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                No active stores available. Create a brand under Organization first.
+                No active brands available. Create a brand under Organization first.
               </p>
             ) : (
               <div className="border-input max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">

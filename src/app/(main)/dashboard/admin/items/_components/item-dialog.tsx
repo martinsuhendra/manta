@@ -21,7 +21,7 @@ import { Form } from "@/components/ui/form";
 import { Stepper } from "@/components/ui/stepper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAccessibleBrands } from "@/hooks/use-brands-query";
-import { useBrandStore } from "@/stores/brand/brand-provider";
+import { cn } from "@/lib/utils";
 import type { BrandSummary } from "@/stores/brand/brand-store";
 
 import { ItemDialogBasicTab } from "./item-dialog-basic-tab";
@@ -76,7 +76,6 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const [createdItem, setCreatedItem] = React.useState<Item | null>(null);
   const { data: brandsQueryData } = useAccessibleBrands();
   const accessibleBrands = brandsQueryData ?? EMPTY_ACCESSIBLE_BRANDS;
-  const activeBrandId = useBrandStore((s) => s.activeBrandId);
 
   const form = useForm<CreateItemForm>({
     resolver: zodResolver(createItemSchema),
@@ -166,12 +165,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           schedules: item.schedules || [],
         });
       } else {
-        const defaultBrandIds =
-          accessibleBrands.length === 0
-            ? []
-            : activeBrandId !== "ALL" && accessibleBrands.some((b) => b.id === activeBrandId)
-              ? [activeBrandId]
-              : [accessibleBrands[0].id];
+        const defaultBrandIds = accessibleBrands.length === 0 ? [] : [accessibleBrands[0].id];
         form.reset({
           brandIds: defaultBrandIds,
           name: "",
@@ -185,7 +179,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
         });
       }
     }
-  }, [open, isEditMode, item, accessibleBrands, activeBrandId, form]);
+  }, [open, isEditMode, item, accessibleBrands, form]);
 
   const onSubmit = async (data: CreateItemForm) => {
     // Ensure all numeric fields are converted to numbers
@@ -271,69 +265,72 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col overflow-hidden p-0 sm:max-w-[90vw] lg:max-w-5xl">
         {(!isEditMode && currentStep !== 3) || isEditMode ? (
           <DialogHeader className="bg-background sticky top-0 z-10 border-b px-6 pt-6 pr-12 pb-4">
-            <DialogTitle>{isEditMode ? "Edit Item" : "Create New Item"}</DialogTitle>
+            <DialogTitle>{isEditMode ? "Edit Class" : "Create New Class"}</DialogTitle>
             <DialogDescription>
-              {isEditMode ? "Update the item details below." : "Fill in the details to create a new item."}
+              {isEditMode ? "Update the class details below." : "Fill in the details to create a new class."}
             </DialogDescription>
           </DialogHeader>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto">
-          <Form {...form}>
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6 px-6 py-4">
-              {isEditMode ? (
-                // Edit mode: Use tabs (current behavior)
-                <Tabs defaultValue="basic">
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="basic" className="relative">
-                      Basic Info
-                      {tabErrors.basic && <AlertTriangle className="text-destructive ml-2 h-4 w-4" />}
-                    </TabsTrigger>
-                    <TabsTrigger value="schedules" className="relative">
-                      Schedules
-                      {tabErrors.schedules && <AlertTriangle className="text-destructive ml-2 h-4 w-4" />}
-                    </TabsTrigger>
-                  </TabsList>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {!isEditMode && currentStep === 3 && createdItem ? (
+            <ItemSuccessStep item={createdItem} onClose={() => onOpenChange(false)} />
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              <Form {...form}>
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-6 px-6 py-4">
+                  {isEditMode ? (
+                    <Tabs defaultValue="basic">
+                      <TabsList className="grid grid-cols-2">
+                        <TabsTrigger value="basic" className="relative">
+                          Basic Info
+                          {tabErrors.basic && <AlertTriangle className="text-destructive ml-2 h-4 w-4" />}
+                        </TabsTrigger>
+                        <TabsTrigger value="schedules" className="relative">
+                          Schedules
+                          {tabErrors.schedules && <AlertTriangle className="text-destructive ml-2 h-4 w-4" />}
+                        </TabsTrigger>
+                      </TabsList>
 
-                  <TabsContent value="basic">
-                    <ItemDialogBasicTab form={form} />
-                  </TabsContent>
+                      <TabsContent value="basic">
+                        <ItemDialogBasicTab form={form} />
+                      </TabsContent>
 
-                  <TabsContent value="schedules">
-                    <ItemDialogSchedulesTab form={form} />
-                  </TabsContent>
-                </Tabs>
-              ) : (
-                // Create mode: Use stepper
-                <>
-                  <Stepper
-                    steps={STEPS}
-                    currentStep={currentStep}
-                    completedSteps={currentStep === 3 ? [1, 2, 3] : currentStep > 1 ? [1, 2] : []}
-                    className="mb-6"
-                  />
+                      <TabsContent value="schedules">
+                        <ItemDialogSchedulesTab form={form} />
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <>
+                      <Stepper
+                        steps={STEPS}
+                        currentStep={currentStep}
+                        completedSteps={currentStep === 3 ? [1, 2, 3] : currentStep > 1 ? [1, 2] : []}
+                        className="mb-6"
+                      />
 
-                  {currentStep === 1 && (
-                    <div className="min-h-[400px]">
-                      <ItemDialogBasicTab form={form} />
-                    </div>
+                      {/*
+                        Keep both steps mounted so ItemDialogSchedulesTab local state (e.g. start times before any day is picked)
+                        survives Basic → Schedules → Previous. Hidden via CSS instead of unmounting.
+                      */}
+                      <div
+                        className={cn("min-h-[400px]", currentStep !== 1 && "hidden")}
+                        aria-hidden={currentStep !== 1}
+                      >
+                        <ItemDialogBasicTab form={form} />
+                      </div>
+                      <div
+                        className={cn("min-h-[400px]", currentStep !== 2 && "hidden")}
+                        aria-hidden={currentStep !== 2}
+                      >
+                        <ItemDialogSchedulesTab form={form} />
+                      </div>
+                    </>
                   )}
-
-                  {currentStep === 2 && (
-                    <div className="min-h-[400px]">
-                      <ItemDialogSchedulesTab form={form} />
-                    </div>
-                  )}
-
-                  {currentStep === 3 && createdItem && (
-                    <div className="min-h-[400px]">
-                      <ItemSuccessStep item={createdItem} onClose={() => onOpenChange(false)} />
-                    </div>
-                  )}
-                </>
-              )}
-            </form>
-          </Form>
+                </form>
+              </Form>
+            </div>
+          )}
         </div>
 
         {currentStep !== 3 && (

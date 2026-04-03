@@ -8,15 +8,19 @@ import { useBrandStore } from "@/stores/brand/brand-provider";
 
 export function useItems(params?: { includeSchedules?: boolean; includeTeachers?: boolean }) {
   const activeBrandId = useBrandStore((s) => s.activeBrandId);
+  const incSched = params?.includeSchedules ?? false;
+  const incTeachers = params?.includeTeachers ?? false;
+
   return useQuery<Item[]>({
-    queryKey: ["items", params, activeBrandId],
+    // Matches invalidateQueries({ queryKey: ["admin-items"] }) — X-Brand-Id is set by axios when a specific store is selected
+    queryKey: ["admin-items", activeBrandId, incSched, incTeachers],
     queryFn: async () => {
       try {
         const searchParams = new URLSearchParams();
-        if (params?.includeSchedules) searchParams.set("includeSchedules", "true");
-        if (params?.includeTeachers) searchParams.set("includeTeachers", "true");
+        if (incSched) searchParams.set("includeSchedules", "true");
+        if (incTeachers) searchParams.set("includeTeachers", "true");
         const url = `/api/admin/items${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-        const response = await axios.get(url);
+        const response = await axios.get<Item[]>(url);
         return response.data;
       } catch (error) {
         console.error("Items API error:", error);
@@ -30,7 +34,7 @@ export function useItems(params?: { includeSchedules?: boolean; includeTeachers?
 export function useItemTeachers(itemId: string, enabled = true) {
   const activeBrandId = useBrandStore((s) => s.activeBrandId);
   return useQuery({
-    queryKey: ["items", itemId, "teachers", activeBrandId],
+    queryKey: ["admin-items", itemId, "teachers", activeBrandId],
     queryFn: async () => {
       try {
         const response = await axios.get(`/api/admin/items/${itemId}/teachers`);

@@ -17,6 +17,7 @@ import { useFormValidation, formSchema, FormData, DEFAULT_FORM_VALUES } from "./
 import { useProductComputed } from "./hooks/use-product-computed";
 import { useProductData } from "./hooks/use-product-data";
 import { useProductMutation } from "./hooks/use-product-mutation";
+import type { ProductSuccessSummary } from "./product-success-step";
 import { Product, QuotaPool, CreateProductItemForm } from "./schema";
 import { handleProductSubmission } from "./utils/product-submission";
 
@@ -41,6 +42,7 @@ export function ProductFormTabbedDialog({
   const [currentStep, setCurrentStep] = React.useState(1);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const [successSummary, setSuccessSummary] = React.useState<ProductSuccessSummary | null>(null);
   const [productItems, setProductItems] = React.useState<CreateProductItemForm[]>([]);
   const [quotaPools, setQuotaPools] = React.useState<QuotaPool[]>([]);
 
@@ -70,6 +72,7 @@ export function ProductFormTabbedDialog({
     if (open) {
       setCurrentStep(1);
       setIsSuccess(false);
+      setSuccessSummary(null);
       setHasAttemptedSubmit(false);
     }
   }, [open]);
@@ -94,7 +97,7 @@ export function ProductFormTabbedDialog({
     }
 
     try {
-      await handleProductSubmission({
+      const savedProduct = await handleProductSubmission({
         data,
         isEdit,
         product,
@@ -102,11 +105,17 @@ export function ProductFormTabbedDialog({
         quotaPools,
         createProduct,
         updateProduct,
-        onOpenChange, // Keep original handler for error cases
+        onOpenChange,
         resetForm: () => form.reset(),
-        showSuccessStep: true, // Don't close dialog, show success step instead
+        showSuccessStep: true,
       });
-      // Show success step after successful submission
+      setSuccessSummary({
+        formData: { ...data },
+        productItems: productItems.map((p) => ({ ...p })),
+        quotaPools: quotaPools.map((p) => ({ ...p })),
+        items: [...items],
+        savedProduct,
+      });
       setIsSuccess(true);
       setCurrentStep(4);
     } catch {
@@ -133,6 +142,7 @@ export function ProductFormTabbedDialog({
       existingProductItemsWithUsage={existingProductItemsWithUsage}
       items={items}
       isSuccess={isSuccess}
+      successSummary={successSummary}
     />
   );
 

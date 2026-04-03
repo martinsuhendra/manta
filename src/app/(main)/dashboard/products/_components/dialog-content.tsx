@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import * as React from "react";
 
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { FormData } from "./hooks/use-form-validation";
 import { ProductPreview } from "./product-card";
 import { ProductFormFields } from "./product-form-fields";
 import { ProductItemsTab } from "./product-items-tab";
+import { ProductSuccessStep, type ProductSuccessSummary } from "./product-success-step";
 import { Product, QuotaPool, CreateProductItemForm } from "./schema";
 
 interface DialogContentProps {
@@ -35,6 +36,7 @@ interface DialogContentProps {
   existingProductItemsWithUsage: CreateProductItemForm[];
   items: Item[];
   isSuccess?: boolean;
+  successSummary?: ProductSuccessSummary | null;
 }
 
 const STEPS = [
@@ -44,34 +46,21 @@ const STEPS = [
   { id: "success", label: "Success", description: "Completed" },
 ];
 
-function SuccessStep({ isEdit, onOpenChange }: { isEdit: boolean; onOpenChange: (open: boolean) => void }) {
+function MinimalSuccessDialogContent({
+  isEdit,
+  onOpenChange,
+}: {
+  isEdit: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   return (
-    <DialogContent className="flex h-[90vh] max-h-[90vh] w-[95vw] !max-w-[1200px] flex-col overflow-hidden">
+    <DialogContent className="flex w-[95vw] !max-w-md flex-col gap-4 p-6">
       <DialogHeader>
-        <DialogTitle>{isEdit ? "Product Updated" : "Product Created"}</DialogTitle>
-        <DialogDescription>
-          {isEdit ? "Your product has been successfully updated." : "Your product has been successfully created."}
-        </DialogDescription>
+        <DialogTitle>{isEdit ? "Saved" : "Created"}</DialogTitle>
+        <DialogDescription>Your product was saved. You can close this dialog.</DialogDescription>
       </DialogHeader>
-
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-12">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-          <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
-        </div>
-        <h3 className="mb-2 text-2xl font-semibold">
-          {isEdit ? "Product Updated Successfully!" : "Product Created Successfully!"}
-        </h3>
-        <p className="text-muted-foreground mb-8 max-w-md text-center text-sm">
-          {isEdit
-            ? "Your product has been updated with all the configured settings and items."
-            : "Your product has been created with all the configured settings and items."}
-        </p>
-      </div>
-
-      <DialogFooter>
-        <Button onClick={() => onOpenChange(false)} className="min-w-[120px]">
-          Close
-        </Button>
+      <DialogFooter className="sm:justify-end">
+        <Button onClick={() => onOpenChange(false)}>Close</Button>
       </DialogFooter>
     </DialogContent>
   );
@@ -179,6 +168,7 @@ function StepContent({
   return null;
 }
 
+// eslint-disable-next-line complexity -- multi-step wizard: success branches, step routing, footer CTA matrix
 export function ProductDialogContent({
   isEdit,
   currentStep,
@@ -197,6 +187,7 @@ export function ProductDialogContent({
   existingProductItemsWithUsage,
   items,
   isSuccess = false,
+  successSummary = null,
 }: DialogContentProps) {
   const completedSteps = React.useMemo(() => {
     const steps: number[] = [];
@@ -232,22 +223,26 @@ export function ProductDialogContent({
     return true;
   }, [currentStep, form.formState.isValid]);
 
+  if (isSuccess && successSummary) {
+    return <ProductSuccessStep isEdit={isEdit} summary={successSummary} onClose={() => onOpenChange(false)} />;
+  }
+
   if (isSuccess) {
-    return <SuccessStep isEdit={isEdit} onOpenChange={onOpenChange} />;
+    return <MinimalSuccessDialogContent isEdit={isEdit} onOpenChange={onOpenChange} />;
   }
 
   return (
-    <DialogContent className="flex h-[90vh] max-h-[90vh] w-[95vw] !max-w-[1200px] flex-col overflow-hidden">
-      <DialogHeader>
-        <DialogTitle>{isEdit ? "Edit Product" : "Add Product"}</DialogTitle>
-        <DialogDescription>
+    <DialogContent className="border-border/60 flex h-[90vh] max-h-[90vh] w-[95vw] !max-w-[1200px] flex-col overflow-hidden shadow-xl">
+      <DialogHeader className="border-border/50 space-y-1.5 border-b pb-4">
+        <DialogTitle className="text-xl">{isEdit ? "Edit product" : "Add product"}</DialogTitle>
+        <DialogDescription className="text-sm leading-relaxed">
           {isEdit
-            ? "Update the product details and item configuration."
-            : "Create a new product and configure which items are included."}
+            ? "Update pricing, details, and which classes this membership includes."
+            : "Set up pricing and link the classes customers can book with this product."}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="mb-6">
+      <div className="mt-2 mb-5">
         <Stepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
       </div>
 
@@ -272,7 +267,7 @@ export function ProductDialogContent({
         />
       </div>
 
-      <DialogFooter className="flex flex-shrink-0 flex-col gap-3">
+      <DialogFooter className="border-border/50 flex flex-shrink-0 flex-col gap-3 border-t pt-4">
         {currentStep === 1 && hasAttemptedSubmit && !form.formState.isValid && (
           <div className="text-destructive flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4" />
