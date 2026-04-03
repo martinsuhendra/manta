@@ -38,11 +38,13 @@ function buildScheduleGroups(schedules: Item["schedules"]): ScheduleGroupRow[] {
   });
 }
 
+type DayOfWeekLabel = (typeof DAY_OF_WEEK_LABELS)[number];
+
 function daysLabel(days: number[]) {
   if (days.length === 7) return "Everyday";
   return days
     .map((d) => DAY_OF_WEEK_LABELS.at(d))
-    .filter((x): x is string => x != null && x !== "")
+    .filter((x): x is DayOfWeekLabel => x !== undefined)
     .join(", ");
 }
 
