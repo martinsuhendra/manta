@@ -237,3 +237,35 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return handleApiError(error, "Failed to update session");
   }
 }
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
+    const { id } = await params;
+
+    const classSession = await prisma.classSession.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!classSession) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    const activeBookingsCount = await prisma.booking.count({
+      where: { classSessionId: id, status: { not: "CANCELLED" } },
+    });
+
+    if (activeBookingsCount > 0) {
+      return NextResponse.json({ error: "Cannot delete a session that has active bookings" }, { status: 400 });
+    }
+
+    await prisma.classSession.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error, "Failed to delete session");
+  }
+}

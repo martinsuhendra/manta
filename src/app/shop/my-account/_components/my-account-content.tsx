@@ -598,7 +598,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                               <div className="text-muted-foreground flex items-center gap-2 text-xs">
                                 <Badge variant="secondary">{item.classSession.item.name}</Badge>
                                 <span>•</span>
-                                <span>Coach {item.classSession.teacher?.name ?? "TBA"}</span>
+                                <span>{item.classSession.teacher?.name ?? "TBA"}</span>
                               </div>
                             </div>
                           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { addDays, format, parseISO, startOfDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -8,6 +8,13 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +27,7 @@ import { BookingModal } from "./booking-modal";
 
 const defaultStart = startOfDay(new Date());
 const defaultEnd = addDays(defaultStart, 14);
+const SESSIONS_PER_PAGE = 7;
 
 interface ClassOption {
   id: string;
@@ -36,10 +44,36 @@ export function BookPageContent({ classes }: BookPageContentProps) {
   const [itemId, setItemId] = useState<string>("");
   const [selectedSession, setSelectedSession] = useState<MemberSession | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filters = useMemo(() => ({ startDate, endDate, itemId: itemId || undefined }), [startDate, endDate, itemId]);
   const { data: sessions = [], isLoading } = useMemberSessions(filters);
-  const sessionIds = useMemo(() => sessions.map((s) => s.id), [sessions]);
+
+  const sortedSessionsFlat = useMemo(
+    () =>
+      [...sessions].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.startTime.localeCompare(b.startTime);
+      }),
+    [sessions],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(sortedSessionsFlat.length / SESSIONS_PER_PAGE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [startDate, endDate, itemId]);
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
+  const paginatedSessions = useMemo(() => {
+    const start = (page - 1) * SESSIONS_PER_PAGE;
+    return sortedSessionsFlat.slice(start, start + SESSIONS_PER_PAGE);
+  }, [sortedSessionsFlat, page]);
+
+  const sessionIds = useMemo(() => paginatedSessions.map((s) => s.id), [paginatedSessions]);
   const { bySessionId } = useSessionEligibilityBatch(sessionIds, sessionIds.length > 0);
 
   const handleSelectSession = (s: MemberSession) => {
@@ -52,7 +86,7 @@ export function BookPageContent({ classes }: BookPageContentProps) {
 
   const sessionsByDate = useMemo(() => {
     const acc: Record<string, MemberSession[]> = {};
-    for (const session of sessions) {
+    for (const session of paginatedSessions) {
       const dateKey = session.date;
       // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
       const bucket = acc[dateKey];
@@ -63,7 +97,7 @@ export function BookPageContent({ classes }: BookPageContentProps) {
       } else bucket.push(session);
     }
     return acc;
-  }, [sessions]);
+  }, [paginatedSessions]);
 
   const sortedDates = useMemo(() => Object.keys(sessionsByDate).sort(), [sessionsByDate]);
 
@@ -165,7 +199,7 @@ export function BookPageContent({ classes }: BookPageContentProps) {
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
-      ) : sessions.length === 0 ? (
+      ) : sortedSessionsFlat.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center">
           <p>No sessions in this date range.</p>
           <p className="mt-1 text-sm">Try adjusting the date range above.</p>
@@ -185,20 +219,61 @@ export function BookPageContent({ classes }: BookPageContentProps) {
                 <div className="bg-border h-px flex-1" />
               </div>
               <div className="space-y-4">
-                {getSessionsForDate(date).map((session) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    eligibility={bySessionId[session.id]}
-                    onCardClick={() => handleSelectSession(session)}
-                    actionLabel="View"
-                    onActionClick={() => handleSelectSession(session)}
-                    actionDisabled={false}
-                  />
-                ))}
+                {getSessionsForDate(date).map((session) => {
+                  const elig = bySessionId[session.id];
+                  const spotsLeft = elig?.spotsLeft ?? session.spotsLeft;
+                  const isFull = spotsLeft <= 0;
+                  const actionLabel = isFull && !elig?.alreadyBooked ? "Waitlist" : "Join";
+
+                  return (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      eligibility={elig}
+                      onCardClick={() => handleSelectSession(session)}
+                      actionLabel={actionLabel}
+                      onActionClick={() => handleSelectSession(session)}
+                      actionDisabled={false}
+                    />
+                  );
+                })}
               </div>
             </div>
           ))}
+
+          {totalPages > 1 ? (
+            <Pagination className="mt-8">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page > 1) setPage((p) => p - 1);
+                    }}
+                    aria-disabled={page <= 1}
+                    className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground px-2 text-sm">
+                    Page {page} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page < totalPages) setPage((p) => p + 1);
+                    }}
+                    aria-disabled={page >= totalPages}
+                    className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          ) : null}
         </div>
       )}
 

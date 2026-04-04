@@ -54,10 +54,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           include: {
             product: {
               include: {
+                // Include inactive items so quota still restores if a product item was deactivated after booking
                 productItems: {
                   where: {
                     itemId: classSession.itemId,
-                    isActive: true,
                   },
                   include: {
                     quotaPool: true,

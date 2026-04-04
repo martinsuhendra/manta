@@ -6,6 +6,7 @@ import { authOptions } from "@/auth";
 import { requireBrandAccess } from "@/lib/api-utils";
 import { canMemberCancel, getBookingSettings, getSessionStartAt } from "@/lib/booking-settings";
 import { prisma } from "@/lib/generated/prisma";
+import { restoreQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ bookingId: string }> }) {
@@ -40,16 +41,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           select: { itemId: true, date: true, startTime: true },
         },
         membership: {
-          include: {
-            product: {
-              include: {
-                productItems: {
-                  where: { isActive: true },
-                  include: { quotaPool: true },
-                },
-              },
-            },
-          },
+          select: { productId: true },
         },
       },
     });
@@ -74,61 +66,23 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Cancellation is no longer allowed for this session." }, { status: 400 });
     }
 
-    const itemId = booking.classSession.itemId;
-    const productItem = booking.membership.product.productItems.find((pi) => pi.itemId === itemId) ?? null;
+    const productItem =
+      booking.status === "CONFIRMED"
+        ? await prisma.productItem.findFirst({
+            where: {
+              productId: booking.membership.productId,
+              itemId: booking.classSession.itemId,
+            },
+            include: { quotaPool: true },
+          })
+        : null;
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.delete({
         where: { id: bookingId },
       });
 
-      if (productItem?.quotaType === "INDIVIDUAL") {
-        const quotaUsage = await tx.membershipQuotaUsage.findUnique({
-          where: {
-            membershipId_productItemId: {
-              membershipId: booking.membershipId,
-              productItemId: productItem.id,
-            },
-          },
-        });
-
-        if (quotaUsage && quotaUsage.usedCount > 0) {
-          await tx.membershipQuotaUsage.update({
-            where: {
-              membershipId_productItemId: {
-                membershipId: booking.membershipId,
-                productItemId: productItem.id,
-              },
-            },
-            data: {
-              usedCount: { decrement: 1 },
-            },
-          });
-        }
-      } else if (productItem?.quotaType === "SHARED" && productItem.quotaPoolId) {
-        const quotaUsage = await tx.membershipQuotaUsage.findUnique({
-          where: {
-            membershipId_quotaPoolId: {
-              membershipId: booking.membershipId,
-              quotaPoolId: productItem.quotaPoolId,
-            },
-          },
-        });
-
-        if (quotaUsage && quotaUsage.usedCount > 0) {
-          await tx.membershipQuotaUsage.update({
-            where: {
-              membershipId_quotaPoolId: {
-                membershipId: booking.membershipId,
-                quotaPoolId: productItem.quotaPoolId,
-              },
-            },
-            data: {
-              usedCount: { decrement: 1 },
-            },
-          });
-        }
-      }
+      if (productItem) await restoreQuota({ tx, membershipId: booking.membershipId, productItem });
     });
 
     return NextResponse.json({ success: true });
