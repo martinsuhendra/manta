@@ -2,32 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { addDays, format, parseISO, startOfDay } from "date-fns";
+import { addDays, eachDayOfInterval, format, parseISO, startOfDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemberSessions, useSessionEligibilityBatch, type MemberSession } from "@/hooks/use-member-sessions";
+import {
+  useMemberSessions,
+  useSessionEligibilityBatch,
+  type MemberSession,
+  type SessionEligibility,
+} from "@/hooks/use-member-sessions";
 import { cn } from "@/lib/utils";
 
 import { SessionCard } from "../../_components/session-card";
 
+import { BookDateStrip } from "./book-date-strip";
 import { BookingModal } from "./booking-modal";
 
 const defaultStart = startOfDay(new Date());
 const defaultEnd = addDays(defaultStart, 14);
-const SESSIONS_PER_PAGE = 7;
 
 interface ClassOption {
   id: string;
@@ -38,13 +36,96 @@ interface BookPageContentProps {
   classes: ClassOption[];
 }
 
+function getSessionsOnDate(byDate: Record<string, MemberSession[]>, dateKey: string): MemberSession[] {
+  if (!Object.prototype.hasOwnProperty.call(byDate, dateKey)) return [];
+  // eslint-disable-next-line security/detect-object-injection -- dateKey validated via hasOwnProperty
+  return byDate[dateKey];
+}
+
+interface BookSessionsPanelProps {
+  daysInRange: string[];
+  dateRangeKey: string;
+  selectedDate: string | null;
+  onSelectDate: (date: string) => void;
+  datesWithSessions: Set<string>;
+  sessionsForSelected: MemberSession[];
+  bySessionId: Record<string, SessionEligibility | undefined>;
+  onSelectSession: (session: MemberSession) => void;
+}
+
+function BookSessionsPanel({
+  daysInRange,
+  dateRangeKey,
+  selectedDate,
+  onSelectDate,
+  datesWithSessions,
+  sessionsForSelected,
+  bySessionId,
+  onSelectSession,
+}: BookSessionsPanelProps) {
+  return (
+    <div className="space-y-6">
+      <BookDateStrip
+        allDays={daysInRange}
+        rangeKey={dateRangeKey}
+        selectedDate={selectedDate}
+        onSelectDate={onSelectDate}
+        datesWithSessions={datesWithSessions}
+      />
+
+      {selectedDate ? (
+        <>
+          <div className="overflow-hidden border-b pb-4">
+            <div
+              key={selectedDate}
+              className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
+            >
+              <p className="text-muted-foreground text-sm font-medium sm:text-base">
+                {format(parseISO(selectedDate), "EEEE")}
+              </p>
+              <h3 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
+                {format(parseISO(selectedDate), "MMMM d, yyyy")}
+              </h3>
+            </div>
+          </div>
+
+          {sessionsForSelected.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No sessions on this day.</p>
+          ) : (
+            <div className="space-y-4">
+              {sessionsForSelected.map((session) => {
+                const elig = bySessionId[session.id];
+                const spotsLeft = elig?.spotsLeft ?? session.spotsLeft;
+                const isFull = spotsLeft <= 0;
+                const actionLabel = isFull && !elig?.alreadyBooked ? "Waitlist" : "Join";
+
+                return (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    eligibility={elig}
+                    onCardClick={() => onSelectSession(session)}
+                    actionLabel={actionLabel}
+                    onActionClick={() => onSelectSession(session)}
+                    actionDisabled={false}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function BookPageContent({ classes }: BookPageContentProps) {
   const [startDate, setStartDate] = useState(() => format(defaultStart, "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(() => format(defaultEnd, "yyyy-MM-dd"));
   const [itemId, setItemId] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<MemberSession | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [page, setPage] = useState(1);
 
   const filters = useMemo(() => ({ startDate, endDate, itemId: itemId || undefined }), [startDate, endDate, itemId]);
   const { data: sessions = [], isLoading } = useMemberSessions(filters);
@@ -58,35 +139,18 @@ export function BookPageContent({ classes }: BookPageContentProps) {
     [sessions],
   );
 
-  const totalPages = Math.max(1, Math.ceil(sortedSessionsFlat.length / SESSIONS_PER_PAGE));
+  const rangeStart = startDate <= endDate ? startDate : endDate;
+  const rangeEnd = startDate <= endDate ? endDate : startDate;
 
-  useEffect(() => {
-    setPage(1);
-  }, [startDate, endDate, itemId]);
-
-  useEffect(() => {
-    setPage((p) => Math.min(p, totalPages));
-  }, [totalPages]);
-
-  const paginatedSessions = useMemo(() => {
-    const start = (page - 1) * SESSIONS_PER_PAGE;
-    return sortedSessionsFlat.slice(start, start + SESSIONS_PER_PAGE);
-  }, [sortedSessionsFlat, page]);
-
-  const sessionIds = useMemo(() => paginatedSessions.map((s) => s.id), [paginatedSessions]);
-  const { bySessionId } = useSessionEligibilityBatch(sessionIds, sessionIds.length > 0);
-
-  const handleSelectSession = (s: MemberSession) => {
-    setSelectedSession(s);
-    setModalOpen(true);
-  };
-
-  const startDateObj = startDate ? new Date(startDate + "T00:00:00") : undefined;
-  const endDateObj = endDate ? new Date(endDate + "T00:00:00") : undefined;
+  const daysInRange = useMemo(() => {
+    const start = parseISO(rangeStart);
+    const end = parseISO(rangeEnd);
+    return eachDayOfInterval({ start, end }).map((d) => format(d, "yyyy-MM-dd"));
+  }, [rangeStart, rangeEnd]);
 
   const sessionsByDate = useMemo(() => {
     const acc: Record<string, MemberSession[]> = {};
-    for (const session of paginatedSessions) {
+    for (const session of sortedSessionsFlat) {
       const dateKey = session.date;
       // eslint-disable-next-line security/detect-object-injection -- dateKey is session.date
       const bucket = acc[dateKey];
@@ -97,15 +161,37 @@ export function BookPageContent({ classes }: BookPageContentProps) {
       } else bucket.push(session);
     }
     return acc;
-  }, [paginatedSessions]);
+  }, [sortedSessionsFlat]);
 
-  const sortedDates = useMemo(() => Object.keys(sessionsByDate).sort(), [sessionsByDate]);
+  const datesWithSessions = useMemo(() => new Set(Object.keys(sessionsByDate)), [sessionsByDate]);
 
-  const getSessionsForDate = (d: string): MemberSession[] => {
-    // eslint-disable-next-line security/detect-object-injection -- d is date key
-    const bucket = sessionsByDate[d];
-    return bucket ?? []; // eslint-disable-line @typescript-eslint/no-unnecessary-condition -- Record access can be undefined
+  useEffect(() => {
+    if (daysInRange.length === 0) {
+      setSelectedDate(null);
+      return;
+    }
+    setSelectedDate((prev) => {
+      if (prev && daysInRange.includes(prev)) return prev;
+      const firstWithSessions = daysInRange.find((d) => getSessionsOnDate(sessionsByDate, d).length > 0);
+      return firstWithSessions ?? daysInRange[0];
+    });
+  }, [startDate, endDate, daysInRange, sessionsByDate]);
+
+  const sessionsForSelected = useMemo(
+    () => (selectedDate ? getSessionsOnDate(sessionsByDate, selectedDate) : []),
+    [selectedDate, sessionsByDate],
+  );
+
+  const sessionIds = useMemo(() => sessionsForSelected.map((s) => s.id), [sessionsForSelected]);
+  const { bySessionId } = useSessionEligibilityBatch(sessionIds, sessionIds.length > 0);
+
+  const handleSelectSession = (s: MemberSession) => {
+    setSelectedSession(s);
+    setModalOpen(true);
   };
+
+  const startDateObj = startDate ? new Date(startDate + "T00:00:00") : undefined;
+  const endDateObj = endDate ? new Date(endDate + "T00:00:00") : undefined;
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6 sm:py-8">
@@ -194,7 +280,20 @@ export function BookPageContent({ classes }: BookPageContentProps) {
       </section>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-1 gap-2 overflow-hidden py-1">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <Skeleton key={i} className="h-[4.25rem] min-w-[3.25rem] shrink-0 rounded-xl sm:min-w-[3.75rem]" />
+              ))}
+            </div>
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-9 w-full max-w-xs" />
+          </div>
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
@@ -205,76 +304,16 @@ export function BookPageContent({ classes }: BookPageContentProps) {
           <p className="mt-1 text-sm">Try adjusting the date range above.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {sortedDates.map((date) => (
-            <div key={date}>
-              <div className="mb-3 flex items-center gap-3 sm:mb-4 sm:gap-4">
-                <div className="bg-primary text-primary-foreground flex flex-col items-center justify-center rounded-lg px-3 py-1.5 shadow-md sm:rounded-xl sm:px-4 sm:py-2">
-                  <span className="text-[10px] font-bold uppercase sm:text-xs">{format(parseISO(date), "MMM")}</span>
-                  <span className="text-xl font-black sm:text-2xl">{format(parseISO(date), "dd")}</span>
-                </div>
-                <h3 className="text-foreground truncate text-base font-bold sm:text-xl">
-                  {format(parseISO(date), "EEEE")}
-                </h3>
-                <div className="bg-border h-px flex-1" />
-              </div>
-              <div className="space-y-4">
-                {getSessionsForDate(date).map((session) => {
-                  const elig = bySessionId[session.id];
-                  const spotsLeft = elig?.spotsLeft ?? session.spotsLeft;
-                  const isFull = spotsLeft <= 0;
-                  const actionLabel = isFull && !elig?.alreadyBooked ? "Waitlist" : "Join";
-
-                  return (
-                    <SessionCard
-                      key={session.id}
-                      session={session}
-                      eligibility={elig}
-                      onCardClick={() => handleSelectSession(session)}
-                      actionLabel={actionLabel}
-                      onActionClick={() => handleSelectSession(session)}
-                      actionDisabled={false}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {totalPages > 1 ? (
-            <Pagination className="mt-8">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (page > 1) setPage((p) => p - 1);
-                    }}
-                    aria-disabled={page <= 1}
-                    className={page <= 1 ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-muted-foreground px-2 text-sm">
-                    Page {page} of {totalPages}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (page < totalPages) setPage((p) => p + 1);
-                    }}
-                    aria-disabled={page >= totalPages}
-                    className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          ) : null}
-        </div>
+        <BookSessionsPanel
+          daysInRange={daysInRange}
+          dateRangeKey={`${rangeStart}|${rangeEnd}`}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          datesWithSessions={datesWithSessions}
+          sessionsForSelected={sessionsForSelected}
+          bySessionId={bySessionId}
+          onSelectSession={handleSelectSession}
+        />
       )}
 
       <BookingModal session={selectedSession} open={modalOpen} onOpenChange={setModalOpen} />
