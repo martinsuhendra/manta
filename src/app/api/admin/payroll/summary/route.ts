@@ -2,8 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { handleApiError, requireAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
+import { perParticipantSessionFeeIdr } from "@/lib/per-participant-session-fee";
+import type { TeacherFeeModel } from "@/lib/teacher-fee-model";
 
 const MAX_DAYS_RANGE = 365;
+
+/** Bookings that count toward per-participant payroll headcount */
+const PAYROLL_BILLABLE_BOOKING_STATUSES = ["CONFIRMED", "COMPLETED"] as const;
+
+interface TeacherFeeConfig {
+  feeAmount: number;
+  feeModel: TeacherFeeModel;
+  perParticipantMinGuarantee: number | null;
+  perParticipantGuaranteeMaxPax: number | null;
+}
+
+function sessionFeeForConfig(config: TeacherFeeConfig | undefined, pax: number): number {
+  if (!config) return 0;
+  if (config.feeModel === "PER_PARTICIPANT") {
+    return perParticipantSessionFeeIdr({
+      ratePerPerson: config.feeAmount,
+      billablePax: pax,
+      minGuarantee: config.perParticipantMinGuarantee,
+      guaranteeMaxPax: config.perParticipantGuaranteeMaxPax,
+    });
+  }
+  return config.feeAmount;
+}
 
 /* eslint-disable complexity */
 export async function GET(request: NextRequest) {
@@ -52,6 +77,26 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const sessionIds = sessions.map((s) => s.id);
+    const paxBySessionId = new Map<string, number>();
+    if (sessionIds.length > 0) {
+      const bookingGroups = await prisma.booking.groupBy({
+        by: ["classSessionId"],
+        where: {
+          classSessionId: { in: sessionIds },
+          status: { in: [...PAYROLL_BILLABLE_BOOKING_STATUSES] },
+        },
+        _sum: { participantCount: true },
+      });
+      for (const g of bookingGroups) {
+        paxBySessionId.set(
+          g.classSessionId,
+          // eslint-disable-next-line no-underscore-dangle -- Prisma groupBy aggregate shape
+          g._sum.participantCount ?? 0,
+        );
+      }
+    }
+
     const pairKeys = [...new Set(sessions.map((s) => `${s.teacherId}:${s.itemId}`))];
     const teacherItemPairs = pairKeys
       .map((key) => {
@@ -64,15 +109,39 @@ export async function GET(request: NextRequest) {
       where: {
         OR: teacherItemPairs.map((p) => ({ teacherId: p.teacherId, itemId: p.itemId })),
       },
-      select: { teacherId: true, itemId: true, feeAmount: true },
+      select: {
+        teacherId: true,
+        itemId: true,
+        feeAmount: true,
+        feeModel: true,
+        perParticipantMinGuarantee: true,
+        perParticipantGuaranteeMaxPax: true,
+      },
     });
 
-    const feeAmountMap = new Map<string, number>();
+    const configByPair = new Map<string, TeacherFeeConfig>();
     for (const ti of teacherItems) {
-      feeAmountMap.set(`${ti.teacherId}:${ti.itemId}`, ti.feeAmount);
+      configByPair.set(`${ti.teacherId}:${ti.itemId}`, {
+        feeAmount: ti.feeAmount,
+        feeModel: ti.feeModel,
+        perParticipantMinGuarantee: ti.perParticipantMinGuarantee,
+        perParticipantGuaranteeMaxPax: ti.perParticipantGuaranteeMaxPax,
+      });
     }
 
-    type ByItem = { itemId: string; itemName: string; sessionsCount: number; feePerSession: number; totalFee: number };
+    type ByItem = {
+      itemId: string;
+      itemName: string;
+      sessionsCount: number;
+      feeModel: TeacherFeeModel;
+      feeAmount: number;
+      perParticipantMinGuarantee: number | null;
+      perParticipantGuaranteeMaxPax: number | null;
+      totalParticipants: number;
+      avgFeePerSession: number;
+      totalFee: number;
+    };
+
     const teacherMap = new Map<
       string,
       {
@@ -87,7 +156,9 @@ export async function GET(request: NextRequest) {
     for (const s of sessions) {
       const tid = s.teacherId!;
       const teacher = s.teacher!;
-      const feePerSession = feeAmountMap.get(`${tid}:${s.itemId}`) ?? 0;
+      const config = configByPair.get(`${tid}:${s.itemId}`);
+      const pax = paxBySessionId.get(s.id) ?? 0;
+      const sessionFee = sessionFeeForConfig(config, pax);
 
       if (!teacherMap.has(tid)) {
         teacherMap.set(tid, {
@@ -105,14 +176,20 @@ export async function GET(request: NextRequest) {
           itemId: s.item.id,
           itemName: s.item.name,
           sessionsCount: 0,
-          feePerSession,
+          feeModel: config?.feeModel ?? "FLAT_PER_SESSION",
+          feeAmount: config?.feeAmount ?? 0,
+          perParticipantMinGuarantee: config?.perParticipantMinGuarantee ?? null,
+          perParticipantGuaranteeMaxPax: config?.perParticipantGuaranteeMaxPax ?? null,
+          totalParticipants: 0,
+          avgFeePerSession: 0,
           totalFee: 0,
         });
       }
       const byItem = row.byItem.get(itemKey)!;
       byItem.sessionsCount += 1;
-      byItem.totalFee += feePerSession;
-      row.totalFee += feePerSession;
+      if (config?.feeModel === "PER_PARTICIPANT") byItem.totalParticipants += pax;
+      byItem.totalFee += sessionFee;
+      row.totalFee += sessionFee;
     }
 
     const rows = Array.from(teacherMap.values()).map((r) => ({
@@ -120,11 +197,21 @@ export async function GET(request: NextRequest) {
       teacherName: r.teacherName,
       teacherEmail: r.teacherEmail,
       sessionsCount: Array.from(r.byItem.values()).reduce((sum, b) => sum + b.sessionsCount, 0),
-      byItem: Array.from(r.byItem.values()).map((b) => ({
-        ...b,
-        feePerSession: Math.round(b.feePerSession * 100) / 100,
-        totalFee: Math.round(b.totalFee * 100) / 100,
-      })),
+      byItem: Array.from(r.byItem.values()).map((b) => {
+        const avgFeePerSession = b.sessionsCount > 0 ? b.totalFee / b.sessionsCount : 0;
+        return {
+          itemId: b.itemId,
+          itemName: b.itemName,
+          sessionsCount: b.sessionsCount,
+          feeModel: b.feeModel,
+          feeAmount: b.feeAmount,
+          perParticipantMinGuarantee: b.perParticipantMinGuarantee,
+          perParticipantGuaranteeMaxPax: b.perParticipantGuaranteeMaxPax,
+          totalParticipants: b.totalParticipants,
+          avgFeePerSession: Math.round(avgFeePerSession * 100) / 100,
+          totalFee: Math.round(b.totalFee * 100) / 100,
+        };
+      }),
       totalFee: Math.round(r.totalFee * 100) / 100,
     }));
 

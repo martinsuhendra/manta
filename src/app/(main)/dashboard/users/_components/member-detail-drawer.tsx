@@ -200,8 +200,8 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
 
   return (
     <>
-      <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-        <DrawerContent className="!w-auto !min-w-fit sm:!max-w-none">
+      <Drawer open={open} onOpenChange={onOpenChange} direction="right" handleOnly>
+        <DrawerContent className="!w-auto !min-w-fit !select-text sm:!max-w-none [&_*]:!select-text">
           <DrawerHeader>{mode && <DrawerHeaderContent mode={mode} canEditRoles={canEditRoles} />}</DrawerHeader>
 
           <div className="overflow-y-auto px-4 pb-4">

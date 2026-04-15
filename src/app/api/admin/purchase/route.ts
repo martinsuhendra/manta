@@ -135,6 +135,7 @@ export async function POST(request: NextRequest) {
         customerPhone: user.phoneNo || undefined,
         productId: validatedData.productId,
         productName: product.name,
+        finishCallbackUrl: null,
       });
 
       snapToken = snapResponse.token;

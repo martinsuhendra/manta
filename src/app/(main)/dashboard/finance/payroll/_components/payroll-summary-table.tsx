@@ -12,7 +12,12 @@ export interface PayrollSummaryRow {
     itemId: string;
     itemName: string;
     sessionsCount: number;
-    feePerSession: number;
+    feeModel: "FLAT_PER_SESSION" | "PER_PARTICIPANT";
+    feeAmount: number;
+    perParticipantMinGuarantee: number | null;
+    perParticipantGuaranteeMaxPax: number | null;
+    totalParticipants: number;
+    avgFeePerSession: number;
     totalFee: number;
   }>;
   totalFee: number;
@@ -23,6 +28,17 @@ interface PayrollSummaryTableProps {
   grandTotalFee: number;
   period: { startDate: string; endDate: string };
   isLoading?: boolean;
+}
+
+function classPayrollLine(b: PayrollSummaryRow["byItem"][number]): string {
+  if (b.feeModel === "PER_PARTICIPANT") {
+    const floor =
+      b.perParticipantMinGuarantee != null && b.perParticipantGuaranteeMaxPax != null
+        ? `; floor ${formatPrice(b.perParticipantMinGuarantee)} if ≤${b.perParticipantGuaranteeMaxPax} pax`
+        : "";
+    return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"}, ${b.totalParticipants} pax @ ${formatPrice(b.feeAmount)}/pax${floor} → ${formatPrice(b.totalFee)} (avg ${formatPrice(b.avgFeePerSession)}/session)`;
+  }
+  return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"} @ ${formatPrice(b.feeAmount)} flat → ${formatPrice(b.totalFee)}`;
 }
 
 export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: PayrollSummaryTableProps) {
@@ -46,7 +62,7 @@ export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: 
           <TableRow>
             <TableHead>Teacher</TableHead>
             <TableHead className="text-right">Sessions</TableHead>
-            <TableHead className="text-right">Breakdown by session</TableHead>
+            <TableHead>Breakdown by class</TableHead>
             <TableHead className="text-right">Total fee</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,14 +76,14 @@ export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: 
                 </div>
               </TableCell>
               <TableCell className="text-right tabular-nums">{row.sessionsCount}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-sm">
+              <TableCell>
+                <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
                   {row.byItem.map((b) => (
-                    <span key={b.itemId}>
-                      {b.itemName}: {b.sessionsCount}
-                    </span>
+                    <li key={b.itemId} className="text-foreground">
+                      {classPayrollLine(b)}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </TableCell>
               <TableCell className="text-right font-medium tabular-nums">{formatPrice(row.totalFee)}</TableCell>
             </TableRow>

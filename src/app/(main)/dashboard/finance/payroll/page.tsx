@@ -43,7 +43,8 @@ export default function PayrollPage() {
           <h1 className="text-2xl font-bold tracking-tight">Payroll</h1>
           <p className="text-muted-foreground text-sm">
             View sessions taught by teacher and total fee to pay (IDR) for the selected period. Only completed sessions
-            are counted. Fee per session is the fixed amount (IDR) set in Teacher fees.
+            are counted. Amounts follow each teacher–class rule in Teacher fees (flat per session or per billable
+            participant).
           </p>
         </div>
 

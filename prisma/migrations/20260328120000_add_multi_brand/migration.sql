@@ -140,7 +140,17 @@ ALTER TABLE "public"."quota_pools" ALTER COLUMN "brandId" SET NOT NULL;
 ALTER TABLE "public"."quota_pools" ADD CONSTRAINT "quota_pools_brandId_fkey" FOREIGN KEY ("brandId") REFERENCES "public"."brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- booking_settings (at most one row in practice)
-ALTER TABLE "public"."booking_settings" ADD COLUMN "brandId" UUID;
+-- Table is created in 20250914070000; IF NOT EXISTS covers shadow DB / ordering edge cases.
+CREATE TABLE IF NOT EXISTS "public"."booking_settings" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "end_booking_period_hours" INTEGER NOT NULL DEFAULT 0,
+    "cancellation_deadline_hours" INTEGER NOT NULL DEFAULT 24,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+    CONSTRAINT "booking_settings_pkey" PRIMARY KEY ("id")
+);
+
+ALTER TABLE "public"."booking_settings" ADD COLUMN IF NOT EXISTS "brandId" UUID;
 
 UPDATE "public"."booking_settings" SET "brandId" = '00000000-0000-4000-8000-000000000001' WHERE "brandId" IS NULL;
 

@@ -54,6 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       customerPhone: transaction.user.phoneNo || undefined,
       productId: transaction.product.id,
       productName: transaction.product.name,
+      finishCallbackUrl: null,
     });
 
     // Update transaction metadata with new token

@@ -266,7 +266,7 @@ export function MembershipDetailDrawer({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-        <DrawerContent className="sm:max-w-lg">
+        <DrawerContent className="select-text sm:max-w-lg [&_*]:select-text">
           <DrawerHeader>
             <DrawerTitle>{getTitle()}</DrawerTitle>
             <DrawerDescription>{getDescription()}</DrawerDescription>
