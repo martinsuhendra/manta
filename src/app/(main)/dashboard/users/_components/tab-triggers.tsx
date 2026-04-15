@@ -7,10 +7,9 @@ import { MemberDetails } from "./schema";
 interface TabTriggersProps {
   memberDetails: MemberDetails | undefined;
   memberRole: string;
-  showBrandsTab?: boolean;
 }
 
-export function TabTriggers({ memberDetails, memberRole, showBrandsTab }: TabTriggersProps) {
+export function TabTriggers({ memberDetails, memberRole }: TabTriggersProps) {
   const isTeacher = memberRole === USER_ROLES.TEACHER;
 
   if (isTeacher) {
@@ -25,7 +24,6 @@ export function TabTriggers({ memberDetails, memberRole, showBrandsTab }: TabTri
             return count > 0 ? <StatusBadge variant="secondary">{count}</StatusBadge> : null;
           })()}
         </TabsTrigger>
-        {showBrandsTab && <TabsTrigger value="brands">Brands</TabsTrigger>}
       </TabsList>
     );
   }
@@ -51,7 +49,6 @@ export function TabTriggers({ memberDetails, memberRole, showBrandsTab }: TabTri
           <StatusBadge variant="secondary">{memberDetails._count.bookings}</StatusBadge>
         )}
       </TabsTrigger>
-      {showBrandsTab && <TabsTrigger value="brands">Brands</TabsTrigger>}
     </TabsList>
   );
 }

@@ -47,30 +47,39 @@ export async function GET() {
       );
     }
 
-    const brandUsers = await prisma.brandUser.findMany({
-      where: { userId: session.user.id },
-      include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-            logoAsset: true,
-            primaryColor: true,
-            accentColor: true,
-            isActive: true,
-            createdAt: true,
-          },
+    const membershipBrandRows = await prisma.membershipBrand.findMany({
+      where: {
+        membership: {
+          userId: session.user.id,
+          status: "ACTIVE",
+          expiredAt: { gt: new Date() },
         },
+      },
+      distinct: ["brandId"],
+      select: { brandId: true },
+    });
+    const accessibleBrandIds = membershipBrandRows.map((row) => row.brandId);
+
+    const brands = await prisma.brand.findMany({
+      where: {
+        isActive: true,
+        ...(accessibleBrandIds.length ? { id: { in: accessibleBrandIds } } : {}),
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+        logoAsset: true,
+        primaryColor: true,
+        accentColor: true,
+        isActive: true,
       },
     });
 
-    const brands = brandUsers
-      .map((bu) => bu.brand)
-      .filter((b) => b.isActive)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-      .map((b) => ({
+    return NextResponse.json(
+      brands.map((b) => ({
         id: b.id,
         name: b.name,
         slug: b.slug,
@@ -78,9 +87,8 @@ export async function GET() {
         primaryColor: b.primaryColor,
         accentColor: b.accentColor,
         isActive: b.isActive,
-      }));
-
-    return NextResponse.json(brands);
+      })),
+    );
   } catch (err) {
     console.error("Failed to fetch accessible brands", err);
     return NextResponse.json({ error: "Failed to fetch brands" }, { status: 500 });

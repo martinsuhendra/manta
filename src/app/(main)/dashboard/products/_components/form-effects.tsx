@@ -51,6 +51,7 @@ export function useFormEffects({
     if (isOpening || productChanged) {
       if (isEdit && product) {
         form.reset({
+          brandIds: product.brandIds,
           name: product.name,
           description: product.description || "",
           price: product.price,

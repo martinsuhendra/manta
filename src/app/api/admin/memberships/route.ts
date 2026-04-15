@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
-import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
+import { getMembershipWhereForBrandAccess, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
@@ -29,11 +29,17 @@ export async function GET(request: NextRequest) {
 
     const { error, brandIds } = await requireBrandAccess(request);
     if (error) return error;
-    const whereBrand = getBrandFilterFromRequest(request, brandIds);
+    const whereBrand = getMembershipWhereForBrandAccess(request, brandIds);
 
     const memberships = await prisma.membership.findMany({
       where: whereBrand,
       include: {
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         user: {
           select: {
             id: true,
@@ -64,7 +70,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(memberships);
+    return NextResponse.json(
+      memberships.map((membership) => ({
+        ...membership,
+        brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+        brands: membership.membershipBrands.map((mb) => mb.brand),
+      })),
+    );
   } catch (error) {
     console.error("Error fetching memberships:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -89,10 +101,20 @@ export async function POST(request: NextRequest) {
     // Get product details to calculate expiration and quota
     const product = await prisma.product.findUnique({
       where: { id: validatedData.productId },
+      include: {
+        productBrands: {
+          select: { brandId: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
-
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const productBrandIds = product.productBrands.map((pb) => pb.brandId);
+    if (!productBrandIds.length) {
+      return NextResponse.json({ error: "Product is not linked to any brand" }, { status: 400 });
     }
 
     // Check if user exists
@@ -113,12 +135,20 @@ export async function POST(request: NextRequest) {
       data: {
         userId: validatedData.userId,
         productId: validatedData.productId,
-        brandId: product.brandId,
         status: validatedData.status,
         joinDate: validatedData.joinDate ? new Date(validatedData.joinDate) : undefined,
         expiredAt,
+        membershipBrands: {
+          create: productBrandIds.map((brandId) => ({ brandId })),
+        },
       },
       include: {
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         user: {
           select: {
             id: true,
@@ -138,7 +168,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(membership, { status: 201 });
+    return NextResponse.json(
+      {
+        ...membership,
+        brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+        brands: membership.membershipBrands.map((mb) => mb.brand),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });

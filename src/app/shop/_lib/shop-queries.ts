@@ -33,7 +33,7 @@ export async function getActiveProducts(brandId?: string) {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
-        ...(brandId ? { brandId } : {}),
+        ...(brandId ? { productBrands: { some: { brandId } } } : {}),
       },
       orderBy: { position: "asc" },
       select: {
@@ -48,10 +48,14 @@ export async function getActiveProducts(brandId?: string) {
         whatIsIncluded: true,
         features: true,
         createdAt: true,
+        productBrands: {
+          select: { brandId: true },
+        },
       },
     });
     return products.map((product) => ({
       ...product,
+      brandIds: product.productBrands.map((pb) => pb.brandId),
       price: Number(product.price),
       createdAt: product.createdAt.toISOString(),
     }));
@@ -114,7 +118,16 @@ export async function getInstructors(brandId?: string) {
     const users = await prisma.user.findMany({
       where: {
         role: USER_ROLES.TEACHER,
-        ...(brandId ? { brandUsers: { some: { brandId } } } : {}),
+        ...(brandId
+          ? {
+              teacherItems: {
+                some: {
+                  item: { itemBrands: { some: { brandId } } },
+                  isActive: true,
+                },
+              },
+            }
+          : {}),
       },
       select: {
         id: true,

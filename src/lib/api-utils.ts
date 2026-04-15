@@ -60,7 +60,7 @@ export async function requireBrandAccess(request: NextRequest) {
     };
   }
 
-  if ([USER_ROLES.DEVELOPER, USER_ROLES.SUPERADMIN].includes(session.user.role ?? "")) {
+  if ([USER_ROLES.ADMIN, USER_ROLES.TEACHER, USER_ROLES.DEVELOPER, USER_ROLES.SUPERADMIN].includes(session.user.role)) {
     return {
       error: null,
       brandIds: null,
@@ -70,22 +70,29 @@ export async function requireBrandAccess(request: NextRequest) {
 
   const activeBrandId = request.headers.get("x-brand-id");
 
-  const brandUsers = await prisma.brandUser.findMany({
-    where: { userId: session.user.id },
+  const activeMembershipBrandRows = await prisma.membershipBrand.findMany({
+    where: {
+      membership: {
+        userId: session.user.id,
+        status: "ACTIVE",
+        expiredAt: { gt: new Date() },
+      },
+    },
+    distinct: ["brandId"],
     select: { brandId: true },
   });
 
-  const accessibleBrandIds = brandUsers.map((bu) => bu.brandId);
-
+  let accessibleBrandIds = activeMembershipBrandRows.map((row) => row.brandId);
   if (!accessibleBrandIds.length) {
-    return {
-      error: NextResponse.json({ error: "No brand access configured" }, { status: 403 }),
-      brandIds: null,
-      session,
-    };
+    const activeBrands = await prisma.brand.findMany({
+      where: { isActive: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    accessibleBrandIds = activeBrands.map((brand) => brand.id);
   }
 
-  if (!activeBrandId) {
+  if (!activeBrandId || activeBrandId === "ALL") {
     return { error: null, brandIds: accessibleBrandIds, session };
   }
 
@@ -107,6 +114,44 @@ export function getBrandFilterFromRequest(request: NextRequest, brandIds: string
   if (brandIds && brandIds.length === 1) return { brandId: brandIds[0] };
   if (brandIds && brandIds.length > 1) return { brandId: { in: brandIds } };
 
+  return {};
+}
+
+export function getProductWhereForBrandAccess(
+  request: NextRequest,
+  brandIds: string[] | null,
+): Prisma.ProductWhereInput {
+  const filter = getBrandFilterFromRequest(request, brandIds);
+  if (Object.keys(filter).length === 0) return {};
+
+  const raw = (filter as { brandId?: string | { in: string[] } }).brandId;
+  if (raw === undefined) return {};
+
+  if (typeof raw === "string") {
+    return { productBrands: { some: { brandId: raw } } };
+  }
+  if (typeof raw === "object" && "in" in raw && Array.isArray((raw as { in: string[] }).in)) {
+    return { productBrands: { some: { brandId: { in: (raw as { in: string[] }).in } } } };
+  }
+  return {};
+}
+
+export function getMembershipWhereForBrandAccess(
+  request: NextRequest,
+  brandIds: string[] | null,
+): Prisma.MembershipWhereInput {
+  const filter = getBrandFilterFromRequest(request, brandIds);
+  if (Object.keys(filter).length === 0) return {};
+
+  const raw = (filter as { brandId?: string | { in: string[] } }).brandId;
+  if (raw === undefined) return {};
+
+  if (typeof raw === "string") {
+    return { membershipBrands: { some: { brandId: raw } } };
+  }
+  if (typeof raw === "object" && "in" in raw && Array.isArray((raw as { in: string[] }).in)) {
+    return { membershipBrands: { some: { brandId: { in: (raw as { in: string[] }).in } } } };
+  }
   return {};
 }
 

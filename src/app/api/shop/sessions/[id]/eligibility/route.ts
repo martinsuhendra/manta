@@ -118,9 +118,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: true,
         memberships: {
           where: {
-            brandId: selectedBrandId,
             status: "ACTIVE",
             expiredAt: { gt: new Date() },
+            membershipBrands: {
+              some: { brandId: selectedBrandId },
+            },
           },
           include: {
             product: {

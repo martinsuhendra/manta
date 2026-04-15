@@ -23,32 +23,16 @@ model Brand {
   updatedAt DateTime @updatedAt @db.Timestamp(6)
 
   // Relations (all scoped models point here)
-  users           BrandUser[]
-  products        Product[]
+  productBrands   ProductBrand[]
   itemBrands      ItemBrand[]
   classSessions   ClassSession[]
-  memberships     Membership[]
+  membershipBrands MembershipBrand[]
   transactions    Transaction[]
   bookings        Booking[]
   bookingSettings BookingSettings[]
   quotaPools      QuotaPool[]
 
   @@map("brands")
-}
-
-model BrandUser {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  brandId   String   @db.Uuid
-  userId    String   @db.Uuid
-  role      String   // role within this brand (ADMIN, TEACHER, MEMBER)
-  isDefault Boolean  @default(false) // default brand for this user
-  createdAt DateTime @default(now()) @db.Timestamp(6)
-
-  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([brandId, userId])
-  @@map("brand_users")
 }
 
 model Account {
@@ -107,7 +91,6 @@ model User {
   transactions  Transaction[]
   freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
-  brandUsers              BrandUser[]
 
   @@map("users")
 }
@@ -143,7 +126,6 @@ model PasswordResetToken {
 
 model Product {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  brandId        String   @db.Uuid
   name           String
   description    String?
   price          Decimal  @db.Decimal(10, 2)
@@ -163,11 +145,24 @@ model Product {
   transactions Transaction[]
   productItems ProductItem[]
   quotaPools   QuotaPool[]
-  brand        Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  productBrands ProductBrand[]
 
   @@index([isActive, position]) // Index for active products with ordering
   @@index([isActive, createdAt]) // Index for active products by creation date
   @@map("products")
+}
+
+model ProductBrand {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  brandId   String   @map("brand_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, brandId])
+  @@map("product_brands")
 }
 
 model Transaction {
@@ -197,7 +192,6 @@ model Membership {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String   @map("user_id") @db.Uuid
   productId     String   @map("product_id") @db.Uuid
-  brandId       String   @db.Uuid
   status        String   @default("ACTIVE")
   joinDate      DateTime @default(now()) @map("join_date") @db.Timestamp(6)
   expiredAt     DateTime @map("expired_at") @db.Timestamp(6)
@@ -211,9 +205,22 @@ model Membership {
   bookings   Booking[]
   quotaUsage MembershipQuotaUsage[]
   freezeRequests MembershipFreezeRequest[]
-  brand      Brand                  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  membershipBrands MembershipBrand[]
 
   @@map("memberships")
+}
+
+model MembershipBrand {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  brandId      String   @map("brand_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, brandId])
+  @@map("membership_brands")
 }
 
 model MembershipFreezeRequest {

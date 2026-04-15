@@ -103,6 +103,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const membership = await prisma.membership.findUnique({
       where: { id: membershipId },
       include: {
+        membershipBrands: {
+          select: { brandId: true },
+        },
         product: {
           include: {
             productItems: {
@@ -121,7 +124,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!membership) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
-    if (membership.brandId !== selectedBrandId) {
+    const membershipBrandIds = membership.membershipBrands.map((mb) => mb.brandId);
+    if (!membershipBrandIds.includes(selectedBrandId)) {
       return NextResponse.json({ error: "Membership does not belong to selected brand" }, { status: 400 });
     }
 

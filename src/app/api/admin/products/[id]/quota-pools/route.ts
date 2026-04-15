@@ -63,17 +63,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Verify product exists
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        productBrands: {
+          select: { brandId: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const primaryBrandId = product.productBrands[0]?.brandId;
+    if (!primaryBrandId) {
+      return NextResponse.json({ error: "Product must be linked to at least one brand" }, { status: 400 });
+    }
+
     const quotaPool = await prisma.quotaPool.create({
       data: {
         ...validatedData,
         productId: id,
-        brandId: product.brandId,
+        brandId: primaryBrandId,
       },
       include: {
         _count: {

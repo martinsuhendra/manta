@@ -57,11 +57,11 @@ function ProductSuccessHero({ isEdit, savedProduct }: { isEdit: boolean; savedPr
                 <Sparkles className="h-3 w-3" />
                 {isEdit ? "Changes saved" : "New product live"}
               </Badge>
-              {savedProduct.brand?.name ? (
-                <Badge variant="outline" className="font-normal">
-                  {savedProduct.brand.name}
+              {savedProduct.brands.map((brand) => (
+                <Badge key={brand.id} variant="outline" className="font-normal">
+                  {brand.name}
                 </Badge>
-              ) : null}
+              ))}
             </div>
             <DialogTitle className="text-2xl font-semibold tracking-tight sm:text-3xl">
               {isEdit ? "Product updated" : "Product created"}

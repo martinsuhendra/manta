@@ -25,16 +25,21 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   let brands = activeBrands;
   if (session?.user.id && ![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
-    const brandUsers = await prisma.brandUser.findMany({
-      where: { userId: session.user.id, brand: { isActive: true } },
-      select: {
-        isDefault: true,
-        createdAt: true,
-        brand: { select: { id: true, name: true, slug: true, primaryColor: true, accentColor: true, isActive: true } },
+    const membershipBrandRows = await prisma.membershipBrand.findMany({
+      where: {
+        membership: {
+          userId: session.user.id,
+          status: "ACTIVE",
+          expiredAt: { gt: new Date() },
+        },
       },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      distinct: ["brandId"],
+      select: { brandId: true },
     });
-    brands = brandUsers.map((brandUser) => brandUser.brand);
+    const membershipBrandIds = membershipBrandRows.map((row) => row.brandId);
+    brands = membershipBrandIds.length
+      ? activeBrands.filter((brand) => membershipBrandIds.includes(brand.id))
+      : activeBrands;
   }
 
   const firstAccessibleBrandId = brands[0]?.id;

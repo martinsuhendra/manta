@@ -32,7 +32,6 @@ import { OverviewTab } from "./overview-tab";
 import { Member, MemberDetails } from "./schema";
 import { TabTriggers } from "./tab-triggers";
 import { AttendanceTab } from "./tabs/attendance-tab";
-import { BrandsTab } from "./tabs/brands-tab";
 import { MembershipsTab } from "./tabs/memberships-tab";
 import { TeacherSessionsTab } from "./tabs/teacher-sessions-tab";
 import { TransactionsTab } from "./tabs/transactions-tab";
@@ -210,27 +209,20 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 <LoadingSpinner />
               ) : (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col justify-start gap-6">
-                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} showBrandsTab={canEditRoles} />
+                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} />
 
                   <TabsContent value="overview" className="relative flex flex-col gap-4 overflow-auto">
                     <OverviewTab member={member} memberDetails={memberDetails} />
                   </TabsContent>
 
                   {member.role === USER_ROLES.TEACHER ? (
-                    <>
-                      <TabsContent value="sessions" className="flex flex-col">
-                        {memberDetails && "classSessions" in memberDetails ? (
-                          <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
-                        ) : (
-                          <LoadingSpinner />
-                        )}
-                      </TabsContent>
-                      {canEditRoles && (
-                        <TabsContent value="brands" className="flex flex-col">
-                          <BrandsTab userId={member.id} />
-                        </TabsContent>
+                    <TabsContent value="sessions" className="flex flex-col">
+                      {memberDetails && "classSessions" in memberDetails ? (
+                        <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
+                      ) : (
+                        <LoadingSpinner />
                       )}
-                    </>
+                    </TabsContent>
                   ) : (
                     <>
                       <TabsContent value="memberships" className="flex flex-col">
@@ -260,12 +252,6 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                           <LoadingSpinner />
                         )}
                       </TabsContent>
-
-                      {canEditRoles && (
-                        <TabsContent value="brands" className="flex flex-col">
-                          <BrandsTab userId={member.id} />
-                        </TabsContent>
-                      )}
                     </>
                   )}
                 </Tabs>

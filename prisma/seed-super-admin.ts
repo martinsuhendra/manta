@@ -36,6 +36,11 @@ async function seedSuperAdmin() {
     for (const seedUser of seedUsers) {
       const existingUser = await prisma.user.findUnique({
         where: { email: seedUser.email },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+        },
       });
 
       if (existingUser) {
@@ -52,6 +57,11 @@ async function seedSuperAdmin() {
           role: seedUser.role,
           name: seedUser.name,
           emailVerified: new Date(),
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
         },
       });
 

@@ -10,7 +10,7 @@ export async function GET() {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
-        ...(activeBrandId ? { brandId: activeBrandId } : {}),
+        ...(activeBrandId ? { productBrands: { some: { brandId: activeBrandId } } } : {}),
       },
       orderBy: { position: "asc" },
       select: {
@@ -24,10 +24,18 @@ export async function GET() {
         whatIsIncluded: true,
         features: true,
         createdAt: true,
+        productBrands: {
+          select: { brandId: true },
+        },
       },
     });
 
-    return NextResponse.json(products);
+    return NextResponse.json(
+      products.map((product) => ({
+        ...product,
+        brandIds: product.productBrands.map((pb) => pb.brandId),
+      })),
+    );
   } catch (error) {
     console.error("Failed to fetch public products:", error);
     return NextResponse.json(

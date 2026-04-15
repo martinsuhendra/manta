@@ -62,8 +62,8 @@ export type MembershipQuotaUsage = z.infer<typeof membershipQuotaUsageSchema>;
 // Enhanced Product schema
 export const productSchema = z.object({
   id: z.string(),
-  brandId: z.string().optional(),
-  brand: z.object({ id: z.string(), name: z.string() }).optional(),
+  brandIds: z.array(z.string()).default([]),
+  brands: z.array(z.object({ id: z.string(), name: z.string() })).default([]),
   name: z.string(),
   description: z.string().nullable(),
   price: z.number(),

@@ -52,7 +52,8 @@ export function ProductFormTabbedDialog({
   });
 
   const { hasBasicErrors } = useFormValidation(form);
-  const { items, existingProductItems, existingQuotaPools } = useProductData(product?.id, isEdit);
+  const selectedBrandIds = form.watch("brandIds");
+  const { items, existingProductItems, existingQuotaPools } = useProductData(product?.id, isEdit, selectedBrandIds);
 
   useFormEffects({
     form,

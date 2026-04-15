@@ -2,6 +2,7 @@ import { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 export const formSchema = z.object({
+  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   price: z.coerce.number().positive("Price must be positive"),
@@ -17,6 +18,7 @@ export const formSchema = z.object({
 export type FormData = z.infer<typeof formSchema>;
 
 export const DEFAULT_FORM_VALUES: FormData = {
+  brandIds: [],
   name: "",
   description: "",
   price: 0,
@@ -32,7 +34,7 @@ export const DEFAULT_FORM_VALUES: FormData = {
 export function useFormValidation(form: UseFormReturn<FormData>) {
   const hasBasicErrors = () => {
     const errors = form.formState.errors;
-    return !!(errors.name || errors.price || errors.validDays);
+    return !!(errors.brandIds || errors.name || errors.price || errors.validDays);
   };
 
   return { hasBasicErrors };

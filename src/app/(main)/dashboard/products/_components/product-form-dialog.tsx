@@ -24,6 +24,7 @@ import { ProductFormFields } from "./product-form-fields";
 import { Product } from "./schema";
 
 const formSchema = z.object({
+  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   price: z.coerce.number().positive("Price must be positive"),
@@ -40,6 +41,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const DEFAULT_FORM_VALUES: FormData = {
+  brandIds: [],
   name: "",
   description: "",
   price: 0,
@@ -138,6 +140,7 @@ export function ProductFormDialog({
   React.useEffect(() => {
     if (isEdit && product) {
       form.reset({
+        brandIds: product.brandIds,
         name: product.name,
         description: product.description || "",
         price: product.price,

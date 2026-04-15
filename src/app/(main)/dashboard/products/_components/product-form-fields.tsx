@@ -13,10 +13,12 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useBrandsAdmin } from "@/hooks/use-brands-query";
 import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
 import { CLOUDINARY_UPLOAD_TARGETS } from "@/lib/cloudinary-validation";
 
 interface FormData {
+  brandIds: string[];
   name: string;
   description?: string;
   price: number;
@@ -48,10 +50,44 @@ export function ProductFormFields({
   hideButtons = false,
 }: ProductFormFieldsProps) {
   const [isUploading, setIsUploading] = React.useState(false);
+  const { data: brands = [] } = useBrandsAdmin();
+  const activeBrands = React.useMemo(() => brands.filter((brand) => brand.isActive), [brands]);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-1">
+        <FormField
+          control={form.control}
+          name="brandIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Brands</FormLabel>
+              <FormControl>
+                <div className="max-h-44 space-y-2 overflow-y-auto rounded-md border p-3">
+                  {activeBrands.map((brand) => (
+                    <label key={brand.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={field.value.includes(brand.id)}
+                        disabled={mutation.isPending}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            field.onChange([...field.value, brand.id]);
+                            return;
+                          }
+                          field.onChange(field.value.filter((id) => id !== brand.id));
+                        }}
+                      />
+                      <span>{brand.name}</span>
+                    </label>
+                  ))}
+                  {!activeBrands.length && <p className="text-muted-foreground text-sm">No active brands available.</p>}
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="name"

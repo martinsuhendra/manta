@@ -4,7 +4,6 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
-import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES, DEFAULT_USER_ROLE } from "@/lib/types";
 
@@ -45,9 +44,6 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         phoneNo: true,
-        image: true,
-        avatarAsset: true,
-        bio: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -63,13 +59,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(
-      users.map((user) => ({
-        ...user,
-        avatarAsset: parseCloudinaryAsset(user.avatarAsset),
-        image: resolveAssetUrl(user.avatarAsset, user.image),
-      })),
-    );
+    return NextResponse.json(users);
   } catch (error) {
     console.error("Failed to fetch users:", error);
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
@@ -102,6 +92,7 @@ export async function POST(request: NextRequest) {
     // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email },
+      select: { id: true },
     });
 
     if (existingUser) {
@@ -117,7 +108,6 @@ export async function POST(request: NextRequest) {
         phoneNo: validatedData.phoneNo,
         avatarAsset: avatarAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,
-        bio: validatedData.bio ?? undefined,
       },
       include: {
         _count: {
