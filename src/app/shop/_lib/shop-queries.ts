@@ -132,13 +132,11 @@ export async function getInstructors(brandId?: string) {
       select: {
         id: true,
         name: true,
-        image: true,
         email: true,
-        bio: true,
       },
       take: 4,
     });
-    return users.map(({ bio, ...rest }) => ({ ...rest, description: bio }));
+    return users.map((user) => ({ ...user, image: null, description: null }));
   } catch (error) {
     console.error("Failed to fetch instructors:", error);
     return [];
