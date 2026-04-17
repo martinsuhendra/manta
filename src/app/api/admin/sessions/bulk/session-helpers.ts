@@ -4,6 +4,7 @@ interface Item {
   schedules: Array<{
     dayOfWeek: number;
     startTime: string;
+    teacherId: string | null;
   }>;
 }
 
@@ -66,7 +67,7 @@ export function generateAutomaticSessions(
         const endTime = calculateEndTimeFn(schedule.startTime, item.duration);
         sessionsToCreate.push({
           itemId: item.id,
-          teacherId: null,
+          teacherId: schedule.teacherId ?? null,
           date: new Date(date),
           startTime: schedule.startTime,
           endTime,

@@ -10,12 +10,21 @@ function timeToMinutes(time: string): number {
 export const itemScheduleSchema = z.object({
   id: z.string(),
   itemId: z.string(),
+  teacherId: z.string().uuid().nullable().optional(),
   dayOfWeek: z.number(),
   startTime: z.string(),
   endTime: z.string(),
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  teacher: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      email: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type ItemSchedule = z.infer<typeof itemScheduleSchema>;
@@ -92,6 +101,7 @@ export const createItemSchema = z.object({
       z
         .object({
           dayOfWeek: z.number().min(0).max(6, "Day of week must be 0-6"),
+          teacherId: z.string().uuid().nullable().optional(),
           startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
           endTime: z
             .string()
@@ -151,6 +161,7 @@ export type UpdateItemForm = z.infer<typeof updateItemSchema>;
 
 export const createItemScheduleSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
+  teacherId: z.string().uuid().nullable().optional(),
   dayOfWeek: z.number().min(0).max(6, "Day of week must be 0-6"),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),

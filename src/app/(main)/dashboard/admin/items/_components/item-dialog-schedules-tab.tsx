@@ -7,6 +7,7 @@ import { UseFormReturn, useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTeachers } from "@/hooks/use-users-query";
 
 import { CreateItemForm, DAY_OF_WEEK_LABELS, TIME_SLOTS } from "./schema";
 
@@ -15,6 +16,7 @@ const DEFAULT_START_TIME = "09:00";
 const DEFAULT_DURATION = 60;
 const MINUTES_PER_DAY = 24 * 60;
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
 
 // Types
 interface ItemDialogSchedulesTabProps {
@@ -24,6 +26,7 @@ interface ItemDialogSchedulesTabProps {
 interface ScheduleGroup {
   days: number[];
   startTime: string;
+  teacherId: string | null;
 }
 
 interface Schedule {
@@ -31,6 +34,7 @@ interface Schedule {
   startTime: string;
   endTime: string;
   isActive: boolean;
+  teacherId?: string | null;
 }
 
 // Helper functions
@@ -71,19 +75,23 @@ function clampStartTimeForDuration(startTime: string, duration: number): string 
 function convertSchedulesToGroups(schedules: Schedule[]): ScheduleGroup[] {
   if (!schedules || schedules.length === 0) return [];
 
-  const groupedByTime = new Map<string, number[]>();
+  const groupedByTime = new Map<string, ScheduleGroup>();
 
   schedules.forEach((schedule) => {
-    const key = schedule.startTime;
+    const key = `${schedule.startTime}|${schedule.teacherId ?? ""}`;
     if (!groupedByTime.has(key)) {
-      groupedByTime.set(key, []);
+      groupedByTime.set(key, {
+        days: [],
+        startTime: schedule.startTime,
+        teacherId: schedule.teacherId ?? null,
+      });
     }
-    groupedByTime.get(key)!.push(schedule.dayOfWeek);
+    groupedByTime.get(key)!.days.push(schedule.dayOfWeek);
   });
 
-  return Array.from(groupedByTime.entries()).map(([startTime, days]) => ({
-    days: [...days].sort((a, b) => a - b),
-    startTime,
+  return Array.from(groupedByTime.values()).map((group) => ({
+    ...group,
+    days: [...group.days].sort((a, b) => a - b),
   }));
 }
 
@@ -99,6 +107,7 @@ function convertGroupsToSchedules(groups: ScheduleGroup[], duration: number): Sc
       if (endMinutes < MINUTES_PER_DAY) {
         schedules.push({
           dayOfWeek: dayIndex,
+          teacherId: group.teacherId,
           startTime: group.startTime,
           endTime: minutesToTime(endMinutes),
           isActive: true,
@@ -156,10 +165,12 @@ interface TimeGroupProps {
   groupIndex: number;
   duration: number;
   scheduleGroups: ScheduleGroup[];
+  teacherOptions: Array<{ id: string; label: string }>;
   onRemove: () => void;
   onToggleDay: (dayIndex: number) => void;
   onToggleEveryday: (checked: boolean) => void;
   onStartTimeChange: (startTime: string) => void;
+  onTeacherChange: (teacherId: string | null) => void;
 }
 
 const TimeGroup = React.memo(
@@ -168,10 +179,12 @@ const TimeGroup = React.memo(
     groupIndex,
     duration,
     scheduleGroups,
+    teacherOptions,
     onRemove,
     onToggleDay,
     onToggleEveryday,
     onStartTimeChange,
+    onTeacherChange,
   }: TimeGroupProps) => {
     const isEveryday = group.days.length === 7;
     const durationToUse = duration > 0 ? duration : DEFAULT_DURATION;
@@ -207,6 +220,10 @@ const TimeGroup = React.memo(
       if (isEveryday) return "Everyday";
       return group.days.map((dayIndex) => DAY_OF_WEEK_LABELS[dayIndex]).join(", ");
     }, [isEveryday, group.days]);
+    const selectedTeacherLabel = React.useMemo(() => {
+      if (!group.teacherId) return "No default";
+      return teacherOptions.find((teacher) => teacher.id === group.teacherId)?.label ?? "Unknown teacher";
+    }, [group.teacherId, teacherOptions]);
 
     return (
       <div className="space-y-4 rounded-lg border p-4">
@@ -282,13 +299,33 @@ const TimeGroup = React.memo(
               </p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Default Teacher</label>
+            <Select
+              value={group.teacherId ?? NO_DEFAULT_TEACHER}
+              onValueChange={(value) => onTeacherChange(value === NO_DEFAULT_TEACHER ? null : value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select a default teacher" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_DEFAULT_TEACHER}>No default</SelectItem>
+                {teacherOptions.map((teacher) => (
+                  <SelectItem key={teacher.id} value={teacher.id}>
+                    {teacher.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Preview */}
         {group.days.length > 0 && (
           <div className="bg-muted rounded-md p-2">
             <p className="text-muted-foreground text-xs">
-              {selectedDaysText} at {group.startTime} - {calculatedEndTime}
+              {selectedDaysText} at {group.startTime} - {calculatedEndTime} ({selectedTeacherLabel})
             </p>
           </div>
         )}
@@ -301,14 +338,23 @@ TimeGroup.displayName = "TimeGroup";
 
 // Main component
 export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
+  const { data: teachers = [] } = useTeachers();
   const { replace } = useFieldArray({
     control: form.control,
     name: "schedules",
   });
+  const teacherOptions = React.useMemo(
+    () =>
+      teachers.map((teacher) => ({
+        id: teacher.id,
+        label: teacher.name || teacher.email || "Unnamed teacher",
+      })),
+    [teachers],
+  );
 
   const duration = form.watch("duration");
   const [scheduleGroups, setScheduleGroups] = React.useState<ScheduleGroup[]>([
-    { days: [], startTime: DEFAULT_START_TIME },
+    { days: [], startTime: DEFAULT_START_TIME, teacherId: null },
   ]);
   const [isInitialized, setIsInitialized] = React.useState(false);
 
@@ -341,6 +387,7 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
       nextGroups.every(
         (g, i) =>
           g.startTime === scheduleGroups[i].startTime &&
+          g.teacherId === scheduleGroups[i].teacherId &&
           g.days.length === scheduleGroups[i].days.length &&
           g.days.every((d, j) => d === scheduleGroups[i].days[j]),
       );
@@ -352,7 +399,7 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
 
   // Handlers
   const handleAddGroup = React.useCallback(() => {
-    setScheduleGroups((prev) => [...prev, { days: [], startTime: DEFAULT_START_TIME }]);
+    setScheduleGroups((prev) => [...prev, { days: [], startTime: DEFAULT_START_TIME, teacherId: null }]);
   }, []);
 
   const handleRemoveGroup = React.useCallback((index: number) => {
@@ -394,6 +441,14 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
     });
   }, []);
 
+  const handleTeacherChange = React.useCallback((groupIndex: number, teacherId: string | null) => {
+    setScheduleGroups((prev) => {
+      const newGroups = [...prev];
+      newGroups[groupIndex] = { ...newGroups[groupIndex], teacherId };
+      return newGroups;
+    });
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -411,10 +466,12 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
             groupIndex={groupIndex}
             duration={duration}
             scheduleGroups={scheduleGroups}
+            teacherOptions={teacherOptions}
             onRemove={() => handleRemoveGroup(groupIndex)}
             onToggleDay={(dayIndex) => handleToggleDay(groupIndex, dayIndex)}
             onToggleEveryday={(checked) => handleToggleEveryday(groupIndex, checked)}
             onStartTimeChange={(startTime) => handleStartTimeChange(groupIndex, startTime)}
+            onTeacherChange={(teacherId) => handleTeacherChange(groupIndex, teacherId)}
           />
         ))}
 

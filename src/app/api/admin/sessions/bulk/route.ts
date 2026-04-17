@@ -56,6 +56,11 @@ export async function POST(request: NextRequest) {
       include: {
         schedules: {
           where: { isActive: true },
+          select: {
+            dayOfWeek: true,
+            startTime: true,
+            teacherId: true,
+          },
         },
         itemBrands: {
           select: { brandId: true },

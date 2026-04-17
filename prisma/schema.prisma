@@ -88,6 +88,7 @@ model User {
   memberships   Membership[]
   sessions      Session[]
   teacherItems  TeacherItem[]  @relation("TeacherItems")
+  itemScheduleDefaults ItemSchedule[] @relation("ItemScheduleDefaultTeacher")
   transactions  Transaction[]
   freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
@@ -304,6 +305,7 @@ model TeacherItem {
 model ItemSchedule {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   itemId    String   @map("item_id") @db.Uuid
+  teacherId String?  @map("teacher_id") @db.Uuid
   dayOfWeek Int      @map("day_of_week")
   startTime String   @map("start_time")
   endTime   String   @map("end_time")
@@ -311,7 +313,9 @@ model ItemSchedule {
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @updatedAt @db.Timestamp(6)
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  teacher   User?    @relation("ItemScheduleDefaultTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
 
+  @@index([teacherId])
   @@map("item_schedules")
 }
 

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { getItemWhereForBrandAccess, requireBrandAccess } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
+import { ensureTeacherItems } from "@/lib/items/ensure-teacher-item";
 import { USER_ROLES } from "@/lib/types";
 
 import { createItemSchema } from "../../../(main)/dashboard/admin/items/_components/schema";
@@ -69,7 +70,19 @@ export async function GET(request: NextRequest) {
               },
             }
           : false,
-        schedules: includeSchedules,
+        schedules: includeSchedules
+          ? {
+              include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            }
+          : false,
         _count: {
           select: {
             teacherItems: true,
@@ -129,7 +142,17 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
-        schedules: true,
+        schedules: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
         itemBrands: {
           select: {
             brandId: true,
@@ -148,20 +171,37 @@ export async function POST(request: NextRequest) {
 
     // Create schedules if any are provided
     if (schedules.length > 0) {
-      await prisma.itemSchedule.createMany({
-        data: schedules.map((schedule) => ({
-          ...schedule,
+      await prisma.$transaction(async (tx) => {
+        await tx.itemSchedule.createMany({
+          data: schedules.map((schedule) => ({
+            ...schedule,
+            itemId: item.id,
+            // Provide default endTime if not specified (duration-based calculation)
+            endTime: schedule.endTime || calculateEndTime(schedule.startTime, itemData.duration),
+          })),
+        });
+        await ensureTeacherItems({
+          tx,
           itemId: item.id,
-          // Provide default endTime if not specified (duration-based calculation)
-          endTime: schedule.endTime || calculateEndTime(schedule.startTime, itemData.duration),
-        })),
+          teacherIds: schedules.map((schedule) => schedule.teacherId),
+        });
       });
 
       // Fetch the updated item with schedules
       const updatedItem = await prisma.item.findUnique({
         where: { id: item.id },
         include: {
-          schedules: true,
+          schedules: {
+            include: {
+              teacher: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
           itemBrands: {
             select: {
               brandId: true,

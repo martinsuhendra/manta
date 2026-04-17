@@ -4,10 +4,20 @@ import * as React from "react";
 
 import Image from "next/image";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Calendar, Clock, Users, User, Palette, Package, Percent } from "lucide-react";
+import { Calendar, Clock, Loader2, Palette, Package, Sparkles, Users } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerClose,
@@ -17,6 +27,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -26,6 +37,11 @@ interface ViewItemDialogProps {
   item: Item | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface TeacherOption {
+  id: string;
+  label: string;
 }
 
 type ExtendedItem = Item & {
@@ -44,12 +60,65 @@ type ExtendedItem = Item & {
     };
   }>;
   schedules?: Array<{
+    id?: string;
     dayOfWeek: number;
     startTime: string;
     endTime: string;
     isActive: boolean;
+    teacherId?: string | null;
+    teacher?: {
+      id: string;
+      name: string | null;
+      email: string | null;
+    } | null;
   }>;
 };
+
+type ItemSchedule = NonNullable<ExtendedItem["schedules"]>[number];
+type ItemSchedules = NonNullable<ExtendedItem["schedules"]>;
+
+interface ChangeScheduleTeacherPayload {
+  schedule: ItemSchedule;
+  teacherId: string | null;
+}
+
+const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
+const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+function getScheduleKey(schedule: ItemSchedule): string {
+  return schedule.id ?? `${schedule.dayOfWeek}-${schedule.startTime}-${schedule.endTime}`;
+}
+
+function groupSchedulesByDay(schedules: ItemSchedules): Map<number, ItemSchedules> {
+  return schedules.reduce((acc, schedule) => {
+    const daySchedules = acc.get(schedule.dayOfWeek) ?? [];
+    daySchedules.push(schedule);
+    acc.set(schedule.dayOfWeek, daySchedules);
+    return acc;
+  }, new Map<number, ItemSchedules>());
+}
+
+function ScheduleEmptyState({ message }: { message: string }) {
+  return (
+    <div className="space-y-3">
+      <span className="text-sm font-medium">Weekly Schedule</span>
+      <div className="bg-muted/50 rounded-lg border-2 border-dashed p-4 text-center">
+        <Calendar className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
+        <p className="text-muted-foreground text-sm">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function toSchedulePayload(schedules: ItemSchedules) {
+  return schedules.map((schedule) => ({
+    dayOfWeek: schedule.dayOfWeek,
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+    isActive: schedule.isActive,
+    teacherId: schedule.teacherId ?? null,
+  }));
+}
 
 function ItemImage({ item }: { item: Item }) {
   if (!item.image) return null;
@@ -130,73 +199,109 @@ function ItemStatistics({ extendedItem }: { extendedItem: ExtendedItem }) {
   );
 }
 
-function ItemTeachers({ extendedItem }: { extendedItem: ExtendedItem }) {
-  if (!extendedItem.teacherItems || extendedItem.teacherItems.length === 0) {
-    return null;
-  }
+function AssignDefaultTeacherDialog({
+  open,
+  onOpenChange,
+  schedules,
+  teacherOptions,
+  onChangeTeacher,
+  isSaving,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  schedules: ItemSchedules;
+  teacherOptions: TeacherOption[];
+  onChangeTeacher: (payload: ChangeScheduleTeacherPayload) => void;
+  isSaving: boolean;
+}) {
+  const activeSchedules = React.useMemo(
+    () =>
+      schedules
+        .filter((schedule) => schedule.isActive)
+        .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime)),
+    [schedules],
+  );
+  const schedulesByDay = React.useMemo(() => groupSchedulesByDay(activeSchedules), [activeSchedules]);
 
   return (
-    <div className="space-y-2">
-      <span className="mb-1 text-sm font-medium">Assigned Teachers</span>
-      <div className="mt-2 space-y-2">
-        {extendedItem.teacherItems.map((teacherItem) => {
-          const teacherProfit = teacherItem.teacherProfitPercent || 60;
-          const ownerProfit = 100 - teacherProfit;
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-lg">
+        <DialogHeader className="border-b px-4 py-3 pr-10 sm:px-6 sm:py-4">
+          <DialogTitle>Assign Default Teachers</DialogTitle>
+          <DialogDescription>Set a default teacher for each schedule slot.</DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          {WEEK_DAYS.map((dayIndex) => {
+            const daySchedules = schedulesByDay.get(dayIndex) ?? [];
+            if (daySchedules.length === 0) return null;
 
-          return (
-            <div key={teacherItem.id} className="space-y-2 rounded border p-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <div className="flex-1">
-                  <div className="font-medium">{teacherItem.teacher.name || "No Name"}</div>
-                  <div className="text-muted-foreground text-sm">{teacherItem.teacher.email}</div>
+            return (
+              <div key={dayIndex} className="space-y-2">
+                <p className="text-sm font-semibold">{DAY_OF_WEEK_LABELS.at(dayIndex) ?? `Day ${dayIndex}`}</p>
+                <div className="space-y-2">
+                  {daySchedules.map((schedule) => (
+                    <div
+                      key={getScheduleKey(schedule)}
+                      className="bg-muted/40 grid grid-cols-[minmax(0,1fr)_220px] items-center gap-3 rounded-md border p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-muted-foreground text-xs">
+                          {schedule.startTime} - {schedule.endTime}
+                        </p>
+                      </div>
+                      <Select
+                        value={schedule.teacherId ?? NO_DEFAULT_TEACHER}
+                        onValueChange={(value) =>
+                          onChangeTeacher({
+                            schedule,
+                            teacherId: value === NO_DEFAULT_TEACHER ? null : value,
+                          })
+                        }
+                        disabled={teacherOptions.length === 0 || isSaving}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Default teacher" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_DEFAULT_TEACHER}>No default teacher</SelectItem>
+                          {teacherOptions.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id}>
+                              {teacher.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+        <DialogFooter className="border-t px-4 py-3 sm:px-6 sm:py-4">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function ItemSchedules({ extendedItem }: { extendedItem: ExtendedItem }) {
-  if (!extendedItem.schedules || extendedItem.schedules.length === 0) {
-    return (
-      <div className="space-y-3">
-        <span className="text-sm font-medium">Weekly Schedule</span>
-        <div className="bg-muted/50 rounded-lg border-2 border-dashed p-4 text-center">
-          <Calendar className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
-          <p className="text-muted-foreground text-sm">No schedules configured</p>
-        </div>
-      </div>
-    );
-  }
+function ItemSchedules({
+  schedules,
+  onOpenAssignDialog,
+}: {
+  schedules: ItemSchedules;
+  onOpenAssignDialog: () => void;
+}) {
+  if (schedules.length === 0) return <ScheduleEmptyState message="No schedules configured" />;
 
-  const activeSchedules = extendedItem.schedules.filter((schedule) => schedule.isActive);
+  const activeSchedules = schedules.filter((schedule) => schedule.isActive);
 
-  if (activeSchedules.length === 0) {
-    return (
-      <div className="space-y-3">
-        <span className="text-sm font-medium">Weekly Schedule</span>
-        <div className="bg-muted/50 rounded-lg border-2 border-dashed p-4 text-center">
-          <Calendar className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
-          <p className="text-muted-foreground text-sm">No active schedules</p>
-        </div>
-      </div>
-    );
-  }
+  if (activeSchedules.length === 0) return <ScheduleEmptyState message="No active schedules" />;
 
-  // Group schedules by day of week
-  const schedulesByDay = activeSchedules.reduce((acc, schedule) => {
-    const day = schedule.dayOfWeek;
-    const daySchedules = acc.get(day) || [];
-    daySchedules.push(schedule);
-    acc.set(day, daySchedules);
-    return acc;
-  }, new Map<number, typeof activeSchedules>());
-
-  // Sort schedules within each day by start time
+  const schedulesByDay = groupSchedulesByDay(activeSchedules);
   schedulesByDay.forEach((daySchedules) => {
     daySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime));
   });
@@ -205,13 +310,24 @@ function ItemSchedules({ extendedItem }: { extendedItem: ExtendedItem }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">Weekly Schedule</span>
-        <span className="bg-primary/10 text-primary rounded-full px-2 py-1 text-xs font-medium">
-          {activeSchedules.length} schedule{activeSchedules.length !== 1 ? "s" : ""}
-        </span>
       </div>
 
+      <button
+        type="button"
+        onClick={onOpenAssignDialog}
+        className="bg-primary/5 hover:bg-primary/10 border-primary/20 flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors"
+      >
+        <div className="bg-primary/15 text-primary rounded-md p-2">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">Assign Default Teacher</p>
+          <p className="text-muted-foreground text-xs">Set default teachers for each schedule slot</p>
+        </div>
+      </button>
+
       <div className="grid grid-cols-1 gap-2">
-        {Array.from({ length: 7 }, (_, dayIndex) => {
+        {WEEK_DAYS.map((dayIndex) => {
           const daySchedules = schedulesByDay.get(dayIndex) ?? [];
           const hasSchedules = daySchedules.length > 0;
 
@@ -233,10 +349,11 @@ function ItemSchedules({ extendedItem }: { extendedItem: ExtendedItem }) {
                   {hasSchedules ? (
                     daySchedules.map((schedule) => (
                       <span
-                        key={`${schedule.startTime}-${schedule.endTime}`}
+                        key={getScheduleKey(schedule)}
                         className="bg-primary text-primary-foreground flex-shrink-0 rounded px-2.5 py-1 text-xs font-medium whitespace-nowrap"
                       >
                         {schedule.startTime} - {schedule.endTime}
+                        {schedule.teacher ? ` • ${schedule.teacher.name || schedule.teacher.email || "Teacher"}` : ""}
                       </span>
                     ))
                   ) : (
@@ -275,10 +392,80 @@ function ItemTimestamps({ item }: { item: Item }) {
 
 export function ViewItemDialog({ item, open, onOpenChange }: ViewItemDialogProps) {
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const extendedItem = item as ExtendedItem | null;
+  const [isAssignTeacherDialogOpen, setIsAssignTeacherDialogOpen] = React.useState(false);
+  const [schedules, setSchedules] = React.useState<ItemSchedules>(extendedItem?.schedules ?? []);
+  const teacherById = React.useMemo(
+    () =>
+      new Map((extendedItem?.teacherItems ?? []).map((teacherItem) => [teacherItem.teacher.id, teacherItem.teacher])),
+    [extendedItem?.teacherItems],
+  );
+  const teacherOptions = React.useMemo(
+    () =>
+      extendedItem?.teacherItems?.map((teacherItem) => ({
+        id: teacherItem.teacher.id,
+        label: teacherItem.teacher.name || teacherItem.teacher.email || "Unnamed teacher",
+      })) ?? [],
+    [extendedItem?.teacherItems],
+  );
 
-  if (!item) return null;
+  React.useEffect(() => {
+    setSchedules(extendedItem?.schedules ?? []);
+  }, [extendedItem?.schedules, extendedItem?.id, open]);
 
-  const extendedItem = item as ExtendedItem;
+  const updateSchedulesMutation = useMutation({
+    mutationFn: async (nextSchedules: ItemSchedules) => {
+      if (!extendedItem?.id) throw new Error("Item is required");
+
+      const response = await fetch(`/api/admin/items/${extendedItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedules: toSchedulePayload(nextSchedules) }),
+      });
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errorData.error || "Failed to update default teachers");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-items"] });
+    },
+  });
+
+  const handleChangeScheduleTeacher = React.useCallback(
+    ({ schedule, teacherId }: ChangeScheduleTeacherPayload) => {
+      const previousSchedules = schedules;
+      const nextSchedules = schedules.map((current) => {
+        const isMatch =
+          (current.id && schedule.id && current.id === schedule.id) ||
+          (current.dayOfWeek === schedule.dayOfWeek &&
+            current.startTime === schedule.startTime &&
+            current.endTime === schedule.endTime);
+        if (!isMatch) return current;
+        return {
+          ...current,
+          teacherId,
+          teacher: teacherId == null ? null : (teacherById.get(teacherId) ?? null),
+        };
+      });
+
+      setSchedules(nextSchedules);
+      updateSchedulesMutation.mutate(nextSchedules, {
+        onError: (error) => {
+          setSchedules(previousSchedules);
+          toast.error(error.message);
+        },
+        onSuccess: () => {
+          toast.success("Default teacher updated");
+        },
+      });
+    },
+    [schedules, teacherById, updateSchedulesMutation],
+  );
+
+  if (!item || !extendedItem) return null;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction={isMobile ? "bottom" : "right"}>
@@ -305,12 +492,25 @@ export function ViewItemDialog({ item, open, onOpenChange }: ViewItemDialogProps
           <ItemDescription item={item} />
           <ItemBasicInfo item={item} />
           <ItemStatistics extendedItem={extendedItem} />
-          <ItemSchedules extendedItem={extendedItem} />
-          <ItemTeachers extendedItem={extendedItem} />
+          <ItemSchedules schedules={schedules} onOpenAssignDialog={() => setIsAssignTeacherDialogOpen(true)} />
           <ItemTimestamps item={item} />
         </div>
+        <AssignDefaultTeacherDialog
+          open={isAssignTeacherDialogOpen}
+          onOpenChange={setIsAssignTeacherDialogOpen}
+          schedules={schedules}
+          teacherOptions={teacherOptions}
+          onChangeTeacher={handleChangeScheduleTeacher}
+          isSaving={updateSchedulesMutation.isPending}
+        />
 
         <DrawerFooter>
+          {updateSchedulesMutation.isPending && (
+            <div className="text-muted-foreground flex items-center gap-2 px-4 text-xs">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Saving default teacher...
+            </div>
+          )}
           <DrawerClose asChild>
             <Button variant="outline">Close</Button>
           </DrawerClose>
