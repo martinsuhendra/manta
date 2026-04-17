@@ -37,8 +37,6 @@ import { useMemberCancelBooking } from "@/hooks/use-member-sessions";
 import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
 
-import { RequestFreezeDialog } from "./request-freeze-dialog";
-
 interface AccountData {
   user: {
     id: string;
@@ -294,8 +292,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
-  const [isRequestFreezeOpen, setIsRequestFreezeOpen] = useState(false);
-  const [freezeMembership, setFreezeMembership] = useState<{ id: string; productName: string } | null>(null);
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
   const cancelBookingMutation = useMemberCancelBooking();
 
@@ -322,8 +318,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
-  const hasPendingFreezeForMembership = (membershipId: string) =>
-    accountData.freezeRequests.some((fr) => fr.membershipId === membershipId && fr.status === "PENDING_APPROVAL");
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/shop" });
@@ -486,24 +480,9 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                                 <span>{membership.remainingQuota} sessions remaining</span>
                               )}
                             </p>
-                            {hasPendingFreezeForMembership(membership.id) ? (
-                              <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-4"
-                                onClick={() => {
-                                  setFreezeMembership({
-                                    id: membership.id,
-                                    productName: membership.product.name,
-                                  });
-                                  setIsRequestFreezeOpen(true);
-                                }}
-                              >
-                                Request Freeze
-                              </Button>
-                            )}
+                            <p className="text-muted-foreground mt-2 text-sm">
+                              Need to freeze this membership? Please contact admin to submit a freeze request.
+                            </p>
                           </div>
                           <div className="w-full border-t pt-6 text-center md:w-auto md:border-t-0 md:border-l md:pt-0 md:pl-10 md:text-right">
                             <p className="text-foreground text-2xl font-black">
@@ -798,16 +777,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
           </Form>
         </DialogContent>
       </Dialog>
-
-      <RequestFreezeDialog
-        open={isRequestFreezeOpen}
-        onOpenChange={(open) => {
-          setIsRequestFreezeOpen(open);
-          if (!open) setFreezeMembership(null);
-        }}
-        membershipId={freezeMembership?.id ?? ""}
-        productName={freezeMembership?.productName ?? ""}
-      />
     </div>
   );
 }

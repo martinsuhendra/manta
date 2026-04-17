@@ -4,18 +4,20 @@ import * as React from "react";
 
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Check, X } from "lucide-react";
+import { Check, HelpCircle, Pencil, X } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FreezeRequestWithRelations } from "@/hooks/use-admin-freeze-requests-query";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { FREEZE_REASON_LABELS, FREEZE_REQUEST_STATUS } from "@/lib/constants/freeze";
 
 import { ApproveFreezeDialog } from "./approve-freeze-dialog";
+import { EditFreezeDialog } from "./edit-freeze-dialog";
 import { FreezeRequestsStatusFilter } from "./freeze-requests-status-filter";
 import { RejectFreezeDialog } from "./reject-freeze-dialog";
 
@@ -43,6 +45,7 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [approveDialogOpen, setApproveDialogOpen] = React.useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [selectedRequest, setSelectedRequest] = React.useState<FreezeRequestWithRelations | null>(null);
 
   const filteredData = React.useMemo(() => {
@@ -60,13 +63,14 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
           <div className="flex flex-col">
             <span className="font-medium">{m.user.name || "N/A"}</span>
             <span className="text-muted-foreground text-sm">{m.user.email}</span>
+            <span className="text-muted-foreground text-sm">{m.user.phoneNo || "No phone"}</span>
           </div>
         );
       },
     },
     {
       accessorKey: "membership.product.name",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Product" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Active memberships" />,
       cell: ({ row }) => row.original.membership.product.name,
     },
     {
@@ -76,13 +80,24 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
         const r = row.original;
         const label = FREEZE_REASON_LABELS[r.reason as keyof typeof FREEZE_REASON_LABELS] || r.reason;
         return (
-          <div className="flex flex-col">
+          <div className="flex items-center gap-2">
             <span>{label}</span>
-            {r.reasonDetails && (
-              <span className="text-muted-foreground max-w-[200px] truncate text-sm" title={r.reasonDetails}>
-                {r.reasonDetails}
-              </span>
-            )}
+            {r.reasonDetails ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="View reason details"
+                    className="text-muted-foreground hover:text-foreground inline-flex h-5 w-5 items-center justify-center rounded"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                  <p>{r.reasonDetails}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
         );
       },
@@ -132,35 +147,51 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => {
         const req = row.original;
-        if (req.status !== FREEZE_REQUEST_STATUS.PENDING_APPROVAL) return null;
         return (
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="default"
+              variant="outline"
               className="h-8"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedRequest(req);
-                setApproveDialogOpen(true);
+                setEditDialogOpen(true);
               }}
             >
-              <Check className="mr-1 h-3.5 w-3.5" />
-              Approve
+              <Pencil className="mr-1 h-3.5 w-3.5" />
+              Edit
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-destructive hover:text-destructive h-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedRequest(req);
-                setRejectDialogOpen(true);
-              }}
-            >
-              <X className="mr-1 h-3.5 w-3.5" />
-              Reject
-            </Button>
+            {req.status === FREEZE_REQUEST_STATUS.PENDING_APPROVAL ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedRequest(req);
+                    setApproveDialogOpen(true);
+                  }}
+                >
+                  <Check className="mr-1 h-3.5 w-3.5" />
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive h-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedRequest(req);
+                    setRejectDialogOpen(true);
+                  }}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Reject
+                </Button>
+              </>
+            ) : null}
           </div>
         );
       },
@@ -196,6 +227,7 @@ export function FreezeRequestsTable({ data, isLoading }: FreezeRequestsTableProp
         freezeRequest={selectedRequest}
       />
       <RejectFreezeDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen} freezeRequest={selectedRequest} />
+      <EditFreezeDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} freezeRequest={selectedRequest} />
     </div>
   );
 }

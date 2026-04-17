@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { FREEZE_REASON } from "@/lib/constants/freeze";
+import { FREEZE_REASON, FREEZE_REQUEST_STATUS } from "@/lib/constants/freeze";
 
 export const approveFreezeSchema = z
   .object({
@@ -33,3 +33,24 @@ export const requestFreezeSchema = z.object({
 });
 
 export type RequestFreezeForm = z.infer<typeof requestFreezeSchema>;
+
+export const editFreezeSchema = z
+  .object({
+    reason: z.enum([FREEZE_REASON.MEDICAL, FREEZE_REASON.PERSONAL]),
+    reasonDetails: z.string().max(500).optional().nullable(),
+    status: z.enum([
+      FREEZE_REQUEST_STATUS.PENDING_APPROVAL,
+      FREEZE_REQUEST_STATUS.APPROVED,
+      FREEZE_REQUEST_STATUS.REJECTED,
+      FREEZE_REQUEST_STATUS.COMPLETED,
+    ]),
+    freezeStartDate: z.string().optional().nullable(),
+    freezeEndDate: z.string().optional().nullable(),
+    membershipExpiredAt: z.string().optional().nullable(),
+  })
+  .refine((d) => !d.freezeStartDate || !d.freezeEndDate || new Date(d.freezeEndDate) > new Date(d.freezeStartDate), {
+    message: "End date must be after start date",
+    path: ["freezeEndDate"],
+  });
+
+export type EditFreezeForm = z.infer<typeof editFreezeSchema>;

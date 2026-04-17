@@ -137,8 +137,8 @@ function ItemTeachers({ extendedItem }: { extendedItem: ExtendedItem }) {
 
   return (
     <div className="space-y-2">
-      <span className="text-sm font-medium">Assigned Teachers</span>
-      <div className="space-y-2">
+      <span className="mb-1 text-sm font-medium">Assigned Teachers</span>
+      <div className="mt-2 space-y-2">
         {extendedItem.teacherItems.map((teacherItem) => {
           const teacherProfit = teacherItem.teacherProfitPercent || 60;
           const ownerProfit = 100 - teacherProfit;
@@ -150,21 +150,6 @@ function ItemTeachers({ extendedItem }: { extendedItem: ExtendedItem }) {
                 <div className="flex-1">
                   <div className="font-medium">{teacherItem.teacher.name || "No Name"}</div>
                   <div className="text-muted-foreground text-sm">{teacherItem.teacher.email}</div>
-                </div>
-              </div>
-              <div className="bg-muted/50 flex items-center justify-between rounded p-2 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <Percent className="h-3.5 w-3.5" />
-                  <span className="font-medium">Profit Split:</span>
-                </div>
-                <div className="flex gap-3 text-xs">
-                  <span>
-                    Teacher: <span className="font-semibold">{teacherProfit}%</span>
-                  </span>
-                  <span className="text-muted-foreground">•</span>
-                  <span>
-                    Owner: <span className="font-semibold">{ownerProfit}%</span>
-                  </span>
                 </div>
               </div>
             </div>

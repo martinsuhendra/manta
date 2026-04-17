@@ -77,7 +77,7 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
   },
   {
     id: "stores",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Stores" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Brand" />,
     cell: ({ row }) => {
       const item = row.original as Item & {
         itemBrands?: { brand: { name: string } }[];
@@ -112,7 +112,7 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
   },
   {
     accessorKey: "capacity",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Capacity" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Max Capacity" />,
     cell: ({ row }) => {
       const capacity = row.original.capacity;
       return (
@@ -155,20 +155,6 @@ export const createItemColumns = (actions: ItemActions): ColumnDef<Item>[] => [
         <StatusBadge variant="outline" className="gap-1">
           <Calendar className="h-3 w-3" />
           {scheduleCount}
-        </StatusBadge>
-      );
-    },
-  },
-  {
-    id: "sessions",
-    header: "Sessions",
-    cell: ({ row }) => {
-      const item = row.original as Item & { _count?: { classSessions: number } };
-      const sessionCount = item._count?.classSessions || 0;
-      return (
-        <StatusBadge variant="outline" className="gap-1">
-          <Calendar className="h-3 w-3" />
-          {sessionCount}
         </StatusBadge>
       );
     },
