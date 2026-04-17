@@ -201,7 +201,7 @@ export function PurchaseMembershipDialog({ open, onOpenChange, selectedMember }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Purchase Membership</DialogTitle>

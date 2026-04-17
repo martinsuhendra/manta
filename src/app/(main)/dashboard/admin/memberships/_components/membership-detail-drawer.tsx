@@ -83,6 +83,11 @@ export function MembershipDetailDrawer({
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
+  function invalidateMembershipAndUserQueries() {
+    queryClient.invalidateQueries({ queryKey: ["admin-memberships"] });
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  }
+
   const form = useForm<CreateMembershipForm | UpdateMembershipForm>({
     resolver: zodResolver(mode === "add" ? createMembershipSchema : updateMembershipSchema),
     defaultValues: {
@@ -156,7 +161,7 @@ export function MembershipDetailDrawer({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-memberships"] });
+      invalidateMembershipAndUserQueries();
       onOpenChange(false);
       onModeChange(null);
       form.reset();
@@ -185,7 +190,7 @@ export function MembershipDetailDrawer({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-memberships"] });
+      invalidateMembershipAndUserQueries();
       onOpenChange(false);
       onModeChange(null);
       toast.success("Membership updated successfully");
@@ -211,7 +216,7 @@ export function MembershipDetailDrawer({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-memberships"] });
+      invalidateMembershipAndUserQueries();
       setDeleteDialogOpen(false);
       onOpenChange(false);
       onModeChange(null);
