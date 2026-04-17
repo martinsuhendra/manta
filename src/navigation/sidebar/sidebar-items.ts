@@ -11,6 +11,7 @@ import {
   UserCircle2,
   Users,
   Wallet,
+  ReceiptText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -124,6 +125,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Payroll",
         url: "/dashboard/finance/payroll",
         icon: Wallet,
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+      },
+      {
+        title: "Transactions",
+        url: "/dashboard/finance/transactions",
+        icon: ReceiptText,
         requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
       },
     ],
