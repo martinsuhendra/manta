@@ -12,6 +12,7 @@ interface CreateUserData {
   email: string;
   role: string;
   phoneNo?: string;
+  birthday?: string;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;
   bio?: string | null;
@@ -22,6 +23,7 @@ interface UpdateUserData {
   email?: string;
   role?: string;
   phoneNo?: string;
+  birthday?: string | null;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;
   bio?: string | null;
@@ -57,6 +59,7 @@ export function useUpdateUser() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["member-details", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-edit", variables.userId] });
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to update user";

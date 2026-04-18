@@ -82,6 +82,7 @@ model User {
   updatedAt     DateTime       @updatedAt @db.Timestamp(6)
   licenseKey    String?
   phoneNo       String?        @map("phone_no")
+  birthday      DateTime?      @db.Date
   accounts      Account[]
   bookings      Booking[]
   classSessions ClassSession[] @relation("SessionTeacher")

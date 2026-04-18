@@ -21,6 +21,10 @@ const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
 // Types
 interface ItemDialogSchedulesTabProps {
   form: UseFormReturn<CreateItemForm>;
+  /** When false, local schedule UI resets so the next open re-syncs from the form. */
+  dialogOpen: boolean;
+  /** Bump when the edited item (or create vs edit) changes so we re-read `schedules` after parent `reset`. */
+  scheduleSourceKey: string;
 }
 
 interface ScheduleGroup {
@@ -41,6 +45,27 @@ interface Schedule {
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+/** Map API / DB strings (e.g. `09:30:00`, `9:30`) to `HH:mm` on the same 15-min grid as `TIME_SLOTS` so Radix Select values match. */
+function normalizeTimeToSlot(time: string): string {
+  if (!time || typeof time !== "string") return DEFAULT_START_TIME;
+  const segments = time.trim().split(":");
+  const h = Number.parseInt(segments[0] ?? "0", 10);
+  const m = Number.parseInt(segments[1] ?? "0", 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return DEFAULT_START_TIME;
+  let total = h * 60 + m;
+  total = Math.max(0, Math.min(total, MINUTES_PER_DAY - 1));
+  const snapped = Math.floor(total / 15) * 15;
+  return minutesToTime(snapped);
+}
+
+function normalizeScheduleTimes(schedule: Schedule): Schedule {
+  return {
+    ...schedule,
+    startTime: normalizeTimeToSlot(schedule.startTime),
+    endTime: normalizeTimeToSlot(schedule.endTime),
+  };
 }
 
 function minutesToTime(totalMinutes: number): string {
@@ -78,15 +103,16 @@ function convertSchedulesToGroups(schedules: Schedule[]): ScheduleGroup[] {
   const groupedByTime = new Map<string, ScheduleGroup>();
 
   schedules.forEach((schedule) => {
-    const key = `${schedule.startTime}|${schedule.teacherId ?? ""}`;
+    const normalized = normalizeScheduleTimes(schedule);
+    const key = `${normalized.startTime}|${normalized.teacherId ?? ""}`;
     if (!groupedByTime.has(key)) {
       groupedByTime.set(key, {
         days: [],
-        startTime: schedule.startTime,
-        teacherId: schedule.teacherId ?? null,
+        startTime: normalized.startTime,
+        teacherId: normalized.teacherId ?? null,
       });
     }
-    groupedByTime.get(key)!.days.push(schedule.dayOfWeek);
+    groupedByTime.get(key)!.days.push(normalized.dayOfWeek);
   });
 
   return Array.from(groupedByTime.values()).map((group) => ({
@@ -337,7 +363,7 @@ const TimeGroup = React.memo(
 TimeGroup.displayName = "TimeGroup";
 
 // Main component
-export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
+export function ItemDialogSchedulesTab({ form, dialogOpen, scheduleSourceKey }: ItemDialogSchedulesTabProps) {
   const { data: teachers = [] } = useTeachers();
   const { replace } = useFieldArray({
     control: form.control,
@@ -358,20 +384,26 @@ export function ItemDialogSchedulesTab({ form }: ItemDialogSchedulesTabProps) {
   ]);
   const [isInitialized, setIsInitialized] = React.useState(false);
 
-  // Initialize from existing schedules
+  // Parent `form.reset` runs in the same commit as this mount; child `useEffect` can run before reset.
+  // Defer read so we sync from the form after schedules are populated. Re-run when dialog/item source changes.
   React.useEffect(() => {
-    if (isInitialized) return;
-
-    const existingSchedules = form.getValues("schedules") as Schedule[];
-    const groups = convertSchedulesToGroups(existingSchedules);
-
-    if (groups.length > 0) {
-      setScheduleGroups(groups);
+    if (!dialogOpen) {
+      setIsInitialized(false);
+      setScheduleGroups([{ days: [], startTime: DEFAULT_START_TIME, teacherId: null }]);
+      return;
     }
 
-    setIsInitialized(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    queueMicrotask(() => {
+      const existingSchedules = (form.getValues("schedules") ?? []) as Schedule[];
+      const normalized = existingSchedules.map(normalizeScheduleTimes);
+      const groups = convertSchedulesToGroups(normalized);
+
+      if (groups.length > 0) setScheduleGroups(groups);
+      else setScheduleGroups([{ days: [], startTime: DEFAULT_START_TIME, teacherId: null }]);
+
+      setIsInitialized(true);
+    });
+  }, [dialogOpen, scheduleSourceKey, form]);
 
   // Clamp start times to fit duration, then sync to form (single pass avoids stale form when duration changes on step 1)
   React.useEffect(() => {

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { BirthdayPicker } from "@/components/ui/birthday-picker";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
@@ -19,22 +20,45 @@ import { USER_ROLES, USER_ROLE_LABELS, DEFAULT_USER_ROLE } from "@/lib/types";
 import { getAvailableRoles } from "./member-detail-drawer-utils";
 import { Member } from "./schema";
 
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  role: z
-    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
-    .default(DEFAULT_USER_ROLE),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-  image: z.string().nullable().optional(),
-  avatarAsset: cloudinaryAssetSchema.nullable().optional(),
-  bio: z.string().max(2000).nullable().optional(),
-});
+/** `YYYY-MM-DD` for birthday picker / API ISO or date-only strings. */
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+const formSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email is required"),
+    role: z
+      .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
+      .default(DEFAULT_USER_ROLE),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+    birthday: z.string().optional(),
+    image: z.string().nullable().optional(),
+    avatarAsset: cloudinaryAssetSchema.nullable().optional(),
+    bio: z.string().max(2000).nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.birthday?.trim()) return;
+    const t = new Date(`${data.birthday}T12:00:00.000Z`).getTime();
+    if (Number.isNaN(t)) {
+      ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
+      return;
+    }
+    if (t >= Date.now()) ctx.addIssue({ code: "custom", message: "Birthday must be in the past", path: ["birthday"] });
+  });
 
 export type FormData = z.infer<typeof formSchema>;
 
@@ -56,6 +80,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
       email: member?.email ?? "",
       role: member?.role ?? DEFAULT_USER_ROLE,
       phoneNo: member?.phoneNo ?? "",
+      birthday: toDateInputValue(member?.birthday),
       image: memberWithExtras?.image ?? null,
       avatarAsset: (memberWithExtras as Member & { avatarAsset?: unknown })?.avatarAsset ?? null,
       bio: memberWithExtras?.bio ?? null,
@@ -71,6 +96,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         email: member.email ?? "",
         role: member.role,
         phoneNo: member.phoneNo ?? "",
+        birthday: toDateInputValue(member.birthday),
         image: m.image ?? null,
         avatarAsset: m.avatarAsset ?? null,
         bio: m.bio ?? null,
@@ -81,6 +107,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         email: "",
         role: DEFAULT_USER_ROLE,
         phoneNo: "",
+        birthday: "",
         image: null,
         avatarAsset: null,
         bio: null,
@@ -189,6 +216,28 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
               <FormControl>
                 <Input placeholder="Enter phone number" {...field} value={field.value || ""} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="birthday"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Birthday</FormLabel>
+              <FormControl>
+                <BirthdayPicker
+                  ref={field.ref}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder="Pick birthday (optional)"
+                  allowClear
+                />
+              </FormControl>
+              <p className="text-muted-foreground text-xs">Optional. Clear to remove a stored birthday.</p>
               <FormMessage />
             </FormItem>
           )}

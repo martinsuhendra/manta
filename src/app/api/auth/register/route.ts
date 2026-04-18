@@ -5,23 +5,12 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/generated/prisma";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
-
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(1).optional(),
-  phoneNo: z
-    .string()
-    .min(1, { message: "Phone number is required" })
-    .min(10, { message: "Phone number must be at least 10 digits" })
-    .max(15, { message: "Phone number must be at most 15 digits" })
-    .regex(/^[0-9+\-\s()]+$/, { message: "Invalid phone number format" }),
-});
+import { registerBodySchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phoneNo } = registerSchema.parse(body);
+    const { email, password, name, phoneNo, birthday } = registerBodySchema.parse(body);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -42,6 +31,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         name: name ?? email.split("@")[0],
         phoneNo: phoneNo,
+        birthday: new Date(birthday),
         role: DEFAULT_USER_ROLE,
       },
     });

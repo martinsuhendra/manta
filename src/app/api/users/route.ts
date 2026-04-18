@@ -23,6 +23,7 @@ const createUserSchema = z.object({
   image: z.string().nullable().optional(),
   avatarAsset: z.unknown().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
+  birthday: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         phoneNo: true,
+        birthday: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -78,6 +80,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createUserSchema.parse(body);
     const avatarAsset = parseCloudinaryAsset(validatedData.avatarAsset);
+    const birthdayDate =
+      validatedData.birthday && validatedData.birthday.trim() !== "" ? new Date(validatedData.birthday) : undefined;
 
     // Check if only SUPERADMIN can create SUPERADMIN users
     if (
@@ -107,6 +111,7 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
+        birthday: birthdayDate,
         avatarAsset: avatarAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,
       },

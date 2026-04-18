@@ -39,6 +39,7 @@ async function getAccountData() {
         name: true,
         email: true,
         phoneNo: true,
+        birthday: true,
         role: true,
         createdAt: true,
         memberships: {
@@ -189,6 +190,7 @@ async function getAccountData() {
         name: user.name,
         email: user.email,
         phoneNo: user.phoneNo,
+        birthday: user.birthday ? user.birthday.toISOString() : null,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
       },

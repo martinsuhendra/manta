@@ -38,6 +38,28 @@ import { TransactionsTab } from "./tabs/transactions-tab";
 
 type DrawerMode = "view" | "edit" | "add" | null;
 
+/** `GET /api/users/[id]` — same shape as list row plus teacher fields; `_count` may only include memberships. */
+interface UserEditRecord {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: Member["role"];
+  phoneNo: string | null;
+  birthday: string | Date | null;
+  image?: string | null;
+  avatarAsset?: unknown;
+  bio?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { memberships?: number };
+}
+
+function serializeBirthday(value: string | Date | null | undefined): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  return value.toISOString();
+}
+
 interface MemberDetailDrawerProps {
   member: Member | null;
   mode: DrawerMode;
@@ -136,6 +158,43 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
     },
     enabled: mode === "view" && !!member?.id && open,
   });
+
+  // Hydrate edit form from canonical user row (birthday, teacher profile, etc.)
+  const { data: userForEdit } = useQuery<UserEditRecord>({
+    queryKey: ["user-edit", member?.id],
+    queryFn: async () => {
+      if (!member?.id) throw new Error("Member ID is required");
+      const response = await fetch(`/api/users/${member.id}`);
+      if (!response.ok) throw new Error("Failed to fetch user");
+      return response.json();
+    },
+    enabled: open && mode === "edit" && !!member?.id,
+  });
+
+  const memberForForm = React.useMemo((): Member | null => {
+    if (!member) return null;
+    if (!userForEdit) return member;
+
+    const birthdayFromApi = userForEdit.birthday;
+    const birthdayResolved =
+      birthdayFromApi === null || birthdayFromApi === undefined || birthdayFromApi === ""
+        ? null
+        : serializeBirthday(birthdayFromApi);
+
+    return {
+      ...member,
+      name: userForEdit.name ?? member.name,
+      email: userForEdit.email ?? member.email,
+      role: userForEdit.role ?? member.role,
+      phoneNo: userForEdit.phoneNo ?? member.phoneNo,
+      birthday: birthdayResolved,
+      image: userForEdit.image ?? member.image,
+      avatarAsset: userForEdit.avatarAsset ?? member.avatarAsset,
+      bio: userForEdit.bio ?? member.bio,
+      updatedAt: userForEdit.updatedAt ?? member.updatedAt,
+      _count: member._count,
+    };
+  }, [member, userForEdit]);
 
   // Reset tab when drawer opens/closes
   React.useEffect(() => {
@@ -259,7 +318,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
             ) : mode === "edit" || mode === "add" ? (
               <MemberForm
                 mode={mode}
-                member={member}
+                member={mode === "edit" ? memberForForm : member}
                 canEditRoles={canEditRoles}
                 canCreateSuperAdmin={canCreateSuperAdmin}
                 onSubmit={handleSubmit}

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
+import { BirthdayPicker } from "@/components/ui/birthday-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,6 +44,7 @@ interface AccountData {
     name: string | null;
     email: string | null;
     phoneNo: string | null;
+    birthday: string | null;
     role: string;
     createdAt: string;
   };
@@ -260,15 +262,28 @@ async function handleReopenPayment(
   }
 }
 
-const editProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-});
+const editProfileSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+    birthday: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.birthday || data.birthday.trim() === "") return;
+    const d = new Date(data.birthday);
+    if (Number.isNaN(d.getTime())) {
+      ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
+      return;
+    }
+    if (d.getTime() >= Date.now()) {
+      ctx.addIssue({ code: "custom", message: "Birthday must be in the past", path: ["birthday"] });
+    }
+  });
 
 type EditProfileFormValues = z.infer<typeof editProfileSchema>;
 
@@ -300,6 +315,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     defaultValues: {
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     },
   });
 
@@ -327,6 +343,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     form.reset({
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     });
     setIsEditDialogOpen(true);
   };
@@ -745,6 +762,26 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
                       <Input id="phoneNo" type="tel" placeholder="+1234567890" autoComplete="tel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="birthday"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Birthday</FormLabel>
+                    <FormControl>
+                      <BirthdayPicker
+                        ref={field.ref}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="Pick your birthday"
+                        allowClear
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
