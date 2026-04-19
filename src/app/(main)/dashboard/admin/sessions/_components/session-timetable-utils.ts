@@ -54,7 +54,7 @@ function sessionAccentColor(session: Session): string {
 
 /**
  * Greedy column assignment + per-event columnCount among all overlapping intervals.
- * Left/width in %: left = (column / columnCount) * 100, width = 100 / columnCount - gap
+ * Lane position/size (% of day column) is applied in `SessionDayTimetable` via `getOverlapLaneStyle`.
  */
 export function buildTimetableLayout(sessions: Session[]): TimetableLayoutEvent[] {
   const withBounds = sessions.map((session) => {

@@ -64,8 +64,7 @@ function renderTableBody<TData>({
     <TableRow
       key={row.id}
       data-state={row.getIsSelected() && "selected"}
-      className={onRowClick ? "hover:bg-muted/50 cursor-pointer" : ""}
-      onClick={() => onRowClick?.(row.original)}
+      onClick={onRowClick ? () => onRowClick(row.original) : undefined}
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>

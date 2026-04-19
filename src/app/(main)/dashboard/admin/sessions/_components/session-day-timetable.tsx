@@ -3,24 +3,44 @@
 import * as React from "react";
 
 import { format, isSameDay } from "date-fns";
-import { Pencil } from "lucide-react";
+import { Clock, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
 import { CompactSessionCard } from "./compact-session-card";
-import type { Session } from "./schema";
+import { SESSION_STATUS_COLORS, SESSION_STATUS_LABELS, type Session } from "./schema";
 import { buildTimetableLayout, minutesToPx, minutesToTimeString } from "./session-timetable-utils";
+import { TimetableSessionEventMenu } from "./timetable-session-event-menu";
 
 const MINUTES_PER_DAY = 24 * 60;
-const PX_PER_HOUR = 80;
+/** Taller hour rows (~30% more than 80px) so labels and session blocks read easier. */
+const PX_PER_HOUR = 104;
 const PX_PER_MINUTE = PX_PER_HOUR / 60;
-const MIN_EVENT_HEIGHT_PX = 40;
-const GAP_PX = 2;
+const MIN_EVENT_HEIGHT_PX = 52;
+/** Tiny gap only when multiple blocks stack; keep 0 so 1h blocks match the hour row (PX_PER_HOUR). */
+const GAP_PX = 0;
 /** Snap hover preview to 15-minute steps (matches session scheduling). */
 const HOVER_SNAP_MINUTES = 15;
+/** Hour index (0–23) to align to the top of the scroll viewport when opening / changing day. */
+const INITIAL_SCROLL_HOUR = 5;
+/** Side-by-side sessions: target width (% of lane). Shrinks only if overlaps cannot fit. */
+const OVERLAP_CARD_WIDTH_TARGET_PCT = 30;
+/** Horizontal gap between overlapping cards as % of lane (keeps columns visually tight). */
+const OVERLAP_COLUMN_GAP_PCT = 0.5;
+
+function getOverlapLaneStyle(column: number, columnCount: number): { widthPct: number; leftPct: number } {
+  if (columnCount <= 1) return { widthPct: 100, leftPct: 0 };
+
+  const gapTotal = OVERLAP_COLUMN_GAP_PCT * (columnCount - 1);
+  const widthIfTarget = OVERLAP_CARD_WIDTH_TARGET_PCT * columnCount + gapTotal;
+  const widthPct = widthIfTarget <= 100 ? OVERLAP_CARD_WIDTH_TARGET_PCT : (100 - gapTotal) / columnCount;
+  const leftPct = column * (widthPct + OVERLAP_COLUMN_GAP_PCT);
+  return { widthPct, leftPct: Math.min(leftPct, Math.max(0, 100 - widthPct)) };
+}
 
 function snapMinutesToStep(totalMinutes: number, step: number): number {
   return Math.round(totalMinutes / step) * step;
@@ -74,10 +94,27 @@ export function SessionDayTimetable({
   const nowLineTop = isToday ? minutesToPx(nowMinutes, PX_PER_MINUTE) : null;
 
   const laneRef = React.useRef<HTMLDivElement>(null);
+  const dayGridScrollRef = React.useRef<HTMLDivElement>(null);
   const [hoverTopPx, setHoverTopPx] = React.useState<number | null>(null);
   const [hoverMinutes, setHoverMinutes] = React.useState<number | null>(null);
 
+  const selectedDayKey = format(selectedDate, "yyyy-MM-dd");
+
+  React.useLayoutEffect(() => {
+    if (isLoading) return;
+    const el = dayGridScrollRef.current;
+    if (!el) return;
+    el.scrollTop = INITIAL_SCROLL_HOUR * PX_PER_HOUR;
+  }, [isLoading, selectedDayKey]);
+
   const handleLaneMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target;
+    if (target instanceof Element && target.closest("[data-timetable-session-event]")) {
+      setHoverTopPx(null);
+      setHoverMinutes(null);
+      return;
+    }
+
     const el = laneRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -108,7 +145,7 @@ export function SessionDayTimetable({
         <CardContent className="p-4">
           <div className="space-y-3">
             <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-[520px] w-full" />
+            <Skeleton className="h-[680px] w-full" />
           </div>
         </CardContent>
       </Card>
@@ -149,17 +186,17 @@ export function SessionDayTimetable({
 
       {/* Desktop: time grid */}
 
-      <div className="border-border max-h-[calc(100vh-14rem)] overflow-auto rounded-md border">
+      <div ref={dayGridScrollRef} className="border-border max-h-[calc(100vh-14rem)] overflow-auto rounded-md border">
         <div className="flex min-w-0">
           {/* Time rail */}
           <div
-            className="border-border bg-muted/30 text-muted-foreground sticky left-0 z-10 w-14 shrink-0 border-r text-xs"
+            className="border-border bg-muted/30 text-muted-foreground sticky left-0 z-10 w-16 shrink-0 border-r text-xs"
             style={{ height: laneHeightPx }}
           >
             {Array.from({ length: 24 }, (_, hour) => (
               <div
                 key={hour}
-                className="border-border/60 box-border flex justify-end border-b pt-0.5 pr-2"
+                className="border-border/60 box-border flex items-start justify-end border-b py-1 pr-2"
                 style={{ height: PX_PER_HOUR }}
               >
                 {format(new Date(2000, 0, 1, hour, 0), "h a")}
@@ -203,16 +240,16 @@ export function SessionDayTimetable({
 
             {hoverTopPx !== null && hoverMinutes !== null ? (
               <>
-                {/* Line sits under session blocks (z-10); badge is separate so it stays readable */}
+                {/* Dashed time preview only on empty grid (hidden while pointer is over a session card). */}
                 <div
-                  className="pointer-events-none absolute right-0 left-0 z-[8] -translate-y-1/2"
+                  className="pointer-events-none absolute right-0 left-0 z-[15] -translate-y-1/2"
                   style={{ top: hoverTopPx }}
                   role="presentation"
                 >
                   <div className="border-primary/70 h-0 w-full border-t-2 border-dashed" />
                 </div>
                 <div
-                  className="bg-background/95 text-primary border-primary/35 pointer-events-none absolute top-0 right-2 z-[11] -translate-y-1/2 rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums shadow-sm"
+                  className="bg-background/95 text-primary border-primary/35 pointer-events-none absolute top-0 right-2 z-[16] -translate-y-1/2 rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums shadow-sm"
                   style={{ top: hoverTopPx }}
                   aria-hidden
                 >
@@ -225,15 +262,15 @@ export function SessionDayTimetable({
               const top = minutesToPx(ev.startMin, PX_PER_MINUTE);
               const rawHeight = minutesToPx(ev.endMin - ev.startMin, PX_PER_MINUTE);
               const height = Math.max(MIN_EVENT_HEIGHT_PX, rawHeight - GAP_PX);
-              const widthPct = 100 / ev.columnCount;
-              const leftPct = (ev.column / ev.columnCount) * 100;
+              const { widthPct, leftPct } = getOverlapLaneStyle(ev.column, ev.columnCount);
 
               return (
                 <div
                   key={ev.session.id}
-                  className="absolute z-10 px-0.5"
+                  data-timetable-session-event
+                  className="absolute z-10 box-border px-1 transition-[z-index,box-shadow] hover:z-40"
                   style={{
-                    top: top + GAP_PX / 2,
+                    top,
                     height,
                     left: `${leftPct}%`,
                     width: `${widthPct}%`,
@@ -241,7 +278,7 @@ export function SessionDayTimetable({
                 >
                   <div
                     className={cn(
-                      "group flex h-full cursor-pointer flex-col overflow-hidden rounded-lg border shadow-sm transition-all",
+                      "group flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border shadow-sm transition-all",
                       "hover:ring-ring hover:shadow-md hover:ring-1",
                     )}
                     style={{
@@ -264,34 +301,50 @@ export function SessionDayTimetable({
                     role="button"
                     tabIndex={0}
                   >
-                    <div className="flex min-h-0 flex-1 flex-col p-2.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-foreground/90 line-clamp-2 text-left text-sm font-semibold">
+                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3.5 py-3.5 [scrollbar-width:thin]">
+                      <div className="flex shrink-0 items-start justify-between gap-3">
+                        <p className="text-foreground line-clamp-2 min-w-0 flex-1 text-left text-base leading-snug font-semibold">
                           {ev.session.item.name}
                         </p>
-                        {onEditSession ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-background/50 h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditSession(ev.session);
-                            }}
-                            aria-label="Edit session"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        ) : null}
+                        <StatusBadge
+                          variant="secondary"
+                          className="shrink-0 px-2 py-0.5 text-[10px] leading-none font-medium"
+                          style={{
+                            backgroundColor: `${SESSION_STATUS_COLORS[ev.session.status]}15`,
+                            color: SESSION_STATUS_COLORS[ev.session.status],
+                            border: `1px solid ${SESSION_STATUS_COLORS[ev.session.status]}30`,
+                          }}
+                        >
+                          {SESSION_STATUS_LABELS[ev.session.status]}
+                        </StatusBadge>
                       </div>
-                      <div className="mt-auto pt-1">
-                        <p className="text-foreground/70 text-xs font-medium">
-                          {ev.session.startTime} – {ev.session.endTime}
-                        </p>
-                        <p className="text-foreground/60 line-clamp-1 text-xs">
-                          {ev.session.teacher?.name || ev.session.teacher?.email || "Unassigned"}
-                        </p>
+                      <div className="mt-auto flex shrink-0 items-end justify-between gap-3">
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="text-foreground/75 flex items-center gap-2 text-xs font-medium tabular-nums">
+                            <Clock className="text-muted-foreground h-4 w-4 shrink-0" aria-hidden />
+                            <span>
+                              {ev.session.startTime} – {ev.session.endTime}
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <User className="text-primary mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                            <span className="text-foreground line-clamp-2 text-sm leading-snug font-semibold">
+                              {ev.session.teacher?.name || ev.session.teacher?.email || "Unassigned"}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          data-timetable-session-menu
+                          className="flex shrink-0 flex-col items-end"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <TimetableSessionEventMenu
+                            session={ev.session}
+                            onEdit={onEditSession}
+                            triggerClassName="opacity-100"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

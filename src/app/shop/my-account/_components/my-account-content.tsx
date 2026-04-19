@@ -681,7 +681,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                     <div className="hidden overflow-x-auto md:block">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="border-border border-b">
+                          <tr className="border-border cursor-pointer border-b">
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Invoice</th>
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Date</th>
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Item</th>
@@ -693,7 +693,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         </thead>
                         <tbody className="divide-border divide-y">
                           {currentPurchases.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-accent/30 transition-colors">
+                            <tr key={inv.id} className="hover:bg-accent/30 cursor-pointer transition-colors">
                               <td className="text-foreground py-4 text-sm font-medium">{inv.id.slice(0, 12)}</td>
                               <td className="text-muted-foreground py-4 text-sm">{formatDateShort(inv.createdAt)}</td>
                               <td className="text-foreground py-4 text-sm font-bold">{inv.product.name}</td>
