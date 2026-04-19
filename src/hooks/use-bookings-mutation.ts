@@ -15,6 +15,11 @@ interface RemoveParticipantData {
   bookingId: string;
 }
 
+interface ConfirmParticipantsData {
+  sessionId: string;
+  bookingIds: string[];
+}
+
 interface Session {
   id: string;
   _count?: {
@@ -43,7 +48,7 @@ function optimisticAdjustSessionBookingCount(old: unknown, sessionId: string, de
     });
   }
 
-  if (typeof old === "object" && old !== null && "id" in old && (old as Session).id === sessionId) {
+  if (typeof old === "object" && "id" in old && (old as Session).id === sessionId) {
     const s = old as Session;
     return {
       ...s,
@@ -60,7 +65,7 @@ function optimisticAdjustSessionBookingCount(old: unknown, sessionId: string, de
 function bookingMutationErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as unknown;
-    if (data && typeof data === "object" && data !== null && "error" in data) {
+    if (data && typeof data === "object" && "error" in data) {
       const err = (data as { error: unknown }).error;
       if (typeof err === "string" && err.length > 0) return err;
     }
@@ -147,6 +152,36 @@ export function useRemoveSessionParticipant() {
       }
 
       toast.error(bookingMutationErrorMessage(error, "Failed to remove participant"));
+    },
+  });
+}
+
+interface ConfirmParticipantsResponse {
+  updatedCount: number;
+  skippedCount: number;
+}
+
+export function useConfirmSessionParticipants() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ sessionId, bookingIds }: ConfirmParticipantsData): Promise<ConfirmParticipantsResponse> => {
+      const response = await axios.patch(`/api/admin/sessions/${sessionId}/bookings`, {
+        bookingIds,
+        targetStatus: "CONFIRMED",
+      });
+      return response.data;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      if (result.skippedCount > 0) {
+        toast.success(`Confirmed ${result.updatedCount} participant(s). Skipped ${result.skippedCount}.`);
+        return;
+      }
+      toast.success(`Confirmed ${result.updatedCount} participant(s).`);
+    },
+    onError: (error) => {
+      toast.error(bookingMutationErrorMessage(error, "Failed to confirm participants"));
     },
   });
 }

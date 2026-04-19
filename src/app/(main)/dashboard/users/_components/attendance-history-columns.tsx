@@ -12,6 +12,8 @@ type Booking = MemberDetails["bookings"][number];
 
 const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
+    case "RESERVED":
+      return "outline";
     case "CONFIRMED":
     case "COMPLETED":
       return "default";
@@ -27,6 +29,8 @@ const getStatusVariant = (status: string): "default" | "secondary" | "destructiv
 
 const getStatusIcon = (status: string) => {
   switch (status) {
+    case "RESERVED":
+      return <ClockIcon className="h-4 w-4" />;
     case "CONFIRMED":
     case "COMPLETED":
       return <CheckCircle2 className="h-4 w-4" />;

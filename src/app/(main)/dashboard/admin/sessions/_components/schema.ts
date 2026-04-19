@@ -42,7 +42,7 @@ export const sessionSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        status: z.enum(["CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW", "WAITLISTED"]),
+        status: z.enum(["RESERVED", "CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW", "WAITLISTED"]),
         user: z.object({
           id: z.string(),
           name: z.string().nullable(),

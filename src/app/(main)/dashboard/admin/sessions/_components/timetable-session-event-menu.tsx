@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Edit2, MoreHorizontal, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Edit2, MoreHorizontal, Trash2, Users, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import { suppressPointerAfterDialogClose } from "@/hooks/use-dialog-close-pointe
 import { useDeleteSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 import { cn } from "@/lib/utils";
 
-import { AddParticipantDialog } from "./add-participant-dialog";
 import { CancelSessionDialog } from "./cancel-session-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
@@ -36,7 +35,6 @@ export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }:
   const updateSessionMutation = useUpdateSession();
 
   const [participantsOpen, setParticipantsOpen] = useState(false);
-  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
@@ -120,17 +118,6 @@ export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }:
             View &amp; edit participants
           </DropdownMenuItem>
 
-          <DropdownMenuItem
-            className="cursor-pointer text-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setAddParticipantOpen(true);
-            }}
-          >
-            <UserPlus className="mr-2 h-3.5 w-3.5" />
-            Add participant
-          </DropdownMenuItem>
-
           <DropdownMenuSeparator />
 
           {hasParticipants ? (
@@ -164,7 +151,6 @@ export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }:
       </DropdownMenu>
 
       <ParticipantsDialog open={participantsOpen} onOpenChange={setParticipantsOpen} session={session} />
-      <AddParticipantDialog open={addParticipantOpen} onOpenChange={setAddParticipantOpen} session={session} />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

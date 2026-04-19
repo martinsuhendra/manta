@@ -8,7 +8,7 @@ import type { TeacherFeeModel } from "@/lib/teacher-fee-model";
 const MAX_DAYS_RANGE = 365;
 
 /** Bookings that count toward per-participant payroll headcount */
-const PAYROLL_BILLABLE_BOOKING_STATUSES = ["CONFIRMED", "COMPLETED"] as const;
+const PAYROLL_BILLABLE_BOOKING_STATUSES = ["CONFIRMED"] as const;
 
 interface TeacherFeeConfig {
   feeAmount: number;

@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { format, isSameDay } from "date-fns";
-import { Clock, User } from "lucide-react";
+import { Clock, User, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -263,6 +263,7 @@ export function SessionDayTimetable({
               const rawHeight = minutesToPx(ev.endMin - ev.startMin, PX_PER_MINUTE);
               const height = Math.max(MIN_EVENT_HEIGHT_PX, rawHeight - GAP_PX);
               const { widthPct, leftPct } = getOverlapLaneStyle(ev.column, ev.columnCount);
+              const participantCount = ev.session.totalParticipantSlots ?? ev.session._count?.bookings ?? 0;
 
               return (
                 <div
@@ -326,11 +327,19 @@ export function SessionDayTimetable({
                               {ev.session.startTime} – {ev.session.endTime}
                             </span>
                           </div>
-                          <div className="flex items-start gap-2">
-                            <User className="text-primary mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                            <span className="text-foreground line-clamp-2 text-sm leading-snug font-semibold">
-                              {ev.session.teacher?.name || ev.session.teacher?.email || "Unassigned"}
-                            </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-start gap-2">
+                              <User className="text-primary mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                              <span className="text-foreground line-clamp-2 text-sm leading-snug font-semibold">
+                                {ev.session.teacher?.name || ev.session.teacher?.email || "Unassigned"}
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs font-semibold">
+                              <Users className="h-3.5 w-3.5" aria-hidden />
+                              <span>
+                                {participantCount} participant{participantCount !== 1 ? "s" : ""}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div

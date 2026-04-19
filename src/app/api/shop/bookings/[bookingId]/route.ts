@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const productItem =
-      booking.status === "CONFIRMED"
+      booking.status === "CONFIRMED" || booking.status === "RESERVED"
         ? await prisma.productItem.findFirst({
             where: {
               productId: booking.membership.productId,

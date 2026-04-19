@@ -67,9 +67,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    const confirmedBookings = classSession.bookings.filter((b) => b.status === "CONFIRMED");
+    const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CONFIRMED");
     const { bookings, ...rest } = classSession;
-    return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(confirmedBookings) });
+    return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(occupiedBookings) });
   } catch (error) {
     console.error("Error fetching session:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

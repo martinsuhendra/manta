@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: "CONFIRMED",
+        status: { in: ["RESERVED", "CONFIRMED"] },
       },
       _sum: { participantCount: true },
     });
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           membershipId,
           brandId: classSession.brandId,
           participantCount: participantsPerPurchase,
-          status: "CONFIRMED",
+          status: "RESERVED",
         },
         include: {
           classSession: {

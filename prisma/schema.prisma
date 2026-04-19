@@ -375,7 +375,7 @@ model Booking {
   membershipId     String        @map("membership_id") @db.Uuid
   brandId          String        @db.Uuid
   participantCount Int           @default(1) @map("participant_count")
-  status           BookingStatus @default(CONFIRMED)
+  status           BookingStatus @default(RESERVED)
   notes            String?
   createdAt        DateTime      @default(now()) @db.Timestamp(6)
   updatedAt        DateTime      @updatedAt @db.Timestamp(6)
@@ -453,6 +453,7 @@ enum SessionStatus {
 }
 
 enum BookingStatus {
+  RESERVED
   CONFIRMED
   CANCELLED
   COMPLETED
