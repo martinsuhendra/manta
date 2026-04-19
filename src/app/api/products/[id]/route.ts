@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const validatedData = updateProductSchema.parse(body);
-    const { brandIds, ...updateData } = validatedData;
+    const { brandIds, imageAsset: imageAssetInput, ...updateData } = validatedData;
     const existingProduct = await prisma.product.findUnique({
       where: { id },
       select: { imageAsset: true },
@@ -80,14 +80,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const previousAsset = parseCloudinaryAsset(existingProduct.imageAsset);
-    const nextAsset =
-      validatedData.imageAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.imageAsset);
-    const nextAssetForDb = validatedData.imageAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const nextAsset = imageAssetInput === undefined ? previousAsset : parseCloudinaryAsset(imageAssetInput);
+    const nextAssetForDb = imageAssetInput === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
     const shouldDeletePrevious =
       !!previousAsset &&
       (!nextAsset ||
         previousAsset.publicId !== nextAsset.publicId ||
-        validatedData.imageAsset === null ||
+        imageAssetInput === null ||
         validatedData.image === "");
 
     if (brandIds) {
@@ -104,7 +103,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       data: {
         ...updateData,
-        ...(validatedData.imageAsset !== undefined && {
+        ...(imageAssetInput !== undefined && {
           imageAsset: nextAssetForDb,
           image: resolveAssetUrl(nextAsset, validatedData.image),
         }),
