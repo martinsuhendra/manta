@@ -492,26 +492,24 @@ export function TeacherFeesTable() {
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent
-          className="max-h-[min(90vh,760px)] w-[calc(100vw-1.5rem)] gap-0 overflow-y-auto p-0 sm:max-w-2xl"
+          className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-lg"
           showCloseButton
         >
-          <div className="from-muted/50 via-background to-background border-b bg-gradient-to-b px-6 pt-6 pb-5">
-            <div className="text-primary mb-4 flex items-center gap-2">
+          <DialogHeader className="border-b px-4 py-3 pr-10 sm:px-6 sm:py-4">
+            <div className="text-primary flex items-center gap-2">
               <Wallet className="size-5" />
               <span className="text-xs font-semibold tracking-wide uppercase">Payroll fee</span>
             </div>
-            <DialogHeader className="space-y-1 text-left">
-              <DialogTitle className="text-xl font-semibold tracking-tight">Edit fee</DialogTitle>
-              <DialogDescription>
-                Update how this teacher is paid when a session for this class is marked completed.
-              </DialogDescription>
-            </DialogHeader>
+            <DialogTitle className="text-xl font-semibold tracking-tight">Edit fee</DialogTitle>
+            <DialogDescription>
+              Update how this teacher is paid when a session for this class is marked completed.
+            </DialogDescription>
             {editing ? (
-              <TeacherContextCard teacher={editing.teacher} classLabel={editing.item.name} cardClassName="mt-5" />
+              <TeacherContextCard teacher={editing.teacher} classLabel={editing.item.name} cardClassName="mt-3" />
             ) : null}
-          </div>
+          </DialogHeader>
           {editing ? (
-            <div className="space-y-6 px-6 py-6">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <FeeModelFields
                 formId="edit-fee"
                 feeModel={editFeeModel}
@@ -550,11 +548,11 @@ export function TeacherFeesTable() {
               ) : null}
             </div>
           ) : null}
-          <DialogFooter className="bg-muted/20 border-t px-6 py-4 sm:justify-end">
-            <Button variant="outline" onClick={() => setEditing(null)}>
+          <DialogFooter className="flex-col-reverse gap-2 border-t px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setEditing(null)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={updateMutation.isPending}>
+            <Button className="w-full sm:w-auto" onClick={handleSave} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save changes
             </Button>
@@ -869,24 +867,22 @@ function AddFeeDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[min(90vh,820px)] w-[calc(100vw-1.5rem)] gap-0 overflow-y-auto p-0 sm:max-w-2xl"
+        className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-lg"
         showCloseButton
       >
-        <div className="from-muted/50 via-background to-background border-b bg-gradient-to-b px-6 pt-6 pb-5">
-          <div className="text-primary mb-4 flex items-center gap-2">
+        <DialogHeader className="border-b px-4 py-3 pr-10 sm:px-6 sm:py-4">
+          <div className="text-primary flex items-center gap-2">
             <Wallet className="size-5" />
             <span className="text-xs font-semibold tracking-wide uppercase">New payroll fee</span>
           </div>
-          <DialogHeader className="space-y-1 text-left">
-            <DialogTitle className="text-xl font-semibold tracking-tight">Add teacher fee</DialogTitle>
-            <DialogDescription>
-              Pick a teacher and class, then set the pay rule and amount. Shown on the payroll summary for completed
-              sessions.
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+          <DialogTitle className="text-xl font-semibold tracking-tight">Add teacher fee</DialogTitle>
+          <DialogDescription>
+            Pick a teacher and class, then set the pay rule and amount. Shown on the payroll summary for completed
+            sessions.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-6 px-6 py-6">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {conflictRow ? (
             <Alert variant="destructive">
               <AlertTriangle />
@@ -982,11 +978,11 @@ function AddFeeDialog({
           ) : null}
         </div>
 
-        <DialogFooter className="bg-muted/20 border-t px-6 py-4 sm:justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col-reverse gap-2 border-t px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={isPending || !!conflictRow}>
+          <Button className="w-full sm:w-auto" onClick={onSubmit} disabled={isPending || !!conflictRow}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Add configuration
           </Button>

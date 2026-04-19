@@ -1,12 +1,42 @@
+"use client";
+
+import type { ReactNode } from "react";
+
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
+
+/** Matches gradient + shadow applied to direct child `Card` components (`data-slot="card"`). */
+export const sectionCardsGradientGridClassName =
+  "*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs";
+
+function sectionCardsGridColsClass(columns: 1 | 3 | 4) {
+  if (columns === 1) return "grid grid-cols-1 gap-4";
+  if (columns === 3) return "grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3";
+  return "grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4";
+}
+
+export function SectionCardsGrid({
+  children,
+  className,
+  columns = 4,
+}: {
+  children: ReactNode;
+  className?: string;
+  columns?: 1 | 3 | 4;
+}) {
+  return (
+    <div className={cn(sectionCardsGradientGridClassName, sectionCardsGridColsClass(columns), className)}>
+      {children}
+    </div>
+  );
+}
 
 export function SectionCards() {
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <SectionCardsGrid columns={4}>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
@@ -81,6 +111,6 @@ export function SectionCards() {
           <div className="text-muted-foreground">Meets growth projections</div>
         </CardFooter>
       </Card>
-    </div>
+    </SectionCardsGrid>
   );
 }

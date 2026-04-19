@@ -1,12 +1,15 @@
 "use client";
 
+import { CalendarSearch } from "lucide-react";
+
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 export interface PayrollSummaryRow {
   teacherId: string;
   teacherName: string;
   teacherEmail: string | null;
+  teacherImage?: string | null;
   sessionsCount: number;
   byItem: Array<{
     itemId: string;
@@ -28,6 +31,7 @@ interface PayrollSummaryTableProps {
   grandTotalFee: number;
   period: { startDate: string; endDate: string };
   isLoading?: boolean;
+  embedded?: boolean;
 }
 
 function classPayrollLine(b: PayrollSummaryRow["byItem"][number]): string {
@@ -41,22 +45,24 @@ function classPayrollLine(b: PayrollSummaryRow["byItem"][number]): string {
   return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"} @ ${formatPrice(b.feeAmount)} flat → ${formatPrice(b.totalFee)}`;
 }
 
-export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: PayrollSummaryTableProps) {
+export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading, embedded }: PayrollSummaryTableProps) {
   if (isLoading) {
     return <div className="text-muted-foreground flex items-center justify-center py-12">Loading summary…</div>;
   }
 
   if (rows.length === 0) {
     return (
-      <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center">
-        No completed sessions
-        {period.startDate && period.endDate ? ` for ${period.startDate} – ${period.endDate}` : ""}.
+      <div className="bg-muted/20 rounded-xl border border-dashed px-6 py-12 text-center">
+        <div className="bg-background mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border">
+          <CalendarSearch className="text-muted-foreground h-4 w-4" />
+        </div>
+        <p className="text-foreground text-sm font-medium">No completed sessions found</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border">
+    <div className={cn(!embedded && "rounded-md border", embedded && "overflow-x-auto")}>
       <Table>
         <TableHeader>
           <TableRow>

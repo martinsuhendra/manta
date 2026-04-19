@@ -4,10 +4,17 @@ import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import { BookOpen, CalendarDays, Users, Wallet } from "lucide-react";
 
 import { RoleGuard } from "@/components/role-guard";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { USER_ROLES } from "@/lib/types";
+import { formatPrice } from "@/lib/utils";
+
+import { SectionCardsGrid } from "../../home/_components/section-cards";
 
 import { PayrollFilters, getSummaryQueryParams, type PayrollFiltersState } from "./_components/payroll-filters";
 import { PayrollSummaryTable } from "./_components/payroll-summary-table";
@@ -36,6 +43,11 @@ export default function PayrollPage() {
     },
   });
 
+  const totalTeachers = data?.rows?.length ?? 0;
+  const totalSessions =
+    data?.rows?.reduce((acc: number, row: { sessionsCount: number }) => acc + row.sessionsCount, 0) ?? 0;
+  const grandTotal = data?.grandTotalFee ?? 0;
+
   return (
     <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]}>
       <div className="@container/main flex flex-col gap-4 md:gap-6">
@@ -54,15 +66,76 @@ export default function PayrollPage() {
             <TabsTrigger value="fees">Teacher fees</TabsTrigger>
           </TabsList>
           <TabsContent value="summary" className="mt-4 space-y-4">
+            <SectionCardsGrid columns={3}>
+              <Card className="@container/card">
+                <CardHeader>
+                  <CardDescription>Total payroll</CardDescription>
+                  <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                    {formatPrice(grandTotal)}
+                  </CardTitle>
+                  <CardAction>
+                    <StatusBadge variant="outline">
+                      <Wallet className="size-4" />
+                    </StatusBadge>
+                  </CardAction>
+                </CardHeader>
+                <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                  <div className="line-clamp-1 flex gap-2 font-medium">Gross IDR for the period</div>
+                  <div className="text-muted-foreground">Before tax or other deductions</div>
+                </CardFooter>
+              </Card>
+              <Card className="@container/card">
+                <CardHeader>
+                  <CardDescription>Teachers paid</CardDescription>
+                  <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                    {totalTeachers}
+                  </CardTitle>
+                  <CardAction>
+                    <StatusBadge variant="outline">
+                      <Users className="size-4" />
+                    </StatusBadge>
+                  </CardAction>
+                </CardHeader>
+                <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                  <div className="line-clamp-1 flex gap-2 font-medium">With payroll in this view</div>
+                  <div className="text-muted-foreground">After teacher & class filters</div>
+                </CardFooter>
+              </Card>
+              <Card className="@container/card">
+                <CardHeader>
+                  <CardDescription>Completed sessions</CardDescription>
+                  <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                    {totalSessions}
+                  </CardTitle>
+                  <CardAction>
+                    <StatusBadge variant="outline">
+                      <BookOpen className="size-4" />
+                    </StatusBadge>
+                  </CardAction>
+                </CardHeader>
+                <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                  <div className="line-clamp-1 flex gap-2 font-medium">Sessions counted toward fees</div>
+                  <div className="text-muted-foreground">Status: completed only</div>
+                </CardFooter>
+              </Card>
+            </SectionCardsGrid>
+
             <div className="flex flex-wrap items-center gap-2">
               <PayrollFilters filters={filters} onFiltersChange={setFilters} />
               {data?.period && (
-                <span className="text-muted-foreground text-sm">
-                  {format(parseISO(data.period.startDate), "dd-MM-yyyy")} –{" "}
-                  {format(parseISO(data.period.endDate), "dd-MM-yyyy")}
-                </span>
+                <Badge
+                  variant="secondary"
+                  className="text-muted-foreground flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-normal"
+                >
+                  <CalendarDays className="h-3.5 w-3.5 opacity-70" />
+                  <span>
+                    {format(parseISO(data.period.startDate), "MMM d, yyyy")} –{" "}
+                    {format(parseISO(data.period.endDate), "MMM d, yyyy")}
+                  </span>
+                </Badge>
               )}
             </div>
+
             <PayrollSummaryTable
               rows={data?.rows ?? []}
               grandTotalFee={data?.grandTotalFee ?? 0}
