@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useDialogClosePointerGuard } from "@/hooks/use-dialog-close-pointer-guard";
 import { useItems } from "@/hooks/use-items-query";
 import { useCreateSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 import { useTeachers } from "@/hooks/use-users-query";
@@ -166,8 +167,10 @@ export function SessionDialog({
     }
   };
 
+  const handleOpenChange = useDialogClosePointerGuard(onOpenChange);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Session" : "Create New Session"}</DialogTitle>

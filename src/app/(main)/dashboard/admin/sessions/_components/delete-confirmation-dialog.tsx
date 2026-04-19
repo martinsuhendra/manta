@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useDialogClosePointerGuard } from "@/hooks/use-dialog-close-pointer-guard";
 
 import { Session } from "./schema";
 
@@ -32,12 +33,14 @@ export function DeleteConfirmationDialog({
   onConfirm,
   isDeleting = false,
 }: DeleteConfirmationDialogProps) {
+  const guardedOnOpenChange = useDialogClosePointerGuard(onOpenChange);
+
   if (!session) return null;
 
   const hasBookings = (session._count?.bookings || 0) > 0;
 
   return (
-    <Dialog open={open} onOpenChange={isDeleting ? () => {} : onOpenChange}>
+    <Dialog open={open} onOpenChange={isDeleting ? () => {} : guardedOnOpenChange}>
       <DialogContent className="max-w-md">
         {/* Loading Overlay */}
         {isDeleting && (

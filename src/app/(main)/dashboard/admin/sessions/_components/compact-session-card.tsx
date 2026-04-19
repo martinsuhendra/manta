@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Clock, User, Users as UsersIcon } from "lucide-react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
+import { suppressPointerAfterDialogClose } from "@/hooks/use-dialog-close-pointer-guard";
 import { useDeleteSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
@@ -13,6 +14,7 @@ import { CompactSessionCardActions } from "./compact-session-card-actions";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
+import { armBlockOpenEditAfterSessionDialog, isBlockingOverlayUiOpen } from "./session-open-edit-guard";
 
 const SESSION_STATUS_COLORS = {
   SCHEDULED: "#10b981",
@@ -45,8 +47,11 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
   const handleDeleteConfirm = () => {
     if (!sessionToDelete) return;
 
-    deleteSessionMutation.mutate(sessionToDelete.id, {
+    const id = sessionToDelete.id;
+    deleteSessionMutation.mutate(id, {
       onSuccess: () => {
+        armBlockOpenEditAfterSessionDialog(id);
+        suppressPointerAfterDialogClose();
         setShowDeleteDialog(false);
         setSessionToDelete(null);
       },
@@ -65,10 +70,13 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
   const handleCancelConfirm = () => {
     if (!sessionToCancel) return;
 
+    const cancelId = sessionToCancel.id;
     updateSessionMutation.mutate(
-      { sessionId: sessionToCancel.id, data: { status: "CANCELLED" } },
+      { sessionId: cancelId, data: { status: "CANCELLED" } },
       {
         onSuccess: () => {
+          armBlockOpenEditAfterSessionDialog(cancelId);
+          suppressPointerAfterDialogClose();
           setShowCancelDialog(false);
           setSessionToCancel(null);
         },
@@ -82,7 +90,10 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
     <div
       className="bg-card cursor-pointer rounded-lg border border-l-4 transition-all duration-200 hover:shadow-lg"
       style={{ borderLeftColor: session.item.color || SESSION_STATUS_COLORS[session.status] }}
-      onClick={() => onSessionSelect(session)}
+      onClick={() => {
+        if (isBlockingOverlayUiOpen()) return;
+        onSessionSelect(session);
+      }}
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
