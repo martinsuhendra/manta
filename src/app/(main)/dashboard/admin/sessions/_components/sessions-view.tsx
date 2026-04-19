@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { BulkSessionDialog } from "./bulk-session-dialog";
 import { Session, SessionFilter } from "./schema";
-import { SessionCalendar } from "./session-calendar";
+import { SessionCalendar, type DateSelectMeta } from "./session-calendar";
 import { SessionDialog } from "./session-dialog";
 import { SessionFilters } from "./session-filters";
 import { SessionList } from "./session-list";
@@ -34,9 +34,9 @@ export function SessionsView() {
     setEditingSession(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- session list not needed for date selection
-  const handleDateSelect = (date: Date, hasSessions?: boolean, sessions?: unknown[]) => {
+  const handleDateSelect = (date: Date, hasSessions?: boolean, _sessions?: unknown[], meta?: DateSelectMeta) => {
     setSelectedDate(date);
+    if (meta?.silent) return;
     if (!hasSessions) {
       setIsDialogOpen(true);
     }
@@ -47,7 +47,6 @@ export function SessionsView() {
   };
 
   const handleEditSession = (session: Session) => {
-    console.log("Editing session:", session);
     setEditingSession(session);
     // Set the selected date to the session's date
     setSelectedDate(new Date(session.date));
@@ -58,7 +57,7 @@ export function SessionsView() {
     <div className="space-y-6">
       {/* Header actions */}
       <div className="flex items-center justify-between gap-2">
-        {activeTab === "list" && <SessionFilters appliedFilters={filters} onFilterChange={handleFilterChange} />}
+        <SessionFilters appliedFilters={filters} onFilterChange={handleFilterChange} />
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)}>
             <Layers className="mr-2 h-4 w-4" />
@@ -76,7 +75,7 @@ export function SessionsView() {
         <TabsList>
           <TabsTrigger value="calendar" className="cursor-pointer">
             <CalendarIcon className="mr-2 h-4 w-4" />
-            Calendar View
+            Day timetable
           </TabsTrigger>
           <TabsTrigger value="list" className="cursor-pointer">
             <List className="mr-2 h-4 w-4" />
@@ -88,10 +87,7 @@ export function SessionsView() {
           <SessionCalendar
             filters={filters}
             onDateSelect={handleDateSelect}
-            onSessionSelect={(session) => {
-              // Handle session selection for editing
-              console.log("Selected session:", session);
-            }}
+            onSessionSelect={handleEditSession}
             onEditSession={handleEditSession}
           />
         </TabsContent>

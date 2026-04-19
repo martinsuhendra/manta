@@ -1,204 +1,126 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-explicit-any, security/detect-object-injection */
 "use client";
 
 import * as React from "react";
 import { useState } from "react";
 
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSessions } from "@/hooks/use-sessions-query";
+import { cn } from "@/lib/utils";
 
-import { CompactSessionCard } from "./compact-session-card";
-import { Session, SessionFilter, SESSION_STATUS_COLORS } from "./schema";
+import { Session, SessionFilter } from "./schema";
+import { SessionDayTimetable } from "./session-day-timetable";
+
+export interface DateSelectMeta {
+  /** When true, parent only syncs date (no create dialog). */
+  silent?: boolean;
+}
 
 interface SessionCalendarProps {
   filters: SessionFilter;
-  onDateSelect: (date: Date, hasSessions?: boolean, sessions?: Session[]) => void;
+  onDateSelect: (date: Date, hasSessions?: boolean, sessions?: Session[], meta?: DateSelectMeta) => void;
   onSessionSelect: (session: Session) => void;
   onEditSession?: (session: Session) => void;
+  /** Reserved for future cache invalidation; timetable uses `useSessions` query key from filters + day. */
   refreshTrigger?: number;
 }
 
-export function SessionCalendar({ filters, onDateSelect, onSessionSelect, onEditSession }: SessionCalendarProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+export function SessionCalendar({
+  filters,
+  onDateSelect,
+  onSessionSelect,
+  onEditSession,
+  refreshTrigger,
+}: SessionCalendarProps) {
+  void refreshTrigger;
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
-  // Prepare filters with date range for current month
-  const calendarFilters = React.useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
+  const dayKey = format(selectedDate, "yyyy-MM-dd");
 
+  const calendarFilters = React.useMemo<SessionFilter>(() => {
     return {
-      ...filters,
-      startDate: format(start, "yyyy-MM-dd"),
-      endDate: format(end, "yyyy-MM-dd"),
+      ...(filters.teacherId ? { teacherId: filters.teacherId } : {}),
+      ...(filters.itemId ? { itemId: filters.itemId } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+      startDate: dayKey,
+      endDate: dayKey,
     };
-  }, [currentMonth, filters]);
+  }, [dayKey, filters.teacherId, filters.itemId, filters.status]);
 
   const { data: sessions = [], isLoading } = useSessions(calendarFilters);
 
-  // Group sessions by date
-  const sessionsByDate = sessions.reduce(
-    (acc, session) => {
-      // Ensure date is in YYYY-MM-DD format for consistent grouping
-      const dateKey = session.date.includes("T") ? session.date.split("T")[0] : session.date;
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(session);
-      return acc;
+  const commitDateToParent = React.useCallback(
+    (date: Date) => {
+      setSelectedDate(date);
+      onDateSelect(date, true, [], { silent: true });
     },
-    {} as Record<string, Session[]>,
+    [onDateSelect],
   );
 
-  // Get sessions for selected date
-  const selectedDateSessions = selectedDate ? sessionsByDate[format(selectedDate, "yyyy-MM-dd")] || [] : [];
+  React.useEffect(() => {
+    onDateSelect(selectedDate, true, [], { silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial parent date sync
+  }, []);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    // Determine which date to use for selection
-    let targetDate: Date | undefined = date;
-
-    // If date is undefined (calendar trying to deselect) or same date clicked, keep current selection
-    if (!date && selectedDate) {
-      targetDate = selectedDate;
-    } else if (date && selectedDate && format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")) {
-      targetDate = selectedDate;
-    }
-
-    // Update state and notify parent
-    if (targetDate) {
-      setSelectedDate(targetDate);
-      const dateKey = format(targetDate, "yyyy-MM-dd");
-      const daySessions = sessionsByDate[dateKey] || [];
-      onDateSelect(targetDate, daySessions.length > 0, daySessions);
-    } else {
-      setSelectedDate(undefined);
-    }
+  const handlePrevDay = () => {
+    commitDateToParent(subDays(selectedDate, 1));
   };
 
-  const handleMonthChange = (date: Date) => {
-    setCurrentMonth(date);
+  const handleNextDay = () => {
+    commitDateToParent(addDays(selectedDate, 1));
   };
 
-  // Custom day content to show session indicators
-  const renderDayContent = (day: any) => {
-    const date = day.date || day;
-    const dateKey = format(date, "yyyy-MM-dd");
-    const daySessions = sessionsByDate[dateKey] || [];
+  const handleToday = () => {
+    commitDateToParent(new Date());
+  };
 
-    return (
-      <div className="relative flex h-full w-full flex-col items-center justify-between p-1">
-        <span className="text-sm font-medium">{format(date, "d")}</span>
-        {daySessions.length > 0 && (
-          <div className="flex justify-center gap-0.5">
-            {daySessions.slice(0, 3).map((session) => (
-              <div
-                key={session.id}
-                className="h-1.5 w-1.5 rounded-full"
-                style={{
-                  backgroundColor: session.item.color || SESSION_STATUS_COLORS[session.status],
-                }}
-                title={`${session.item.name} - ${session.startTime}`}
-              />
-            ))}
-            {daySessions.length > 3 && (
-              <div
-                className="h-1.5 w-1.5 rounded-full bg-gray-400"
-                title={`+${daySessions.length - 3} more sessions`}
-              />
-            )}
-          </div>
-        )}
-      </div>
-    );
+  const handlePopoverSelect = (date: Date | undefined) => {
+    if (!date) return;
+    commitDateToParent(date);
+  };
+
+  const handleCreateForDay = () => {
+    onDateSelect(selectedDate, false, [], {});
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Calendar */}
-      <div className="lg:col-span-2">
-        <div className="sticky top-4">
-          <Card className="border-none">
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                month={currentMonth}
-                onMonthChange={handleMonthChange}
-                className="w-full rounded-md border"
-                classNames={{
-                  day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-md m-0.5",
-                  day_selected:
-                    "bg-blue-500 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-md m-0.5",
-                  day_today: "bg-accent text-accent-foreground rounded-md m-0.5 border border-primary/30",
-                  day_outside: "text-muted-foreground opacity-50",
-                  day_disabled: "text-muted-foreground opacity-50",
-                  day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                  day_hidden: "invisible",
-                }}
-                components={{
-                  DayButton: ({ day, ...props }: { day: any; [key: string]: any }) => (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground m-0.5 h-12 w-full rounded-md p-0 font-normal"
-                      {...props}
-                    >
-                      {renderDayContent(day)}
-                    </Button>
-                  ),
-                }}
-              />
-              {isLoading && <div className="text-muted-foreground mt-4 text-center text-sm">Loading sessions...</div>}
-            </CardContent>
-          </Card>
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="icon" onClick={handlePrevDay} aria-label="Previous day">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="outline" className={cn("min-w-[200px] justify-start text-left font-normal")}>
+              <CalendarIcon className="text-muted-foreground mr-2 h-4 w-4" />
+              {format(selectedDate, "PPP")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={selectedDate} onSelect={handlePopoverSelect} initialFocus />
+          </PopoverContent>
+        </Popover>
+        <Button type="button" variant="outline" size="icon" onClick={handleNextDay} aria-label="Next day">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={handleToday}>
+          Today
+        </Button>
       </div>
 
-      {/* Session Details for Selected Date */}
-      <div className="flex h-[calc(100vh-12rem)] flex-col space-y-4">
-        <div className="shrink-0">
-          <h3 className="text-lg font-semibold">
-            {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            {selectedDateSessions.length} session{selectedDateSessions.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        <div className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto">
-          {selectedDateSessions.length === 0 ? (
-            <Card>
-              <CardContent className="text-muted-foreground p-4 text-center">
-                <p>No sessions on this date</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => selectedDate && onDateSelect(selectedDate)}
-                >
-                  Create Session
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            selectedDateSessions
-              .sort((a, b) => a.startTime.localeCompare(b.startTime))
-              .map((session) => (
-                <CompactSessionCard
-                  key={session.id}
-                  session={session}
-                  onSessionSelect={onSessionSelect}
-                  onEdit={onEditSession}
-                />
-              ))
-          )}
-        </div>
-      </div>
+      <SessionDayTimetable
+        selectedDate={selectedDate}
+        sessions={sessions}
+        isLoading={isLoading}
+        onSessionSelect={onSessionSelect}
+        onEditSession={onEditSession}
+        onCreateForDay={handleCreateForDay}
+      />
     </div>
   );
 }
