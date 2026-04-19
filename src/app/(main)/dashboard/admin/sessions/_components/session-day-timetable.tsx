@@ -12,13 +12,19 @@ import { cn } from "@/lib/utils";
 
 import { CompactSessionCard } from "./compact-session-card";
 import type { Session } from "./schema";
-import { buildTimetableLayout, minutesToPx } from "./session-timetable-utils";
+import { buildTimetableLayout, minutesToPx, minutesToTimeString } from "./session-timetable-utils";
 
 const MINUTES_PER_DAY = 24 * 60;
 const PX_PER_HOUR = 80;
 const PX_PER_MINUTE = PX_PER_HOUR / 60;
 const MIN_EVENT_HEIGHT_PX = 40;
 const GAP_PX = 2;
+/** Snap hover preview to 15-minute steps (matches session scheduling). */
+const HOVER_SNAP_MINUTES = 15;
+
+function snapMinutesToStep(totalMinutes: number, step: number): number {
+  return Math.round(totalMinutes / step) * step;
+}
 
 export interface SessionDayTimetableProps {
   selectedDate: Date;
@@ -26,7 +32,8 @@ export interface SessionDayTimetableProps {
   isLoading: boolean;
   onSessionSelect: (session: Session) => void;
   onEditSession?: (session: Session) => void;
-  onCreateForDay: () => void;
+  /** Pass snapped hover time as `HH:mm` when creating from the grid; omit for default (e.g. header create). */
+  onCreateForDay: (defaultStartTime?: string) => void;
 }
 
 function useNowTick(isToday: boolean) {
@@ -66,6 +73,35 @@ export function SessionDayTimetable({
 
   const nowLineTop = isToday ? minutesToPx(nowMinutes, PX_PER_MINUTE) : null;
 
+  const laneRef = React.useRef<HTMLDivElement>(null);
+  const [hoverTopPx, setHoverTopPx] = React.useState<number | null>(null);
+  const [hoverMinutes, setHoverMinutes] = React.useState<number | null>(null);
+
+  const handleLaneMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = laneRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < 0 || y > rect.height) {
+      setHoverTopPx(null);
+      setHoverMinutes(null);
+      return;
+    }
+    const rawMinutes = y / PX_PER_MINUTE;
+    const maxSnapped = Math.floor((MINUTES_PER_DAY - 1) / HOVER_SNAP_MINUTES) * HOVER_SNAP_MINUTES;
+    const snapped = Math.min(
+      snapMinutesToStep(Math.max(0, Math.min(MINUTES_PER_DAY - 1, rawMinutes)), HOVER_SNAP_MINUTES),
+      maxSnapped,
+    );
+    setHoverMinutes(snapped);
+    setHoverTopPx(minutesToPx(snapped, PX_PER_MINUTE));
+  }, []);
+
+  const handleLaneMouseLeave = React.useCallback(() => {
+    setHoverTopPx(null);
+    setHoverMinutes(null);
+  }, []);
+
   if (isLoading) {
     return (
       <Card className="border-none">
@@ -94,7 +130,7 @@ export function SessionDayTimetable({
           <Card>
             <CardContent className="text-muted-foreground p-6 text-center text-sm">
               <p>No sessions on this day.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={onCreateForDay}>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => onCreateForDay()}>
                 Create session
               </Button>
             </CardContent>
@@ -132,12 +168,18 @@ export function SessionDayTimetable({
           </div>
 
           {/* Lane */}
-          <div className="relative min-w-0 flex-1" style={{ height: laneHeightPx }}>
+          <div
+            ref={laneRef}
+            className="relative min-w-0 flex-1"
+            style={{ height: laneHeightPx }}
+            onMouseMove={handleLaneMouseMove}
+            onMouseLeave={handleLaneMouseLeave}
+          >
             <button
               type="button"
-              className="absolute inset-0 z-0 cursor-default bg-transparent"
-              aria-label="Day schedule background"
-              onClick={onCreateForDay}
+              className="absolute inset-0 z-0 cursor-crosshair bg-transparent"
+              aria-label="Day schedule background — hover to preview time, click to create session"
+              onClick={() => onCreateForDay(hoverMinutes !== null ? minutesToTimeString(hoverMinutes) : undefined)}
             />
 
             {Array.from({ length: 24 }, (_, hour) => (
@@ -157,6 +199,26 @@ export function SessionDayTimetable({
                 <div className="bg-primary/80 h-px w-full" />
                 <div className="bg-primary absolute -top-1 left-0 size-2 rounded-full" />
               </div>
+            ) : null}
+
+            {hoverTopPx !== null && hoverMinutes !== null ? (
+              <>
+                {/* Line sits under session blocks (z-10); badge is separate so it stays readable */}
+                <div
+                  className="pointer-events-none absolute right-0 left-0 z-[8] -translate-y-1/2"
+                  style={{ top: hoverTopPx }}
+                  role="presentation"
+                >
+                  <div className="border-primary/70 h-0 w-full border-t-2 border-dashed" />
+                </div>
+                <div
+                  className="bg-background/95 text-primary border-primary/35 pointer-events-none absolute top-0 right-2 z-[11] -translate-y-1/2 rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums shadow-sm"
+                  style={{ top: hoverTopPx }}
+                  aria-hidden
+                >
+                  {format(new Date(2000, 0, 1, Math.floor(hoverMinutes / 60) % 24, hoverMinutes % 60), "h:mm a")}
+                </div>
+              </>
             ) : null}
 
             {layout.map((ev) => {

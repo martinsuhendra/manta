@@ -21,10 +21,12 @@ export function SessionsView() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [filters, setFilters] = useState<SessionFilter>({});
   const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [prefillStartTime, setPrefillStartTime] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState("calendar");
 
   const handleCreateSession = () => {
     setEditingSession(null);
+    setPrefillStartTime(undefined);
     setIsDialogOpen(true);
   };
 
@@ -32,12 +34,14 @@ export function SessionsView() {
     setIsDialogOpen(false);
     setSelectedDate(undefined);
     setEditingSession(null);
+    setPrefillStartTime(undefined);
   };
 
   const handleDateSelect = (date: Date, hasSessions?: boolean, _sessions?: unknown[], meta?: DateSelectMeta) => {
     setSelectedDate(date);
     if (meta?.silent) return;
     if (!hasSessions) {
+      setPrefillStartTime(meta?.defaultStartTime);
       setIsDialogOpen(true);
     }
   };
@@ -48,6 +52,7 @@ export function SessionsView() {
 
   const handleEditSession = (session: Session) => {
     setEditingSession(session);
+    setPrefillStartTime(undefined);
     // Set the selected date to the session's date
     setSelectedDate(new Date(session.date));
     setIsDialogOpen(true);
@@ -100,9 +105,13 @@ export function SessionsView() {
       {/* Create/Edit Dialog */}
       <SessionDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setPrefillStartTime(undefined);
+        }}
         selectedDate={selectedDate}
         editingSession={editingSession}
+        prefillStartTime={prefillStartTime}
         onSuccess={handleDialogClose}
       />
 

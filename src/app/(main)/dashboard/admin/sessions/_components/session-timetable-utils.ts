@@ -31,6 +31,14 @@ export function minutesToPx(minutes: number, pixelsPerMinute: number): number {
   return minutes * pixelsPerMinute;
 }
 
+/** Midnight offset → `HH:mm` for session form / API */
+export function minutesToTimeString(totalMinutes: number): string {
+  const clamped = Math.max(0, Math.min(24 * 60 - 1, Math.round(totalMinutes)));
+  const h = Math.floor(clamped / 60) % 24;
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 export interface TimetableLayoutEvent {
   session: Session;
   startMin: number;

@@ -29,11 +29,20 @@ interface SessionDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   editingSession?: Session | null;
+  /** When creating from timetable click, prefill start time (`HH:mm`). */
+  prefillStartTime?: string;
   onSuccess?: () => void;
 }
 
 /* eslint-disable-next-line complexity */
-export function SessionDialog({ open, onOpenChange, selectedDate, editingSession, onSuccess }: SessionDialogProps) {
+export function SessionDialog({
+  open,
+  onOpenChange,
+  selectedDate,
+  editingSession,
+  prefillStartTime,
+  onSuccess,
+}: SessionDialogProps) {
   const { data: items = [], isLoading: itemsLoading } = useItems();
   const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
   const createSessionMutation = useCreateSession();
@@ -63,7 +72,7 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
         const day = String(dateToUse.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       })(),
-      startTime: editingSession?.startTime || "09:00",
+      startTime: editingSession?.startTime || prefillStartTime || "09:00",
       status: editingSession?.status || "SCHEDULED",
       notes: editingSession?.notes || "",
     },
@@ -97,12 +106,12 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
         form.setValue("date", localDateString);
         form.setValue("itemId", "");
         form.setValue("teacherId", "none");
-        form.setValue("startTime", "09:00");
+        form.setValue("startTime", prefillStartTime ?? "09:00");
         form.setValue("status", "SCHEDULED");
         form.setValue("notes", "");
       }
     }
-  }, [selectedDate, open, form, editingSession]);
+  }, [selectedDate, open, form, editingSession, prefillStartTime]);
 
   const onSubmit = (data: CreateSessionForm) => {
     // Convert "none" teacherId to undefined
