@@ -9,6 +9,7 @@ import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
 const updateProductSchema = z.object({
+  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand").optional(),
   name: z.string().min(1, "Name is required").optional(),
   description: z.string().optional(),
   price: z.number().positive("Price must be positive").optional(),
@@ -32,6 +33,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
+        productBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         _count: {
           select: { memberships: true, transactions: true },
         },
@@ -44,6 +51,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({
       ...product,
+      brandIds: product.productBrands.map((pb) => pb.brandId),
+      brands: product.productBrands.map((pb) => pb.brand),
       imageAsset: parseCloudinaryAsset(product.imageAsset),
       image: resolveAssetUrl(product.imageAsset, product.image),
     });
@@ -60,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const validatedData = updateProductSchema.parse(body);
-    const { imageAsset: _imageAsset, ...updateData } = validatedData;
+    const { brandIds, imageAsset: imageAssetInput, ...updateData } = validatedData;
     const existingProduct = await prisma.product.findUnique({
       where: { id },
       select: { imageAsset: true },
@@ -71,34 +80,61 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const previousAsset = parseCloudinaryAsset(existingProduct.imageAsset);
-    const nextAsset =
-      validatedData.imageAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.imageAsset);
-    const nextAssetForDb = validatedData.imageAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const nextAsset = imageAssetInput === undefined ? previousAsset : parseCloudinaryAsset(imageAssetInput);
+    const nextAssetForDb = imageAssetInput === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
     const shouldDeletePrevious =
       !!previousAsset &&
       (!nextAsset ||
         previousAsset.publicId !== nextAsset.publicId ||
-        validatedData.imageAsset === null ||
+        imageAssetInput === null ||
         validatedData.image === "");
+
+    if (brandIds) {
+      const brands = await prisma.brand.findMany({
+        where: { id: { in: brandIds }, isActive: true },
+        select: { id: true },
+      });
+      if (brands.length !== brandIds.length) {
+        return NextResponse.json({ error: "One or more selected brands are invalid or inactive" }, { status: 400 });
+      }
+    }
 
     const product = await prisma.product.update({
       where: { id },
       data: {
         ...updateData,
-        ...(validatedData.imageAsset !== undefined && {
+        ...(imageAssetInput !== undefined && {
           imageAsset: nextAssetForDb,
           image: resolveAssetUrl(nextAsset, validatedData.image),
         }),
+        ...(brandIds && {
+          productBrands: {
+            deleteMany: {},
+            create: brandIds.map((brandId) => ({ brandId })),
+          },
+        }),
+      },
+      include: {
+        productBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
-    if (shouldDeletePrevious && previousAsset) {
+    if (shouldDeletePrevious) {
       deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
         console.warn("Failed to delete previous Cloudinary product image:", error);
       });
     }
 
-    return NextResponse.json(product);
+    return NextResponse.json({
+      ...product,
+      brandIds: product.productBrands.map((pb) => pb.brandId),
+      brands: product.productBrands.map((pb) => pb.brand),
+    });
   } catch (error) {
     return handleApiError(error, "Failed to update membership product");
   }

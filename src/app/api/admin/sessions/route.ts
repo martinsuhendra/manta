@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
           },
         },
         bookings: {
-          where: { status: "CONFIRMED" },
+          where: { status: { in: ["RESERVED", "CONFIRMED"] } },
           select: { participantCount: true },
         },
       },

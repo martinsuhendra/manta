@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
+import { BirthdayPicker } from "@/components/ui/birthday-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,14 +38,13 @@ import { useMemberCancelBooking } from "@/hooks/use-member-sessions";
 import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
 import { formatPrice } from "@/lib/utils";
 
-import { RequestFreezeDialog } from "./request-freeze-dialog";
-
 interface AccountData {
   user: {
     id: string;
     name: string | null;
     email: string | null;
     phoneNo: string | null;
+    birthday: string | null;
     role: string;
     createdAt: string;
   };
@@ -262,15 +262,28 @@ async function handleReopenPayment(
   }
 }
 
-const editProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-});
+const editProfileSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+    birthday: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.birthday || data.birthday.trim() === "") return;
+    const d = new Date(data.birthday);
+    if (Number.isNaN(d.getTime())) {
+      ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
+      return;
+    }
+    if (d.getTime() >= Date.now()) {
+      ctx.addIssue({ code: "custom", message: "Birthday must be in the past", path: ["birthday"] });
+    }
+  });
 
 type EditProfileFormValues = z.infer<typeof editProfileSchema>;
 
@@ -294,8 +307,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [reopeningPayment, setReopeningPayment] = useState<string | null>(null);
-  const [isRequestFreezeOpen, setIsRequestFreezeOpen] = useState(false);
-  const [freezeMembership, setFreezeMembership] = useState<{ id: string; productName: string } | null>(null);
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
   const cancelBookingMutation = useMemberCancelBooking();
 
@@ -304,6 +315,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     defaultValues: {
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     },
   });
 
@@ -322,8 +334,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
-  const hasPendingFreezeForMembership = (membershipId: string) =>
-    accountData.freezeRequests.some((fr) => fr.membershipId === membershipId && fr.status === "PENDING_APPROVAL");
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/shop" });
@@ -333,6 +343,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     form.reset({
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     });
     setIsEditDialogOpen(true);
   };
@@ -486,24 +497,9 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                                 <span>{membership.remainingQuota} sessions remaining</span>
                               )}
                             </p>
-                            {hasPendingFreezeForMembership(membership.id) ? (
-                              <span className="text-muted-foreground mt-2 block text-sm">Freeze request pending</span>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-4"
-                                onClick={() => {
-                                  setFreezeMembership({
-                                    id: membership.id,
-                                    productName: membership.product.name,
-                                  });
-                                  setIsRequestFreezeOpen(true);
-                                }}
-                              >
-                                Request Freeze
-                              </Button>
-                            )}
+                            <p className="text-muted-foreground mt-2 text-sm">
+                              Need to freeze this membership? Please contact admin to submit a freeze request.
+                            </p>
                           </div>
                           <div className="w-full border-t pt-6 text-center md:w-auto md:border-t-0 md:border-l md:pt-0 md:pl-10 md:text-right">
                             <p className="text-foreground text-2xl font-black">
@@ -598,7 +594,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                               <div className="text-muted-foreground flex items-center gap-2 text-xs">
                                 <Badge variant="secondary">{item.classSession.item.name}</Badge>
                                 <span>•</span>
-                                <span>Coach {item.classSession.teacher?.name ?? "TBA"}</span>
+                                <span>{item.classSession.teacher?.name ?? "TBA"}</span>
                               </div>
                             </div>
                           </div>
@@ -685,7 +681,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                     <div className="hidden overflow-x-auto md:block">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="border-border border-b">
+                          <tr className="border-border cursor-pointer border-b">
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Invoice</th>
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Date</th>
                             <th className="text-muted-foreground pb-4 text-xs font-bold uppercase">Item</th>
@@ -697,7 +693,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         </thead>
                         <tbody className="divide-border divide-y">
                           {currentPurchases.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-accent/30 transition-colors">
+                            <tr key={inv.id} className="hover:bg-accent/30 cursor-pointer transition-colors">
                               <td className="text-foreground py-4 text-sm font-medium">{inv.id.slice(0, 12)}</td>
                               <td className="text-muted-foreground py-4 text-sm">{formatDateShort(inv.createdAt)}</td>
                               <td className="text-foreground py-4 text-sm font-bold">{inv.product.name}</td>
@@ -771,6 +767,26 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="birthday"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Birthday</FormLabel>
+                    <FormControl>
+                      <BirthdayPicker
+                        ref={field.ref}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="Pick your birthday"
+                        allowClear
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="bg-muted rounded-lg p-4">
                 <FormItem>
                   <FormLabel>Email</FormLabel>
@@ -798,16 +814,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
           </Form>
         </DialogContent>
       </Dialog>
-
-      <RequestFreezeDialog
-        open={isRequestFreezeOpen}
-        onOpenChange={(open) => {
-          setIsRequestFreezeOpen(open);
-          if (!open) setFreezeMembership(null);
-        }}
-        membershipId={freezeMembership?.id ?? ""}
-        productName={freezeMembership?.productName ?? ""}
-      />
     </div>
   );
 }

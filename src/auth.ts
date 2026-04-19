@@ -27,7 +27,18 @@ export const authOptions = {
         if (!raw) return null;
 
         const { email, password } = signInFormSchema.parse(raw);
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            password: true,
+            role: true,
+            emailVerified: true,
+            phoneNo: true,
+          },
+        });
         if (!user || !user.password) return null;
 
         const ok = await bcrypt.compare(password, user.password);
@@ -75,16 +86,7 @@ export const authOptions = {
           token.emailVerified = refreshedUser.emailVerified;
           token.role = refreshedUser.role;
           token.phoneNo = refreshedUser.phoneNo;
-          try {
-            const defaultBrand = await prisma.brandUser.findFirst({
-              where: { userId: refreshedUser.id },
-              orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-              select: { brandId: true },
-            });
-            token.defaultBrandId = defaultBrand?.brandId ?? "ALL";
-          } catch {
-            token.defaultBrandId = "ALL";
-          }
+          token.defaultBrandId = "ALL";
         }
       }
 

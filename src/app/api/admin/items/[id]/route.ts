@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { ensureTeacherItems } from "@/lib/items/ensure-teacher-item";
 import { USER_ROLES } from "@/lib/types";
 
 import { updateItemSchema } from "../../../../(main)/dashboard/admin/items/_components/schema";
@@ -13,7 +14,13 @@ import { updateItemSchema } from "../../../../(main)/dashboard/admin/items/_comp
 function validateUpdateData(body: unknown): {
   data: Omit<z.infer<typeof updateItemSchema>, "brandIds">;
   brandIds?: string[];
-  schedules?: Array<{ dayOfWeek: number; startTime: string; endTime?: string; isActive: boolean }>;
+  schedules?: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime?: string;
+    isActive: boolean;
+    teacherId?: string | null;
+  }>;
 } {
   const { schedules, ...itemData } = body as Record<string, unknown>;
   const parsed = updateItemSchema.parse(itemData);
@@ -22,7 +29,13 @@ function validateUpdateData(body: unknown): {
     data,
     brandIds,
     schedules: Array.isArray(schedules)
-      ? (schedules as Array<{ dayOfWeek: number; startTime: string; endTime?: string; isActive: boolean }>)
+      ? (schedules as Array<{
+          dayOfWeek: number;
+          startTime: string;
+          endTime?: string;
+          isActive: boolean;
+          teacherId?: string | null;
+        }>)
       : undefined,
   };
 }
@@ -30,25 +43,39 @@ function validateUpdateData(body: unknown): {
 // Helper function to update item schedules
 async function updateItemSchedules(
   itemId: string,
-  schedules: Array<{ dayOfWeek: number; startTime: string; endTime?: string; isActive: boolean }>,
+  schedules: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime?: string;
+    isActive: boolean;
+    teacherId?: string | null;
+  }>,
 ) {
-  // Delete existing schedules
-  await prisma.itemSchedule.deleteMany({
-    where: { itemId },
-  });
-
-  // Create new schedules
-  if (schedules.length > 0) {
-    await prisma.itemSchedule.createMany({
-      data: schedules.map((schedule) => ({
-        itemId,
-        dayOfWeek: schedule.dayOfWeek,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime || schedule.startTime,
-        isActive: schedule.isActive,
-      })),
+  await prisma.$transaction(async (tx) => {
+    // Delete existing schedules
+    await tx.itemSchedule.deleteMany({
+      where: { itemId },
     });
-  }
+
+    // Create new schedules
+    if (schedules.length > 0) {
+      await tx.itemSchedule.createMany({
+        data: schedules.map((schedule) => ({
+          itemId,
+          teacherId: schedule.teacherId ?? null,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime || schedule.startTime,
+          isActive: schedule.isActive,
+        })),
+      });
+      await ensureTeacherItems({
+        tx,
+        itemId,
+        teacherIds: schedules.map((schedule) => schedule.teacherId),
+      });
+    }
+  });
 }
 
 // Helper function to update item data
@@ -79,7 +106,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const item = await prisma.item.findUnique({
       where: { id },
       include: {
-        schedules: true,
+        schedules: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
         itemBrands: {
           select: {
             brandId: true,
@@ -153,7 +190,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const finalItem = await prisma.item.findUnique({
       where: { id },
       include: {
-        schedules: true,
+        schedules: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
         itemBrands: {
           select: {
             brandId: true,

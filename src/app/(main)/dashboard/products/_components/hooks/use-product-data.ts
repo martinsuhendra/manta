@@ -1,8 +1,10 @@
+import * as React from "react";
+
 import { useQuery } from "@tanstack/react-query";
 
 import { Item } from "../../../admin/items/_components/schema";
 
-export function useProductData(productId?: string, isEdit?: boolean) {
+export function useProductData(productId?: string, isEdit?: boolean, selectedBrandIds: string[] = []) {
   const { data: items = [] } = useQuery<Item[]>({
     queryKey: ["items"],
     queryFn: async () => {
@@ -34,8 +36,14 @@ export function useProductData(productId?: string, isEdit?: boolean) {
     enabled: isEdit && !!productId,
   });
 
+  const filteredItems = React.useMemo(() => {
+    if (!selectedBrandIds.length) return [];
+    const selectedBrandIdSet = new Set(selectedBrandIds);
+    return items.filter((item) => (item.brandIds ?? []).some((brandId) => selectedBrandIdSet.has(brandId)));
+  }, [items, selectedBrandIds]);
+
   return {
-    items,
+    items: filteredItems,
     existingProductItems,
     existingQuotaPools,
   };

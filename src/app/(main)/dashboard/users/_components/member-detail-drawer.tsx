@@ -32,12 +32,33 @@ import { OverviewTab } from "./overview-tab";
 import { Member, MemberDetails } from "./schema";
 import { TabTriggers } from "./tab-triggers";
 import { AttendanceTab } from "./tabs/attendance-tab";
-import { BrandsTab } from "./tabs/brands-tab";
 import { MembershipsTab } from "./tabs/memberships-tab";
 import { TeacherSessionsTab } from "./tabs/teacher-sessions-tab";
 import { TransactionsTab } from "./tabs/transactions-tab";
 
 type DrawerMode = "view" | "edit" | "add" | null;
+
+/** `GET /api/users/[id]` — same shape as list row plus teacher fields; `_count` may only include memberships. */
+interface UserEditRecord {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: Member["role"];
+  phoneNo: string | null;
+  birthday: string | Date | null;
+  image?: string | null;
+  avatarAsset?: unknown;
+  bio?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { memberships?: number };
+}
+
+function serializeBirthday(value: string | Date | null | undefined): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  return value.toISOString();
+}
 
 interface MemberDetailDrawerProps {
   member: Member | null;
@@ -138,6 +159,43 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
     enabled: mode === "view" && !!member?.id && open,
   });
 
+  // Hydrate edit form from canonical user row (birthday, teacher profile, etc.)
+  const { data: userForEdit } = useQuery<UserEditRecord>({
+    queryKey: ["user-edit", member?.id],
+    queryFn: async () => {
+      if (!member?.id) throw new Error("Member ID is required");
+      const response = await fetch(`/api/users/${member.id}`);
+      if (!response.ok) throw new Error("Failed to fetch user");
+      return response.json();
+    },
+    enabled: open && mode === "edit" && !!member?.id,
+  });
+
+  const memberForForm = React.useMemo((): Member | null => {
+    if (!member) return null;
+    if (!userForEdit) return member;
+
+    const birthdayFromApi = userForEdit.birthday;
+    const birthdayResolved =
+      birthdayFromApi === null || birthdayFromApi === undefined || birthdayFromApi === ""
+        ? null
+        : serializeBirthday(birthdayFromApi);
+
+    return {
+      ...member,
+      name: userForEdit.name ?? member.name,
+      email: userForEdit.email ?? member.email,
+      role: userForEdit.role ?? member.role,
+      phoneNo: userForEdit.phoneNo ?? member.phoneNo,
+      birthday: birthdayResolved,
+      image: userForEdit.image ?? member.image,
+      avatarAsset: userForEdit.avatarAsset ?? member.avatarAsset,
+      bio: userForEdit.bio ?? member.bio,
+      updatedAt: userForEdit.updatedAt ?? member.updatedAt,
+      _count: member._count,
+    };
+  }, [member, userForEdit]);
+
   // Reset tab when drawer opens/closes
   React.useEffect(() => {
     if (open && mode === "view") {
@@ -200,8 +258,8 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
 
   return (
     <>
-      <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-        <DrawerContent className="!w-auto !min-w-fit sm:!max-w-none">
+      <Drawer open={open} onOpenChange={onOpenChange} direction="right" handleOnly>
+        <DrawerContent className="!w-auto !min-w-fit !select-text sm:!max-w-none [&_*]:!select-text">
           <DrawerHeader>{mode && <DrawerHeaderContent mode={mode} canEditRoles={canEditRoles} />}</DrawerHeader>
 
           <div className="overflow-y-auto px-4 pb-4">
@@ -210,27 +268,20 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 <LoadingSpinner />
               ) : (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col justify-start gap-6">
-                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} showBrandsTab={canEditRoles} />
+                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} />
 
                   <TabsContent value="overview" className="relative flex flex-col gap-4 overflow-auto">
                     <OverviewTab member={member} memberDetails={memberDetails} />
                   </TabsContent>
 
                   {member.role === USER_ROLES.TEACHER ? (
-                    <>
-                      <TabsContent value="sessions" className="flex flex-col">
-                        {memberDetails && "classSessions" in memberDetails ? (
-                          <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
-                        ) : (
-                          <LoadingSpinner />
-                        )}
-                      </TabsContent>
-                      {canEditRoles && (
-                        <TabsContent value="brands" className="flex flex-col">
-                          <BrandsTab userId={member.id} />
-                        </TabsContent>
+                    <TabsContent value="sessions" className="flex flex-col">
+                      {memberDetails && "classSessions" in memberDetails ? (
+                        <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
+                      ) : (
+                        <LoadingSpinner />
                       )}
-                    </>
+                    </TabsContent>
                   ) : (
                     <>
                       <TabsContent value="memberships" className="flex flex-col">
@@ -260,12 +311,6 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                           <LoadingSpinner />
                         )}
                       </TabsContent>
-
-                      {canEditRoles && (
-                        <TabsContent value="brands" className="flex flex-col">
-                          <BrandsTab userId={member.id} />
-                        </TabsContent>
-                      )}
                     </>
                   )}
                 </Tabs>
@@ -273,7 +318,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
             ) : mode === "edit" || mode === "add" ? (
               <MemberForm
                 mode={mode}
-                member={member}
+                member={mode === "edit" ? memberForForm : member}
                 canEditRoles={canEditRoles}
                 canCreateSuperAdmin={canCreateSuperAdmin}
                 onSubmit={handleSubmit}

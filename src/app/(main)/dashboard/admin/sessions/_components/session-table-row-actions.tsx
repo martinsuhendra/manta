@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import { suppressPointerAfterDialogClose } from "@/hooks/use-dialog-close-pointer-guard";
 import { useDeleteSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
@@ -13,6 +14,7 @@ import { CompactSessionCardActions } from "./compact-session-card-actions";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
+import { armBlockOpenEditAfterSessionDialog } from "./session-open-edit-guard";
 
 interface SessionTableRowActionsProps {
   session: Session;
@@ -32,15 +34,27 @@ export function SessionTableRowActions({ session, onEdit }: SessionTableRowActio
   const hasParticipants = (session._count?.bookings || 0) > 0;
 
   const handleDeleteConfirm = () => {
-    deleteSessionMutation.mutate(session.id, {
-      onSuccess: () => setShowDeleteDialog(false),
+    const id = session.id;
+    deleteSessionMutation.mutate(id, {
+      onSuccess: () => {
+        armBlockOpenEditAfterSessionDialog(id);
+        suppressPointerAfterDialogClose();
+        setShowDeleteDialog(false);
+      },
     });
   };
 
   const handleCancelConfirm = () => {
+    const id = session.id;
     updateSessionMutation.mutate(
-      { sessionId: session.id, data: { status: "CANCELLED" } },
-      { onSuccess: () => setShowCancelDialog(false) },
+      { sessionId: id, data: { status: "CANCELLED" } },
+      {
+        onSuccess: () => {
+          armBlockOpenEditAfterSessionDialog(id);
+          suppressPointerAfterDialogClose();
+          setShowCancelDialog(false);
+        },
+      },
     );
   };
 

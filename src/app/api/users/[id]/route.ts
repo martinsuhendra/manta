@@ -25,6 +25,7 @@ const updateUserSchema = z.object({
   image: z.string().nullable().optional(),
   avatarAsset: z.unknown().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
+  birthday: z.string().nullable().optional(),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         email: true,
         role: true,
         phoneNo: true,
+        birthday: true,
         image: true,
         avatarAsset: true,
         bio: true,
@@ -78,7 +80,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateUserSchema.parse(body);
-    const { avatarAsset: _avatarAsset, ...updateData } = validatedData;
+    const { avatarAsset: _avatarAsset, birthday: birthdayRaw, ...updateData } = validatedData;
+    let birthdayForDb: Date | null | undefined;
+    if (birthdayRaw === undefined) birthdayForDb = undefined;
+    else if (birthdayRaw === null || birthdayRaw === "") birthdayForDb = null;
+    else {
+      const parsed = new Date(birthdayRaw);
+      birthdayForDb = Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
 
     // Get the target user
     const targetUser = await prisma.user.findUnique({
@@ -126,6 +135,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id },
       data: {
         ...updateData,
+        ...(birthdayRaw !== undefined && { birthday: birthdayForDb }),
         ...(validatedData.avatarAsset !== undefined && {
           avatarAsset: nextAssetForDb,
           image: resolveAssetUrl(nextAsset, validatedData.image),

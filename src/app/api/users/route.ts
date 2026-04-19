@@ -23,6 +23,7 @@ const createUserSchema = z.object({
   image: z.string().nullable().optional(),
   avatarAsset: z.unknown().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
+  birthday: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -45,9 +46,7 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         phoneNo: true,
-        image: true,
-        avatarAsset: true,
-        bio: true,
+        birthday: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -63,13 +62,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(
-      users.map((user) => ({
-        ...user,
-        avatarAsset: parseCloudinaryAsset(user.avatarAsset),
-        image: resolveAssetUrl(user.avatarAsset, user.image),
-      })),
-    );
+    return NextResponse.json(users);
   } catch (error) {
     console.error("Failed to fetch users:", error);
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
@@ -87,6 +80,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createUserSchema.parse(body);
     const avatarAsset = parseCloudinaryAsset(validatedData.avatarAsset);
+    const birthdayDate =
+      validatedData.birthday && validatedData.birthday.trim() !== "" ? new Date(validatedData.birthday) : undefined;
 
     // Check if only SUPERADMIN can create SUPERADMIN users
     if (
@@ -102,6 +97,7 @@ export async function POST(request: NextRequest) {
     // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email },
+      select: { id: true },
     });
 
     if (existingUser) {
@@ -115,9 +111,9 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
+        birthday: birthdayDate,
         avatarAsset: avatarAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,
-        bio: validatedData.bio ?? undefined,
       },
       include: {
         _count: {

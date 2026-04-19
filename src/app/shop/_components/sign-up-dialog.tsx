@@ -8,8 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
+import { BirthdayPicker } from "@/components/ui/birthday-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,24 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
-const FormSchema = z
-  .object({
-    name: z.string().min(1, { message: "Name is required." }),
-    email: z.string().email({ message: "Please enter a valid email address." }),
-    phoneNo: z
-      .string()
-      .min(1, { message: "Phone number is required." })
-      .min(10, { message: "Phone number must be at least 10 digits." })
-      .max(15, { message: "Phone number must be at most 15 digits." })
-      .regex(/^[0-9+\-\s()]+$/, { message: "Invalid phone number format." }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-    confirmPassword: z.string().min(6, { message: "Confirm Password must be at least 6 characters." }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
+import { signUpFormSchema } from "@/lib/validators";
 
 interface SignUpDialogProps {
   children: React.ReactNode;
@@ -50,18 +34,19 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
+  const form = useForm<z.infer<typeof signUpFormSchema>>({
+    resolver: zodResolver(signUpFormSchema),
     defaultValues: {
       name: "",
       email: "",
       phoneNo: "",
+      birthday: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof signUpFormSchema>) => {
     setIsLoading(true);
     try {
       // Register user
@@ -74,6 +59,7 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
           name: data.name,
           email: data.email,
           phoneNo: data.phoneNo,
+          birthday: data.birthday,
           password: data.password,
         }),
       });
@@ -161,6 +147,25 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
                     <Input id="phoneNo" type="tel" placeholder="+1234567890" autoComplete="tel" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="birthday"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Birthday</FormLabel>
+                  <FormControl>
+                    <BirthdayPicker
+                      ref={field.ref}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Pick your birthday"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -19,6 +19,7 @@ export interface FreezeRequestWithRelations extends Record<string, unknown> {
   membership: {
     id: string;
     status: string;
+    joinDate: string;
     expiredAt: string;
     user: {
       id: string;

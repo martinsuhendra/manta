@@ -36,6 +36,12 @@ export async function GET(request: NextRequest) {
     const memberships = await prisma.membership.findMany({
       where: whereCondition,
       include: {
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         product: true,
         user: {
           select: {
@@ -48,7 +54,13 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(memberships);
+    return NextResponse.json(
+      memberships.map((membership) => ({
+        ...membership,
+        brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+        brands: membership.membershipBrands.map((mb) => mb.brand),
+      })),
+    );
   } catch (error) {
     console.error("Failed to fetch memberships:", error);
     return NextResponse.json({ error: "Failed to fetch memberships" }, { status: 500 });
@@ -69,6 +81,12 @@ async function validatePurchaseRequest(request: NextRequest) {
 async function validateProduct(productId: string) {
   const product = await prisma.product.findUnique({
     where: { id: productId },
+    include: {
+      productBrands: {
+        select: { brandId: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   });
 
   if (!product) {
@@ -77,6 +95,9 @@ async function validateProduct(productId: string) {
 
   if (!product.isActive) {
     return { error: "Product is not available", status: 400 };
+  }
+  if (!product.productBrands.length) {
+    return { error: "Product is not linked to any brand", status: 400 };
   }
 
   return { product };
@@ -127,12 +148,20 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         productId: validatedData.productId,
-        brandId: product.brandId,
         expiredAt,
         transactionId: validatedData.transactionId,
         status: membershipStatus,
+        membershipBrands: {
+          create: product.productBrands.map((pb) => ({ brandId: pb.brandId })),
+        },
       },
       include: {
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         product: true,
         user: {
           select: {
@@ -144,7 +173,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(membership, { status: 201 });
+    return NextResponse.json(
+      {
+        ...membership,
+        brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+        brands: membership.membershipBrands.map((mb) => mb.brand),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });

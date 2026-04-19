@@ -103,15 +103,19 @@ export const createProductColumns = (actions: ProductActions): ColumnDef<Product
     maxSize: 220,
   },
   {
-    accessorKey: "brand",
-    header: "Brand",
+    accessorKey: "brands",
+    header: "Brands",
     cell: ({ row }) => {
-      const brand = row.original.brand;
-      if (!brand) return null;
+      const brands = row.original.brands;
+      if (!brands.length) return null;
       return (
-        <Badge variant="outline" className="font-normal">
-          {brand.name}
-        </Badge>
+        <div className="flex flex-wrap gap-1">
+          {brands.map((brand) => (
+            <Badge key={brand.id} variant="outline" className="font-normal">
+              {brand.name}
+            </Badge>
+          ))}
+        </div>
       );
     },
     enableSorting: false,

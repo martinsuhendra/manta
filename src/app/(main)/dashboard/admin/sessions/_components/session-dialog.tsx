@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useDialogClosePointerGuard } from "@/hooks/use-dialog-close-pointer-guard";
 import { useItems } from "@/hooks/use-items-query";
 import { useCreateSession, useUpdateSession } from "@/hooks/use-sessions-mutation";
 import { useTeachers } from "@/hooks/use-users-query";
@@ -29,11 +30,20 @@ interface SessionDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
   editingSession?: Session | null;
+  /** When creating from timetable click, prefill start time (`HH:mm`). */
+  prefillStartTime?: string;
   onSuccess?: () => void;
 }
 
 /* eslint-disable-next-line complexity */
-export function SessionDialog({ open, onOpenChange, selectedDate, editingSession, onSuccess }: SessionDialogProps) {
+export function SessionDialog({
+  open,
+  onOpenChange,
+  selectedDate,
+  editingSession,
+  prefillStartTime,
+  onSuccess,
+}: SessionDialogProps) {
   const { data: items = [], isLoading: itemsLoading } = useItems();
   const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
   const createSessionMutation = useCreateSession();
@@ -63,7 +73,7 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
         const day = String(dateToUse.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       })(),
-      startTime: editingSession?.startTime || "09:00",
+      startTime: editingSession?.startTime || prefillStartTime || "09:00",
       status: editingSession?.status || "SCHEDULED",
       notes: editingSession?.notes || "",
     },
@@ -97,12 +107,12 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
         form.setValue("date", localDateString);
         form.setValue("itemId", "");
         form.setValue("teacherId", "none");
-        form.setValue("startTime", "09:00");
+        form.setValue("startTime", prefillStartTime ?? "09:00");
         form.setValue("status", "SCHEDULED");
         form.setValue("notes", "");
       }
     }
-  }, [selectedDate, open, form, editingSession]);
+  }, [selectedDate, open, form, editingSession, prefillStartTime]);
 
   const onSubmit = (data: CreateSessionForm) => {
     // Convert "none" teacherId to undefined
@@ -157,8 +167,10 @@ export function SessionDialog({ open, onOpenChange, selectedDate, editingSession
     }
   };
 
+  const handleOpenChange = useDialogClosePointerGuard(onOpenChange);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Session" : "Create New Session"}</DialogTitle>

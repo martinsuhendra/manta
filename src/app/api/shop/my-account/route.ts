@@ -5,15 +5,28 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
 
-const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-});
+const updateProfileSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+    birthday: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.birthday || data.birthday.trim() === "") return;
+    const d = new Date(data.birthday);
+    if (Number.isNaN(d.getTime())) {
+      ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
+      return;
+    }
+    if (d.getTime() >= Date.now()) {
+      ctx.addIssue({ code: "custom", message: "Birthday must be in the past", path: ["birthday"] });
+    }
+  });
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -27,17 +40,24 @@ export async function PATCH(request: NextRequest) {
     const validatedData = updateProfileSchema.parse(body);
 
     // Update the user's own profile (excluding email)
+    const birthdayForDb =
+      validatedData.birthday === undefined || validatedData.birthday.trim() === ""
+        ? undefined
+        : new Date(validatedData.birthday);
+
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name: validatedData.name,
         phoneNo: validatedData.phoneNo,
+        ...(birthdayForDb !== undefined && { birthday: birthdayForDb }),
       },
       select: {
         id: true,
         name: true,
         email: true,
         phoneNo: true,
+        birthday: true,
         role: true,
         createdAt: true,
       },

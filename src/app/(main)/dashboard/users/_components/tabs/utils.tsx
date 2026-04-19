@@ -41,6 +41,8 @@ export function getMembershipStatusVariant(status: string): "default" | "seconda
 
 export function getBookingStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
+    case "RESERVED":
+      return "outline";
     case "CONFIRMED":
     case "COMPLETED":
       return "default";
@@ -86,6 +88,8 @@ export function getTransactionStatusIcon(status: string) {
 
 export function getBookingStatusIcon(status: string) {
   switch (status) {
+    case "RESERVED":
+      return <ClockIcon className="h-4 w-4" />;
     case "CONFIRMED":
     case "COMPLETED":
       return <CheckCircle2 className="h-4 w-4" />;

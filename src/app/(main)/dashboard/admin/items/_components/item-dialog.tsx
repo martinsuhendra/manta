@@ -72,6 +72,7 @@ const EMPTY_ACCESSIBLE_BRANDS: BrandSummary[] = [];
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!item;
+  const scheduleSourceKey = isEditMode ? (item?.id ?? "") : "create";
   const [currentStep, setCurrentStep] = React.useState(1);
   const [createdItem, setCreatedItem] = React.useState<Item | null>(null);
   const { data: brandsQueryData } = useAccessibleBrands();
@@ -297,7 +298,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
                       </TabsContent>
 
                       <TabsContent value="schedules">
-                        <ItemDialogSchedulesTab form={form} />
+                        <ItemDialogSchedulesTab form={form} dialogOpen={open} scheduleSourceKey={scheduleSourceKey} />
                       </TabsContent>
                     </Tabs>
                   ) : (
@@ -323,7 +324,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
                         className={cn("min-h-[400px]", currentStep !== 2 && "hidden")}
                         aria-hidden={currentStep !== 2}
                       >
-                        <ItemDialogSchedulesTab form={form} />
+                        <ItemDialogSchedulesTab form={form} dialogOpen={open} scheduleSourceKey={scheduleSourceKey} />
                       </div>
                     </>
                   )}

@@ -39,10 +39,11 @@ async function getAccountData() {
         name: true,
         email: true,
         phoneNo: true,
+        birthday: true,
         role: true,
         createdAt: true,
         memberships: {
-          where: { brandId: activeBrandId },
+          where: { membershipBrands: { some: { brandId: activeBrandId } } },
           include: {
             product: {
               select: {
@@ -144,7 +145,7 @@ async function getAccountData() {
     const frozenMemberships = user.memberships.filter((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
 
     const freezeRequests = await prisma.membershipFreezeRequest.findMany({
-      where: { requestedById: user.id, membership: { brandId: activeBrandId } },
+      where: { requestedById: user.id, membership: { membershipBrands: { some: { brandId: activeBrandId } } } },
       include: {
         membership: {
           select: {
@@ -189,6 +190,7 @@ async function getAccountData() {
         name: user.name,
         email: user.email,
         phoneNo: user.phoneNo,
+        birthday: user.birthday ? user.birthday.toISOString() : null,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
       },

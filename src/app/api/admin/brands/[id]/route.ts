@@ -24,8 +24,9 @@ const updateBrandSchema = z.object({
 });
 
 interface BrandDependencyCounts {
-  assignedUsers: number;
+  productBrands: number;
   products: number;
+  membershipBrands: number;
   itemBrands: number;
   classSessions: number;
   memberships: number;
@@ -37,8 +38,9 @@ interface BrandDependencyCounts {
 
 async function getBrandDependencyCounts(brandId: string): Promise<BrandDependencyCounts> {
   const [
-    assignedUsers,
+    productBrands,
     products,
+    membershipBrands,
     itemBrands,
     classSessions,
     memberships,
@@ -47,11 +49,12 @@ async function getBrandDependencyCounts(brandId: string): Promise<BrandDependenc
     bookingSettings,
     quotaPools,
   ] = await prisma.$transaction([
-    prisma.brandUser.count({ where: { brandId } }),
-    prisma.product.count({ where: { brandId } }),
+    prisma.productBrand.count({ where: { brandId } }),
+    prisma.product.count({ where: { productBrands: { some: { brandId } } } }),
+    prisma.membershipBrand.count({ where: { brandId } }),
     prisma.itemBrand.count({ where: { brandId } }),
     prisma.classSession.count({ where: { brandId } }),
-    prisma.membership.count({ where: { brandId } }),
+    prisma.membership.count({ where: { membershipBrands: { some: { brandId } } } }),
     prisma.transaction.count({ where: { brandId } }),
     prisma.booking.count({ where: { brandId } }),
     prisma.bookingSettings.count({ where: { brandId } }),
@@ -59,8 +62,9 @@ async function getBrandDependencyCounts(brandId: string): Promise<BrandDependenc
   ]);
 
   return {
-    assignedUsers,
+    productBrands,
     products,
+    membershipBrands,
     itemBrands,
     classSessions,
     memberships,
@@ -80,9 +84,10 @@ function buildDeleteBlockReasons({
 }) {
   const reasons: string[] = [];
   if (isLastActiveBrand) reasons.push("You cannot delete the last active brand.");
-  if (dependencyCounts.assignedUsers > 0) reasons.push("This brand still has assigned users.");
   if (
+    dependencyCounts.productBrands > 0 ||
     dependencyCounts.products > 0 ||
+    dependencyCounts.membershipBrands > 0 ||
     dependencyCounts.itemBrands > 0 ||
     dependencyCounts.classSessions > 0 ||
     dependencyCounts.memberships > 0 ||

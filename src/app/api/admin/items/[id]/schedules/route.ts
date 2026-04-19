@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { ensureTeacherItems } from "@/lib/items/ensure-teacher-item";
 import { USER_ROLES } from "@/lib/types";
 
 import { createItemScheduleSchema } from "../../../../../(main)/dashboard/admin/items/_components/schema";
@@ -24,6 +25,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const schedules = await prisma.itemSchedule.findMany({
       where: { itemId: id },
       include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         item: {
           select: {
             id: true,
@@ -66,6 +74,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ...body,
       itemId: id,
     });
+    if (validatedData.teacherId) {
+      const teacher = await prisma.user.findUnique({
+        where: { id: validatedData.teacherId },
+        select: { role: true },
+      });
+      if (!teacher || teacher.role !== USER_ROLES.TEACHER) {
+        return NextResponse.json({ error: "Selected user must have TEACHER role" }, { status: 400 });
+      }
+    }
 
     // Validate time range
     const timeValidation = validateTimeRange(validatedData.startTime, validatedData.endTime);
@@ -92,16 +109,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: overlapCheck.error }, { status: 400 });
     }
 
-    const schedule = await prisma.itemSchedule.create({
-      data: validatedData,
-      include: {
-        item: {
-          select: {
-            id: true,
-            name: true,
+    const schedule = await prisma.$transaction(async (tx) => {
+      const createdSchedule = await tx.itemSchedule.create({
+        data: validatedData,
+        include: {
+          teacher: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          item: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
+      });
+      await ensureTeacherItems({
+        tx,
+        itemId: id,
+        teacherIds: [validatedData.teacherId ?? null],
+      });
+      return createdSchedule;
     });
 
     return NextResponse.json(schedule, { status: 201 });

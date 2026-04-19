@@ -1,18 +1,26 @@
 "use client";
 
+import { CalendarSearch } from "lucide-react";
+
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 export interface PayrollSummaryRow {
   teacherId: string;
   teacherName: string;
   teacherEmail: string | null;
+  teacherImage?: string | null;
   sessionsCount: number;
   byItem: Array<{
     itemId: string;
     itemName: string;
     sessionsCount: number;
-    feePerSession: number;
+    feeModel: "FLAT_PER_SESSION" | "PER_PARTICIPANT";
+    feeAmount: number;
+    perParticipantMinGuarantee: number | null;
+    perParticipantGuaranteeMaxPax: number | null;
+    totalParticipants: number;
+    avgFeePerSession: number;
     totalFee: number;
   }>;
   totalFee: number;
@@ -23,30 +31,44 @@ interface PayrollSummaryTableProps {
   grandTotalFee: number;
   period: { startDate: string; endDate: string };
   isLoading?: boolean;
+  embedded?: boolean;
 }
 
-export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: PayrollSummaryTableProps) {
+function classPayrollLine(b: PayrollSummaryRow["byItem"][number]): string {
+  if (b.feeModel === "PER_PARTICIPANT") {
+    const floor =
+      b.perParticipantMinGuarantee != null && b.perParticipantGuaranteeMaxPax != null
+        ? `; floor ${formatPrice(b.perParticipantMinGuarantee)} if ≤${b.perParticipantGuaranteeMaxPax} pax`
+        : "";
+    return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"}, ${b.totalParticipants} pax @ ${formatPrice(b.feeAmount)}/pax${floor} → ${formatPrice(b.totalFee)} (avg ${formatPrice(b.avgFeePerSession)}/session)`;
+  }
+  return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"} @ ${formatPrice(b.feeAmount)} flat → ${formatPrice(b.totalFee)}`;
+}
+
+export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading, embedded }: PayrollSummaryTableProps) {
   if (isLoading) {
     return <div className="text-muted-foreground flex items-center justify-center py-12">Loading summary…</div>;
   }
 
   if (rows.length === 0) {
     return (
-      <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center">
-        No completed sessions
-        {period.startDate && period.endDate ? ` for ${period.startDate} – ${period.endDate}` : ""}.
+      <div className="bg-muted/20 rounded-xl border border-dashed px-6 py-12 text-center">
+        <div className="bg-background mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border">
+          <CalendarSearch className="text-muted-foreground h-4 w-4" />
+        </div>
+        <p className="text-foreground text-sm font-medium">No completed sessions found</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border">
+    <div className={cn(!embedded && "rounded-md border", embedded && "overflow-x-auto")}>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Teacher</TableHead>
             <TableHead className="text-right">Sessions</TableHead>
-            <TableHead className="text-right">Breakdown by session</TableHead>
+            <TableHead>Breakdown by class</TableHead>
             <TableHead className="text-right">Total fee</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,14 +82,14 @@ export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading }: 
                 </div>
               </TableCell>
               <TableCell className="text-right tabular-nums">{row.sessionsCount}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-sm">
+              <TableCell>
+                <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
                   {row.byItem.map((b) => (
-                    <span key={b.itemId}>
-                      {b.itemName}: {b.sessionsCount}
-                    </span>
+                    <li key={b.itemId} className="text-foreground">
+                      {classPayrollLine(b)}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </TableCell>
               <TableCell className="text-right font-medium tabular-nums">{formatPrice(row.totalFee)}</TableCell>
             </TableRow>

@@ -9,6 +9,7 @@ export interface User {
   email: string | null;
   role: "ADMIN" | "SUPERADMIN" | "DEVELOPER" | "MEMBER" | "TEACHER";
   phoneNo: string | null;
+  birthday?: string | null;
   image?: string | null;
   avatarAsset?: unknown;
   createdAt: string;

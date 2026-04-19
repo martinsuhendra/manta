@@ -23,32 +23,16 @@ model Brand {
   updatedAt DateTime @updatedAt @db.Timestamp(6)
 
   // Relations (all scoped models point here)
-  users           BrandUser[]
-  products        Product[]
+  productBrands   ProductBrand[]
   itemBrands      ItemBrand[]
   classSessions   ClassSession[]
-  memberships     Membership[]
+  membershipBrands MembershipBrand[]
   transactions    Transaction[]
   bookings        Booking[]
   bookingSettings BookingSettings[]
   quotaPools      QuotaPool[]
 
   @@map("brands")
-}
-
-model BrandUser {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  brandId   String   @db.Uuid
-  userId    String   @db.Uuid
-  role      String   // role within this brand (ADMIN, TEACHER, MEMBER)
-  isDefault Boolean  @default(false) // default brand for this user
-  createdAt DateTime @default(now()) @db.Timestamp(6)
-
-  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([brandId, userId])
-  @@map("brand_users")
 }
 
 model Account {
@@ -98,16 +82,17 @@ model User {
   updatedAt     DateTime       @updatedAt @db.Timestamp(6)
   licenseKey    String?
   phoneNo       String?        @map("phone_no")
+  birthday      DateTime?      @db.Date
   accounts      Account[]
   bookings      Booking[]
   classSessions ClassSession[] @relation("SessionTeacher")
   memberships   Membership[]
   sessions      Session[]
   teacherItems  TeacherItem[]  @relation("TeacherItems")
+  itemScheduleDefaults ItemSchedule[] @relation("ItemScheduleDefaultTeacher")
   transactions  Transaction[]
   freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
-  brandUsers              BrandUser[]
 
   @@map("users")
 }
@@ -143,7 +128,6 @@ model PasswordResetToken {
 
 model Product {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  brandId        String   @db.Uuid
   name           String
   description    String?
   price          Decimal  @db.Decimal(10, 2)
@@ -163,11 +147,24 @@ model Product {
   transactions Transaction[]
   productItems ProductItem[]
   quotaPools   QuotaPool[]
-  brand        Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  productBrands ProductBrand[]
 
   @@index([isActive, position]) // Index for active products with ordering
   @@index([isActive, createdAt]) // Index for active products by creation date
   @@map("products")
+}
+
+model ProductBrand {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  brandId   String   @map("brand_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, brandId])
+  @@map("product_brands")
 }
 
 model Transaction {
@@ -197,7 +194,6 @@ model Membership {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String   @map("user_id") @db.Uuid
   productId     String   @map("product_id") @db.Uuid
-  brandId       String   @db.Uuid
   status        String   @default("ACTIVE")
   joinDate      DateTime @default(now()) @map("join_date") @db.Timestamp(6)
   expiredAt     DateTime @map("expired_at") @db.Timestamp(6)
@@ -211,9 +207,22 @@ model Membership {
   bookings   Booking[]
   quotaUsage MembershipQuotaUsage[]
   freezeRequests MembershipFreezeRequest[]
-  brand      Brand                  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  membershipBrands MembershipBrand[]
 
   @@map("memberships")
+}
+
+model MembershipBrand {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  brandId      String   @map("brand_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, brandId])
+  @@map("membership_brands")
 }
 
 model MembershipFreezeRequest {
@@ -276,12 +285,16 @@ model ItemBrand {
 }
 
 model TeacherItem {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  teacherId            String   @map("teacher_id") @db.Uuid
-  itemId               String   @map("item_id") @db.Uuid
-  teacherProfitPercent Decimal  @default(60) @map("teacher_profit_percent") @db.Decimal(5, 2)
-  feeAmount             Int      @default(0) @map("fee_amount")
-  isActive             Boolean  @default(true) @map("is_active")
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teacherId            String           @map("teacher_id") @db.Uuid
+  itemId               String           @map("item_id") @db.Uuid
+  teacherProfitPercent Decimal          @default(60) @map("teacher_profit_percent") @db.Decimal(5, 2)
+  feeModel             TeacherFeeModel  @default(FLAT_PER_SESSION) @map("fee_model")
+  feeAmount            Int              @default(0) @map("fee_amount")
+  // PER_PARTICIPANT only: if billable pax is 1..guaranteeMaxPax (inclusive), pay minGuarantee instead of feeAmount × pax
+  perParticipantMinGuarantee    Int?    @map("per_participant_min_guarantee")
+  perParticipantGuaranteeMaxPax Int?    @map("per_participant_guarantee_max_pax")
+  isActive             Boolean          @default(true) @map("is_active")
   createdAt            DateTime @default(now()) @db.Timestamp(6)
   item                 Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   teacher              User     @relation("TeacherItems", fields: [teacherId], references: [id], onDelete: Cascade)
@@ -293,6 +306,7 @@ model TeacherItem {
 model ItemSchedule {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   itemId    String   @map("item_id") @db.Uuid
+  teacherId String?  @map("teacher_id") @db.Uuid
   dayOfWeek Int      @map("day_of_week")
   startTime String   @map("start_time")
   endTime   String   @map("end_time")
@@ -300,7 +314,9 @@ model ItemSchedule {
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @updatedAt @db.Timestamp(6)
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  teacher   User?    @relation("ItemScheduleDefaultTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
 
+  @@index([teacherId])
   @@map("item_schedules")
 }
 
@@ -359,7 +375,7 @@ model Booking {
   membershipId     String        @map("membership_id") @db.Uuid
   brandId          String        @db.Uuid
   participantCount Int           @default(1) @map("participant_count")
-  status           BookingStatus @default(CONFIRMED)
+  status           BookingStatus @default(RESERVED)
   notes            String?
   createdAt        DateTime      @default(now()) @db.Timestamp(6)
   updatedAt        DateTime      @updatedAt @db.Timestamp(6)
@@ -424,6 +440,12 @@ enum TransactionStatus {
   EXPIRED
 }
 
+// How feeAmount on TeacherItem is applied in payroll (see payroll summary).
+enum TeacherFeeModel {
+  FLAT_PER_SESSION // feeAmount = total IDR per completed session
+  PER_PARTICIPANT // feeAmount = IDR per head; multiply by billable participant count
+}
+
 enum SessionStatus {
   SCHEDULED
   CANCELLED
@@ -431,6 +453,7 @@ enum SessionStatus {
 }
 
 enum BookingStatus {
+  RESERVED
   CONFIRMED
   CANCELLED
   COMPLETED

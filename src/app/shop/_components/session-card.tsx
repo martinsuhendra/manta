@@ -97,7 +97,7 @@ export function SessionCard({
                 {session.teacher && (
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    Coach {session.teacher.name ?? "TBA"}
+                    {session.teacher.name ?? "TBA"}
                   </span>
                 )}
                 <span className="flex items-center gap-1">

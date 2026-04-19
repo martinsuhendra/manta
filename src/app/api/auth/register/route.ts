@@ -5,23 +5,12 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/generated/prisma";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
-
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(1).optional(),
-  phoneNo: z
-    .string()
-    .min(1, { message: "Phone number is required" })
-    .min(10, { message: "Phone number must be at least 10 digits" })
-    .max(15, { message: "Phone number must be at most 15 digits" })
-    .regex(/^[0-9+\-\s()]+$/, { message: "Invalid phone number format" }),
-});
+import { registerBodySchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phoneNo } = registerSchema.parse(body);
+    const { email, password, name, phoneNo, birthday } = registerBodySchema.parse(body);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -42,30 +31,10 @@ export async function POST(request: Request) {
         password: hashedPassword,
         name: name ?? email.split("@")[0],
         phoneNo: phoneNo,
+        birthday: new Date(birthday),
         role: DEFAULT_USER_ROLE,
       },
     });
-
-    // Assign to default brand (first active brand) so they can access the dashboard
-    try {
-      const defaultBrand = await prisma.brand.findFirst({
-        where: { isActive: true },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      });
-      if (defaultBrand) {
-        await prisma.brandUser.create({
-          data: {
-            userId: user.id,
-            brandId: defaultBrand.id,
-            role: DEFAULT_USER_ROLE,
-            isDefault: true,
-          },
-        });
-      }
-    } catch {
-      // Ignore if brands table not yet migrated
-    }
 
     // Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { CloudinaryAssetPayload } from "@/lib/cloudinary-asset";
 
 interface CreateProductData {
+  brandIds: string[];
   name: string;
   description?: string;
   price: number;

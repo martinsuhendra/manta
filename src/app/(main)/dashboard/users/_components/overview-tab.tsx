@@ -112,6 +112,16 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
               </div>
             </div>
           )}
+
+          {member.birthday && (
+            <div>
+              <label className="text-muted-foreground text-sm font-medium">Birthday</label>
+              <div className="flex items-center gap-2">
+                <Calendar className="text-muted-foreground h-4 w-4" />
+                <p className="text-base">{format(new Date(member.birthday), "MMMM dd, yyyy")}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

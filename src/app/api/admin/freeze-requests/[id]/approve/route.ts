@@ -85,6 +85,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const membership = freezeRequest.membership;
+
+    if (freezeStartDate < membership.joinDate || freezeStartDate > membership.expiredAt) {
+      return NextResponse.json({ error: "Freeze start date must be within membership period" }, { status: 400 });
+    }
+
+    if (freezeEndDate < membership.joinDate || freezeEndDate > membership.expiredAt) {
+      return NextResponse.json({ error: "Freeze end date must be within membership period" }, { status: 400 });
+    }
+
     const newExpiredAt = extendExpirationByFreezeDays(membership.expiredAt, totalFrozenDays);
 
     await prisma.$transaction([

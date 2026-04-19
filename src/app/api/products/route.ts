@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { getBrandFilterFromRequest, handleApiError, requireBrandAccess, requireSuperAdmin } from "@/lib/api-utils";
+import { getProductWhereForBrandAccess, handleApiError, requireBrandAccess, requireSuperAdmin } from "@/lib/api-utils";
 import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
 const createProductSchema = z.object({
+  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   price: z.number().positive("Price must be positive"),
@@ -26,13 +27,18 @@ export async function GET(request: NextRequest) {
     const { error, brandIds } = await requireBrandAccess(request);
     if (error) return error;
 
-    const whereBrand = getBrandFilterFromRequest(request, brandIds);
+    const whereBrand = getProductWhereForBrandAccess(request, brandIds);
 
     const products = await prisma.product.findMany({
       where: whereBrand,
       orderBy: { position: "asc" },
       include: {
-        brand: { select: { id: true, name: true } },
+        productBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
         _count: {
           select: { memberships: true, transactions: true },
         },
@@ -42,6 +48,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       products.map((product) => ({
         ...product,
+        brandIds: product.productBrands.map((pb) => pb.brandId),
+        brands: product.productBrands.map((pb) => pb.brand),
         imageAsset: parseCloudinaryAsset(product.imageAsset),
         image: resolveAssetUrl(product.imageAsset, product.image),
       })),
@@ -56,14 +64,17 @@ export async function POST(request: NextRequest) {
     const { error } = await requireSuperAdmin();
     if (error) return error;
 
-    const brandId = request.headers.get("x-brand-id");
-    if (!brandId || brandId === "ALL") {
-      return NextResponse.json({ error: "Select a single brand to create a product" }, { status: 400 });
-    }
-
     const body = await request.json();
     const validatedData = createProductSchema.parse(body);
-    const { imageAsset: _imageAsset, ...productData } = validatedData;
+    const { brandIds, ...productData } = validatedData;
+
+    const brands = await prisma.brand.findMany({
+      where: { id: { in: brandIds }, isActive: true },
+      select: { id: true },
+    });
+    if (brands.length !== brandIds.length) {
+      return NextResponse.json({ error: "One or more selected brands are invalid or inactive" }, { status: 400 });
+    }
 
     const imageAsset = parseCloudinaryAsset(validatedData.imageAsset);
     const product = await prisma.product.create({
@@ -71,11 +82,28 @@ export async function POST(request: NextRequest) {
         ...productData,
         imageAsset: imageAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(imageAsset, validatedData.image),
-        brandId,
+        productBrands: {
+          create: brandIds.map((brandId) => ({ brandId })),
+        },
+      },
+      include: {
+        productBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(
+      {
+        ...product,
+        brandIds: product.productBrands.map((pb) => pb.brandId),
+        brands: product.productBrands.map((pb) => pb.brand),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return handleApiError(error, "Failed to create membership product");
   }

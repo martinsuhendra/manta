@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
     // Validate product exists and is active
     const product = await prisma.product.findUnique({
       where: { id: validatedData.productId },
+      include: {
+        productBrands: {
+          select: { brandId: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
 
     if (!product) {
@@ -36,6 +42,15 @@ export async function POST(request: NextRequest) {
     if (!product.isActive) {
       return NextResponse.json({ error: "Product is not available" }, { status: 400 });
     }
+    const productBrandIds = product.productBrands.map((pb) => pb.brandId);
+    if (!productBrandIds.length) {
+      return NextResponse.json({ error: "Product is not linked to any brand" }, { status: 400 });
+    }
+    const activeBrandId = request.headers.get("x-brand-id");
+    const primaryBrandId =
+      activeBrandId && activeBrandId !== "ALL" && productBrandIds.includes(activeBrandId)
+        ? activeBrandId
+        : productBrandIds[0];
 
     // Find or create user
     let user;
@@ -71,7 +86,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
-        brandId: product.brandId,
+        brandId: primaryBrandId,
         amount: product.price,
         currency: "IDR", // Midtrans requires IDR
         status: TRANSACTION_STATUS.PENDING,
@@ -94,10 +109,12 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
-        brandId: product.brandId,
         expiredAt,
         transactionId: transaction.id,
         status: MEMBERSHIP_STATUS.PENDING,
+        membershipBrands: {
+          create: productBrandIds.map((brandId) => ({ brandId })),
+        },
       },
       include: {
         product: {
@@ -114,6 +131,12 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             email: true,
+          },
+        },
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
           },
         },
       },
@@ -135,6 +158,7 @@ export async function POST(request: NextRequest) {
         customerPhone: user.phoneNo || undefined,
         productId: validatedData.productId,
         productName: product.name,
+        finishCallbackUrl: `${request.nextUrl.origin}/dashboard/users`,
       });
 
       snapToken = snapResponse.token;
@@ -183,6 +207,8 @@ export async function POST(request: NextRequest) {
           expiredAt: membership.expiredAt,
           product: membership.product,
           user: membership.user,
+          brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+          brands: membership.membershipBrands.map((mb) => mb.brand),
         },
       },
       { status: 201 },

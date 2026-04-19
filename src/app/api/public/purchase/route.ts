@@ -17,23 +17,31 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = purchaseSchema.parse(body);
-    const activeBrandId = await resolveActiveBrandIdFromCookie();
 
     // Validate product exists and is active
     const product = await prisma.product.findUnique({
       where: { id: validatedData.productId },
+      include: {
+        productBrands: {
+          select: { brandId: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    if (activeBrandId && product.brandId !== activeBrandId) {
-      return NextResponse.json({ error: "Product not available for selected brand" }, { status: 400 });
-    }
-
     if (!product.isActive) {
       return NextResponse.json({ error: "Product is not available" }, { status: 400 });
     }
+    const productBrandIds = product.productBrands.map((pb) => pb.brandId);
+    if (!productBrandIds.length) {
+      return NextResponse.json({ error: "Product is not linked to any brand" }, { status: 400 });
+    }
+    const cookieBrandId = await resolveActiveBrandIdFromCookie();
+    const primaryBrandId =
+      cookieBrandId && productBrandIds.includes(cookieBrandId) ? cookieBrandId : productBrandIds[0];
 
     // Find or create user
     let user = await prisma.user.findUnique({
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
-        brandId: product.brandId,
+        brandId: primaryBrandId,
         amount: product.price,
         currency: "IDR", // Midtrans requires IDR
         status: TRANSACTION_STATUS.PENDING,
@@ -77,10 +85,12 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: validatedData.productId,
-        brandId: product.brandId,
         expiredAt,
         transactionId: transaction.id,
         status: MEMBERSHIP_STATUS.PENDING,
+        membershipBrands: {
+          create: productBrandIds.map((brandId) => ({ brandId })),
+        },
       },
       include: {
         product: {
@@ -90,6 +100,12 @@ export async function POST(request: NextRequest) {
             price: true,
             validDays: true,
             paymentUrl: true,
+          },
+        },
+        membershipBrands: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
           },
         },
       },
@@ -153,6 +169,8 @@ export async function POST(request: NextRequest) {
           status: membership.status,
           expiredAt: membership.expiredAt,
           product: membership.product,
+          brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+          brands: membership.membershipBrands.map((mb) => mb.brand),
         },
       },
       { status: 201 },

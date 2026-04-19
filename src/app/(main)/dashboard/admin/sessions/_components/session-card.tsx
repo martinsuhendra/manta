@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState } from "react";
 
+import { suppressPointerAfterDialogClose } from "@/hooks/use-dialog-close-pointer-guard";
 import { useUpdateSession, useDeleteSession } from "@/hooks/use-sessions-mutation";
 
 import { AddParticipantDialog } from "./add-participant-dialog";
@@ -12,6 +13,7 @@ import { ParticipantsDialog } from "./participants-dialog";
 import { Session } from "./schema";
 import { SessionCardCompact } from "./session-card-compact";
 import { SessionCardDetailed } from "./session-card-detailed";
+import { armBlockOpenEditAfterSessionDialog } from "./session-open-edit-guard";
 
 interface SessionCardProps {
   session: Session;
@@ -42,8 +44,11 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
   const handleDeleteConfirm = () => {
     if (!sessionToDelete) return;
 
-    deleteSessionMutation.mutate(sessionToDelete.id, {
+    const id = sessionToDelete.id;
+    deleteSessionMutation.mutate(id, {
       onSuccess: () => {
+        armBlockOpenEditAfterSessionDialog(id);
+        suppressPointerAfterDialogClose();
         setShowDeleteDialog(false);
         setSessionToDelete(null);
       },
@@ -58,10 +63,13 @@ export function SessionCard({ session, variant = "compact", showDate = true, onE
   const handleCancelConfirm = () => {
     if (!sessionToCancel) return;
 
+    const cancelId = sessionToCancel.id;
     updateSessionMutation.mutate(
-      { sessionId: sessionToCancel.id, data: { status: "CANCELLED" } },
+      { sessionId: cancelId, data: { status: "CANCELLED" } },
       {
         onSuccess: () => {
+          armBlockOpenEditAfterSessionDialog(cancelId);
+          suppressPointerAfterDialogClose();
           setShowCancelDialog(false);
           setSessionToCancel(null);
         },

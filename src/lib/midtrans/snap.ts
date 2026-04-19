@@ -19,6 +19,11 @@ import { midtransFetch, parseJsonResponse } from "./utils";
 export async function createSnapTransaction(params: SnapTransactionParams): Promise<SnapTokenResponse> {
   validateMidtransConfig();
 
+  const finishCallbackUrl =
+    params.finishCallbackUrl === undefined
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/shop/my-account`
+      : params.finishCallbackUrl;
+
   const payload: MidtransSnapRequest = {
     transaction_details: {
       order_id: params.transactionId,
@@ -37,9 +42,7 @@ export async function createSnapTransaction(params: SnapTransactionParams): Prom
         name: params.productName,
       },
     ],
-    callbacks: {
-      finish: `${process.env.NEXT_PUBLIC_APP_URL}/shop/my-account`,
-    },
+    ...(finishCallbackUrl ? { callbacks: { finish: finishCallbackUrl } } : {}),
   };
 
   try {

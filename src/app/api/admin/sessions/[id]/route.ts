@@ -67,9 +67,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    const confirmedBookings = classSession.bookings.filter((b) => b.status === "CONFIRMED");
+    const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CONFIRMED");
     const { bookings, ...rest } = classSession;
-    return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(confirmedBookings) });
+    return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(occupiedBookings) });
   } catch (error) {
     console.error("Error fetching session:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -235,5 +235,37 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json(updatedSession);
   } catch (error) {
     return handleApiError(error, "Failed to update session");
+  }
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
+    const { id } = await params;
+
+    const classSession = await prisma.classSession.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!classSession) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    const activeBookingsCount = await prisma.booking.count({
+      where: { classSessionId: id, status: { not: "CANCELLED" } },
+    });
+
+    if (activeBookingsCount > 0) {
+      return NextResponse.json({ error: "Cannot delete a session that has active bookings" }, { status: 400 });
+    }
+
+    await prisma.classSession.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error, "Failed to delete session");
   }
 }

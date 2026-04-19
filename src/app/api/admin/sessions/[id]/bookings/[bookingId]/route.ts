@@ -54,10 +54,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           include: {
             product: {
               include: {
+                // Include inactive items so quota still restores if a product item was deactivated after booking
                 productItems: {
                   where: {
                     itemId: classSession.itemId,
-                    isActive: true,
                   },
                   include: {
                     quotaPool: true,
@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const productItem = booking.membership.product.productItems[0];
-    const wasConfirmed = booking.status === "CONFIRMED";
+    const consumedCapacityAndQuota = booking.status === "RESERVED" || booking.status === "CONFIRMED";
 
     // Delete booking, restore quota, and auto-confirm waitlisted member in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -90,13 +90,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         where: { id: bookingId },
       });
 
-      // Only restore quota if booking was CONFIRMED (not WAITLISTED)
-      if (wasConfirmed && productItem) {
+      // Restore quota only when the booking consumed quota
+      if (consumedCapacityAndQuota && productItem) {
         await restoreQuota({ tx, membershipId: booking.membershipId, productItem });
       }
 
       const confirmedBookings = await tx.booking.findMany({
-        where: { classSessionId: sessionId, status: "CONFIRMED" },
+        where: { classSessionId: sessionId, status: { in: ["RESERVED", "CONFIRMED"] } },
         select: { participantCount: true },
       });
       const totalParticipantSlots = sumParticipantSlots(confirmedBookings);

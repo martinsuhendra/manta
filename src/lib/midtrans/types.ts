@@ -8,6 +8,7 @@ export interface SnapTransactionParams {
   customerPhone?: string;
   productId: string;
   productName: string;
+  finishCallbackUrl?: string | null;
 }
 
 export interface SnapTokenResponse {

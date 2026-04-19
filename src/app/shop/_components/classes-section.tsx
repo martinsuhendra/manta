@@ -115,11 +115,13 @@ export function ClassesSection({ classes }: ClassesSectionProps) {
                   </div>
 
                   <Button
-                    className="group-hover:bg-primary group-hover:text-primary-foreground w-full rounded-xl py-4 text-sm font-black tracking-widest uppercase transition-colors"
+                    className="hover:bg-primary hover:text-primary-foreground w-full rounded-xl py-4 text-sm font-black tracking-widest uppercase transition-colors"
                     variant="secondary"
                     asChild
                   >
-                    <Link href={`/shop/classes/${item.id}`}>View Class Info</Link>
+                    <Link href={`/shop/classes/${item.id}`} className="cursor-pointer">
+                      View Class Info
+                    </Link>
                   </Button>
                 </div>
               </div>

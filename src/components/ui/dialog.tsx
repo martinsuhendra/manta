@@ -50,6 +50,7 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
@@ -64,6 +65,11 @@ function DialogContent({
           className
         )}
         {...props}
+        onCloseAutoFocus={(e) => {
+          // Avoid focus + stray click landing on elements under the dialog after close (ghost click)
+          e.preventDefault()
+          onCloseAutoFocus?.(e)
+        }}
       >
         {children}
         {showCloseButton && (

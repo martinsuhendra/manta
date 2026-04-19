@@ -16,6 +16,11 @@ const addParticipantSchema = z.object({
   membershipId: z.string().uuid("Invalid membership ID"),
 });
 
+const updateBookingStatusesSchema = z.object({
+  bookingIds: z.array(z.string().uuid("Invalid booking ID")).min(1, "At least one booking ID is required"),
+  targetStatus: z.literal("CONFIRMED"),
+});
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -229,7 +234,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: "CONFIRMED",
+        status: { in: ["RESERVED", "CONFIRMED"] },
       },
       _sum: { participantCount: true },
     });
@@ -244,7 +249,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Create booking and update quota usage in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Determine booking status based on capacity
-      const bookingStatus = isAtCapacity ? "WAITLISTED" : "CONFIRMED";
+      const bookingStatus = isAtCapacity ? "WAITLISTED" : "RESERVED";
 
       // Create booking
       const booking = await tx.booking.create({
@@ -278,7 +283,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       });
 
-      if (bookingStatus === "CONFIRMED") {
+      if (bookingStatus === "RESERVED") {
         await deductQuota({ tx, membershipId, productItem });
       }
 
@@ -324,6 +329,61 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     console.error("Error adding participant:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { id: sessionId } = await params;
+    const body = await request.json();
+    const { bookingIds } = updateBookingStatusesSchema.parse(body);
+
+    const classSession = await prisma.classSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true },
+    });
+
+    if (!classSession) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    const updateResult = await prisma.booking.updateMany({
+      where: {
+        classSessionId: sessionId,
+        id: { in: bookingIds },
+        status: "RESERVED",
+      },
+      data: {
+        status: "CONFIRMED",
+      },
+    });
+
+    const updatedCount = updateResult.count;
+    const skippedCount = bookingIds.length - updatedCount;
+
+    return NextResponse.json({
+      success: true,
+      updatedCount,
+      skippedCount,
+      message: `Updated ${updatedCount} booking(s) to CONFIRMED.`,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
+    }
+
+    console.error("Error updating booking statuses:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

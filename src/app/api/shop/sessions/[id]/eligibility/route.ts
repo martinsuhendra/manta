@@ -105,7 +105,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: "CONFIRMED",
+        status: { in: ["RESERVED", "CONFIRMED"] },
       },
       _sum: { participantCount: true },
     });
@@ -118,9 +118,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: true,
         memberships: {
           where: {
-            brandId: selectedBrandId,
             status: "ACTIVE",
             expiredAt: { gt: new Date() },
+            membershipBrands: {
+              some: { brandId: selectedBrandId },
+            },
           },
           include: {
             product: {
