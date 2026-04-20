@@ -108,7 +108,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/admin/sessions",
         icon: Calendar,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER],
       },
     ],
   },

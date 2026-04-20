@@ -48,10 +48,11 @@ export function SessionCalendar({
       ...(filters.teacherId ? { teacherId: filters.teacherId } : {}),
       ...(filters.itemId ? { itemId: filters.itemId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.visibility ? { visibility: filters.visibility } : {}),
       startDate: dayKey,
       endDate: dayKey,
     };
-  }, [dayKey, filters.teacherId, filters.itemId, filters.status]);
+  }, [dayKey, filters.teacherId, filters.itemId, filters.status, filters.visibility]);
 
   const { data: sessions = [], isLoading } = useSessions(calendarFilters);
 

@@ -58,6 +58,7 @@ export function SessionDialog({
     defaultValues: {
       itemId: editingSession?.itemId || "",
       teacherId: editingSession?.teacherId || "none",
+      visibility: editingSession?.visibility || "PUBLIC",
       date: (() => {
         if (editingSession) {
           // Use the editing session's date
@@ -95,6 +96,7 @@ export function SessionDialog({
         form.setValue("date", localDateString);
         form.setValue("startTime", editingSession.startTime || "09:00");
         form.setValue("status", editingSession.status || "SCHEDULED");
+        form.setValue("visibility", editingSession.visibility || "PUBLIC");
         form.setValue("notes", editingSession.notes || "");
       } else {
         // Reset form for create mode
@@ -107,6 +109,7 @@ export function SessionDialog({
         form.setValue("date", localDateString);
         form.setValue("itemId", "");
         form.setValue("teacherId", "none");
+        form.setValue("visibility", "PUBLIC");
         form.setValue("startTime", prefillStartTime ?? "09:00");
         form.setValue("status", "SCHEDULED");
         form.setValue("notes", "");

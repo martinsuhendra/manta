@@ -335,6 +335,7 @@ model ClassSession {
   startTime String        @map("start_time")
   endTime   String        @map("end_time")
   status    SessionStatus @default(SCHEDULED)
+  visibility SessionVisibility @default(PUBLIC)
   notes     String?
   createdAt DateTime      @default(now()) @db.Timestamp(6)
   updatedAt DateTime      @updatedAt @db.Timestamp(6)
@@ -456,6 +457,11 @@ enum SessionStatus {
   SCHEDULED
   CANCELLED
   COMPLETED
+}
+
+enum SessionVisibility {
+  PUBLIC
+  PRIVATE
 }
 
 enum BookingStatus {

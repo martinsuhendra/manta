@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const whereConditions: Prisma.ClassSessionWhereInput = {
       date: { gte: today },
       status: "SCHEDULED",
+      visibility: "PUBLIC",
     };
 
     if (startDate && endDate) {

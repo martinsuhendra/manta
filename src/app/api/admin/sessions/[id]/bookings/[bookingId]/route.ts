@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-utils";
+import { doesBookingStatusConsumeQuota, getCapacityBookingStatuses } from "@/lib/booking-status";
 import { emailService } from "@/lib/email/service";
 import { createSessionJoinedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
@@ -81,7 +82,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const productItem = booking.membership.product.productItems[0];
-    const consumedCapacityAndQuota = booking.status === "RESERVED" || booking.status === "CONFIRMED";
+    const consumedCapacityAndQuota = doesBookingStatusConsumeQuota(booking.status);
 
     // Delete booking, restore quota, and auto-confirm waitlisted member in a transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -96,7 +97,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       }
 
       const confirmedBookings = await tx.booking.findMany({
-        where: { classSessionId: sessionId, status: { in: ["RESERVED", "CONFIRMED"] } },
+        where: { classSessionId: sessionId, status: { in: getCapacityBookingStatuses() } },
         select: { participantCount: true },
       });
       const totalParticipantSlots = sumParticipantSlots(confirmedBookings);

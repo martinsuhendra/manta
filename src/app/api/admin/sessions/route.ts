@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
+import { getCapacityBookingStatuses } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
 import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -18,7 +19,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
+    if (
+      ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(session.user.role)
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -32,6 +35,7 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get("teacherId");
     const itemId = searchParams.get("itemId");
     const status = searchParams.get("status");
+    const visibility = searchParams.get("visibility");
 
     // Build filter conditions (asserted when passed to Prisma)
     const whereConditions: Record<string, unknown> = {};
@@ -96,6 +100,12 @@ export async function GET(request: NextRequest) {
     if (status) {
       whereConditions.status = status;
     }
+    if (visibility) {
+      whereConditions.visibility = visibility;
+    }
+    if (session.user.role === USER_ROLES.TEACHER) {
+      whereConditions.teacherId = session.user.id;
+    }
 
     const sessions = await prisma.classSession.findMany({
       where: { ...whereBrand, ...whereConditions } as Prisma.ClassSessionWhereInput,
@@ -122,7 +132,7 @@ export async function GET(request: NextRequest) {
           },
         },
         bookings: {
-          where: { status: { in: ["RESERVED", "CONFIRMED"] } },
+          where: { status: { in: getCapacityBookingStatuses() } },
           select: { participantCount: true },
         },
       },
@@ -154,7 +164,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { itemId, teacherId, date, startTime, status, notes } = body;
+    const { itemId, teacherId, date, startTime, status, notes, visibility } = body;
 
     // Validate required fields
     if (!itemId || !date || !startTime) {
@@ -233,6 +243,7 @@ export async function POST(request: NextRequest) {
         startTime,
         endTime: calculatedEndTime,
         status: status || "SCHEDULED",
+        visibility: visibility === "PRIVATE" ? "PRIVATE" : "PUBLIC",
         notes: notes || null,
       },
       include: {

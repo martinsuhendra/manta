@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { requireBrandAccess } from "@/lib/api-utils";
 import { canMemberCancel, getBookingSettings, getSessionStartAt } from "@/lib/booking-settings";
+import { doesBookingStatusConsumeQuota } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
 import { restoreQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -66,16 +67,15 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Cancellation is no longer allowed for this session." }, { status: 400 });
     }
 
-    const productItem =
-      booking.status === "CONFIRMED" || booking.status === "RESERVED"
-        ? await prisma.productItem.findFirst({
-            where: {
-              productId: booking.membership.productId,
-              itemId: booking.classSession.itemId,
-            },
-            include: { quotaPool: true },
-          })
-        : null;
+    const productItem = doesBookingStatusConsumeQuota(booking.status)
+      ? await prisma.productItem.findFirst({
+          where: {
+            productId: booking.membership.productId,
+            itemId: booking.classSession.itemId,
+          },
+          include: { quotaPool: true },
+        })
+      : null;
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.delete({

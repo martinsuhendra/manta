@@ -219,6 +219,23 @@ export function SessionFilters({ appliedFilters, onFilterChange }: SessionFilter
               </Select>
             </div>
 
+            <div className="space-y-1">
+              <Label className="text-xs">Visibility</Label>
+              <Select
+                value={draftFilters.visibility || "all"}
+                onValueChange={(value) => updateDraft("visibility", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All visibility" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All visibility</SelectItem>
+                  <SelectItem value="PUBLIC">Public</SelectItem>
+                  <SelectItem value="PRIVATE">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
                 Cancel

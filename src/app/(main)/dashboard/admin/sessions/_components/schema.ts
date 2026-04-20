@@ -11,6 +11,7 @@ export const sessionSchema = z.object({
   id: z.string(),
   itemId: z.string(),
   teacherId: z.string().nullable(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]),
   date: z.string(),
   startTime: z.string(),
   endTime: z.string(),
@@ -58,6 +59,7 @@ export type Session = z.infer<typeof sessionSchema>;
 export const createSessionSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
   teacherId: z.string().optional(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]).default("PUBLIC"),
   date: z.string().min(1, "Date is required"),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).default("SCHEDULED"),
@@ -80,6 +82,7 @@ export const updateSessionSchema = z
       .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
       .optional(),
     status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+    visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
     notes: z.string().optional(),
   })
   .refine(
@@ -124,6 +127,7 @@ export const sessionFilterSchema = z.object({
   teacherId: z.string().optional(),
   itemId: z.string().optional(),
   status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
 });
 
 export type SessionFilter = z.infer<typeof sessionFilterSchema>;
@@ -139,6 +143,11 @@ export const SESSION_STATUS_COLORS = {
   SCHEDULED: "#3B82F6", // Blue
   CANCELLED: "#EF4444", // Red
   COMPLETED: "#10B981", // Green
+} as const;
+
+export const SESSION_VISIBILITY_LABELS = {
+  PUBLIC: "Public",
+  PRIVATE: "Private",
 } as const;
 
 // Time slots for scheduling (15-minute intervals)

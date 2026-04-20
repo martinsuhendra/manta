@@ -89,6 +89,7 @@ const updateSessionSchema = z.object({
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
     .optional(),
   status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
   notes: z.string().optional().nullable(),
 });
 
