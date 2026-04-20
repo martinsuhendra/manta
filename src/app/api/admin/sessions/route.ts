@@ -6,9 +6,20 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
+import { doesBookingStatusConsumeQuota } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
 import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
+
+const ALLOWED_SESSION_STATUS = new Set(["SCHEDULED", "CANCELLED", "COMPLETED"]);
+const ALLOWED_SESSION_VISIBILITY = new Set(["PUBLIC", "PRIVATE"]);
+
+function parseDateOrNull(raw: string | null): Date | null {
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
+    if (
+      ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(session.user.role)
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -32,13 +45,24 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get("teacherId");
     const itemId = searchParams.get("itemId");
     const status = searchParams.get("status");
+    const visibility = searchParams.get("visibility");
 
     // Build filter conditions (asserted when passed to Prisma)
     const whereConditions: Record<string, unknown> = {};
 
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+    const parsedStartDate = parseDateOrNull(startDate);
+    const parsedEndDate = parseDateOrNull(endDate);
+
+    if (startDate && !parsedStartDate) {
+      return NextResponse.json({ error: "Invalid startDate" }, { status: 400 });
+    }
+    if (endDate && !parsedEndDate) {
+      return NextResponse.json({ error: "Invalid endDate" }, { status: 400 });
+    }
+
+    if (parsedStartDate && parsedEndDate) {
+      const start = parsedStartDate;
+      const end = parsedEndDate;
 
       // Enforce maximum 30-day range
       const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -56,8 +80,8 @@ export async function GET(request: NextRequest) {
           lte: end,
         };
       }
-    } else if (startDate) {
-      const start = new Date(startDate);
+    } else if (parsedStartDate) {
+      const start = parsedStartDate;
       // If only start date provided, default to 30 days from start
       const defaultEnd = new Date(start);
       defaultEnd.setDate(defaultEnd.getDate() + 30);
@@ -65,9 +89,9 @@ export async function GET(request: NextRequest) {
         gte: start,
         lte: defaultEnd,
       };
-    } else if (endDate) {
+    } else if (parsedEndDate) {
       whereConditions.date = {
-        lte: new Date(endDate),
+        lte: parsedEndDate,
       };
     } else {
       // Default: show next 30 days from today if no date filter
@@ -81,7 +105,9 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    if (teacherId) {
+    const isTeacher = session.user.role === USER_ROLES.TEACHER;
+
+    if (!isTeacher && teacherId) {
       if (teacherId === "unassigned") {
         whereConditions.teacherId = null;
       } else {
@@ -93,8 +119,21 @@ export async function GET(request: NextRequest) {
       whereConditions.itemId = itemId;
     }
 
-    if (status) {
+    if (status && ALLOWED_SESSION_STATUS.has(status)) {
       whereConditions.status = status;
+    }
+    if (visibility && ALLOWED_SESSION_VISIBILITY.has(visibility)) {
+      whereConditions.visibility = visibility;
+    }
+    if (isTeacher) {
+      if (visibility === "PRIVATE") {
+        whereConditions.visibility = "PRIVATE";
+        whereConditions.teacherId = session.user.id;
+      } else if (visibility === "PUBLIC") {
+        whereConditions.visibility = "PUBLIC";
+      } else {
+        whereConditions.OR = [{ visibility: "PUBLIC" }, { teacherId: session.user.id }];
+      }
     }
 
     const sessions = await prisma.classSession.findMany({
@@ -122,8 +161,7 @@ export async function GET(request: NextRequest) {
           },
         },
         bookings: {
-          where: { status: { in: ["RESERVED", "CONFIRMED"] } },
-          select: { participantCount: true },
+          select: { participantCount: true, status: true },
         },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
@@ -131,7 +169,8 @@ export async function GET(request: NextRequest) {
 
     const sessionsWithSlots = sessions.map((s) => {
       const { bookings, ...rest } = s;
-      return { ...rest, totalParticipantSlots: sumParticipantSlots(bookings) };
+      const occupiedBookings = bookings.filter((booking) => doesBookingStatusConsumeQuota(booking.status));
+      return { ...rest, totalParticipantSlots: sumParticipantSlots(occupiedBookings) };
     });
 
     return NextResponse.json(sessionsWithSlots);
@@ -154,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { itemId, teacherId, date, startTime, status, notes } = body;
+    const { itemId, teacherId, date, startTime, status, notes, visibility } = body;
 
     // Validate required fields
     if (!itemId || !date || !startTime) {
@@ -233,6 +272,7 @@ export async function POST(request: NextRequest) {
         startTime,
         endTime: calculatedEndTime,
         status: status || "SCHEDULED",
+        visibility: visibility === "PRIVATE" ? "PRIVATE" : "PUBLIC",
         notes: notes || null,
       },
       include: {

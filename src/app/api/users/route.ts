@@ -4,30 +4,56 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { requireAdmin } from "@/lib/api-utils";
 import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES, DEFAULT_USER_ROLE } from "@/lib/types";
 
-const createUserSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  role: z
-    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
-    .default(DEFAULT_USER_ROLE),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-  image: z.string().nullable().optional(),
-  avatarAsset: z.unknown().nullable().optional(),
-  bio: z.string().max(2000).nullable().optional(),
-  birthday: z.string().optional(),
-});
+function normalizePhoneNumber(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+const createUserSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email is required"),
+    role: z
+      .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
+      .default(DEFAULT_USER_ROLE),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+    emergencyContact: z
+      .string()
+      .min(10, "Emergency contact must be at least 10 digits")
+      .max(15, "Emergency contact must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    image: z.string().nullable().optional(),
+    avatarAsset: z.unknown().nullable().optional(),
+    bio: z.string().max(2000).nullable().optional(),
+    birthday: z
+      .string({ required_error: "Birthday is required" })
+      .min(1, "Birthday is required")
+      .refine((value) => !Number.isNaN(new Date(value).getTime()), "Invalid date")
+      .refine((value) => new Date(value).getTime() < Date.now(), "Birthday must be in the past"),
+  })
+  .superRefine((data, ctx) => {
+    if (normalizePhoneNumber(data.phoneNo) !== normalizePhoneNumber(data.emergencyContact)) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Emergency contact must be different from phone number",
+      path: ["emergencyContact"],
+    });
+  });
 
 export async function GET(request: NextRequest) {
   try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
 
@@ -46,6 +72,9 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         phoneNo: true,
+        emergencyContact: true,
+        waiverAcceptedAt: true,
+        waiverAcceptedVersion: true,
         birthday: true,
         createdAt: true,
         updatedAt: true,
@@ -71,7 +100,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    const { error } = await requireAdmin();
+    if (error) return error;
+
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -80,8 +111,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createUserSchema.parse(body);
     const avatarAsset = parseCloudinaryAsset(validatedData.avatarAsset);
-    const birthdayDate =
-      validatedData.birthday && validatedData.birthday.trim() !== "" ? new Date(validatedData.birthday) : undefined;
+    const birthdayDate = new Date(validatedData.birthday);
 
     // Check if only SUPERADMIN can create SUPERADMIN users
     if (
@@ -111,6 +141,7 @@ export async function POST(request: NextRequest) {
         email: validatedData.email,
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
+        emergencyContact: validatedData.emergencyContact,
         birthday: birthdayDate,
         avatarAsset: avatarAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,

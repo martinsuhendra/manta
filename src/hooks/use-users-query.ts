@@ -9,6 +9,9 @@ export interface User {
   email: string | null;
   role: "ADMIN" | "SUPERADMIN" | "DEVELOPER" | "MEMBER" | "TEACHER";
   phoneNo: string | null;
+  emergencyContact: string | null;
+  waiverAcceptedAt?: string | null;
+  waiverAcceptedVersion?: number | null;
   birthday?: string | null;
   image?: string | null;
   avatarAsset?: unknown;
@@ -22,11 +25,11 @@ export interface User {
 }
 
 // Re-export from mutations for backward compatibility
-export { useCreateUser, useUpdateUser, useDeleteUser } from "./use-users-mutation";
+export { useCreateUser, useUpdateUser, useDeleteUser, useUpdateUserWaiverStatus } from "./use-users-mutation";
 
-export function useTeachers() {
+export function useTeachers(enabled = true) {
   return useQuery<User[]>({
-    queryKey: ["users", "teachers"],
+    queryKey: ["users", "teachers", enabled],
     queryFn: async () => {
       try {
         const response = await axios.get("/api/users", {
@@ -38,6 +41,7 @@ export function useTeachers() {
         throw error;
       }
     },
+    enabled,
     retry: false,
   });
 }

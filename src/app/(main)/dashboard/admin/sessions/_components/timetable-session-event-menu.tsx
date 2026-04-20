@@ -28,9 +28,15 @@ interface TimetableSessionEventMenuProps {
   onEdit?: (session: Session) => void;
   /** Extra classes for the trigger (e.g. show on group-hover in timetable cards). */
   triggerClassName?: string;
+  readOnly?: boolean;
 }
 
-export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }: TimetableSessionEventMenuProps) {
+export function TimetableSessionEventMenu({
+  session,
+  onEdit,
+  triggerClassName,
+  readOnly = false,
+}: TimetableSessionEventMenuProps) {
   const deleteSessionMutation = useDeleteSession();
   const updateSessionMutation = useUpdateSession();
 
@@ -94,7 +100,7 @@ export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }:
           <DropdownMenuLabel className="text-xs font-normal">Session</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {onEdit ? (
+          {!readOnly && onEdit ? (
             <DropdownMenuItem
               className="cursor-pointer text-sm"
               onClick={(e) => {
@@ -115,56 +121,69 @@ export function TimetableSessionEventMenu({ session, onEdit, triggerClassName }:
             }}
           >
             <Users className="mr-2 h-3.5 w-3.5" />
-            View &amp; edit participants
+            {readOnly ? "View participants" : "View & edit participants"}
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
+          {!readOnly && (
+            <>
+              <DropdownMenuSeparator />
 
-          {hasParticipants ? (
-            <DropdownMenuItem
-              className="cursor-pointer text-sm"
-              disabled={session.status === "CANCELLED"}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSessionToCancel(session);
-                setShowCancelDialog(true);
-              }}
-            >
-              <X className="mr-2 h-3.5 w-3.5" />
-              Cancel session
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              variant="destructive"
-              className="cursor-pointer text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSessionToDelete(session);
-                setShowDeleteDialog(true);
-              }}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              Delete session
-            </DropdownMenuItem>
+              {hasParticipants ? (
+                <DropdownMenuItem
+                  className="cursor-pointer text-sm"
+                  disabled={session.status === "CANCELLED"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSessionToCancel(session);
+                    setShowCancelDialog(true);
+                  }}
+                >
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  Cancel session
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="cursor-pointer text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSessionToDelete(session);
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  Delete session
+                </DropdownMenuItem>
+              )}
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ParticipantsDialog open={participantsOpen} onOpenChange={setParticipantsOpen} session={session} />
-      <DeleteConfirmationDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        session={sessionToDelete}
-        onConfirm={handleDeleteConfirm}
-        isDeleting={deleteSessionMutation.isPending}
+      <ParticipantsDialog
+        open={participantsOpen}
+        onOpenChange={setParticipantsOpen}
+        session={session}
+        readOnly={readOnly}
       />
-      <CancelSessionDialog
-        open={showCancelDialog}
-        onOpenChange={setShowCancelDialog}
-        session={sessionToCancel}
-        onConfirm={handleCancelConfirm}
-        isCancelling={updateSessionMutation.isPending}
-      />
+      {!readOnly && (
+        <>
+          <DeleteConfirmationDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            session={sessionToDelete}
+            onConfirm={handleDeleteConfirm}
+            isDeleting={deleteSessionMutation.isPending}
+          />
+          <CancelSessionDialog
+            open={showCancelDialog}
+            onOpenChange={setShowCancelDialog}
+            session={sessionToCancel}
+            onConfirm={handleCancelConfirm}
+            isCancelling={updateSessionMutation.isPending}
+          />
+        </>
+      )}
     </>
   );
 }

@@ -32,6 +32,10 @@ function toDateInputValue(value: string | null | undefined): string {
   return `${y}-${m}-${day}`;
 }
 
+function normalizePhoneNumber(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 const formSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
@@ -45,13 +49,25 @@ const formSchema = z
       .min(10, "Phone number must be at least 10 digits")
       .max(15, "Phone number must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-    birthday: z.string().optional(),
+    emergencyContact: z
+      .string()
+      .min(10, "Emergency contact must be at least 10 digits")
+      .max(15, "Emergency contact must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    birthday: z.string().min(1, "Birthday is required"),
     image: z.string().nullable().optional(),
     avatarAsset: cloudinaryAssetSchema.nullable().optional(),
     bio: z.string().max(2000).nullable().optional(),
   })
   .superRefine((data, ctx) => {
-    if (!data.birthday?.trim()) return;
+    if (normalizePhoneNumber(data.phoneNo) === normalizePhoneNumber(data.emergencyContact)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Emergency contact must be different from phone number",
+        path: ["emergencyContact"],
+      });
+    }
+
     const t = new Date(`${data.birthday}T12:00:00.000Z`).getTime();
     if (Number.isNaN(t)) {
       ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
@@ -80,6 +96,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
       email: member?.email ?? "",
       role: member?.role ?? DEFAULT_USER_ROLE,
       phoneNo: member?.phoneNo ?? "",
+      emergencyContact: member?.emergencyContact ?? "",
       birthday: toDateInputValue(member?.birthday),
       image: memberWithExtras?.image ?? null,
       avatarAsset: (memberWithExtras as Member & { avatarAsset?: unknown })?.avatarAsset ?? null,
@@ -96,6 +113,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         email: member.email ?? "",
         role: member.role,
         phoneNo: member.phoneNo ?? "",
+        emergencyContact: member.emergencyContact ?? "",
         birthday: toDateInputValue(member.birthday),
         image: m.image ?? null,
         avatarAsset: m.avatarAsset ?? null,
@@ -107,6 +125,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         email: "",
         role: DEFAULT_USER_ROLE,
         phoneNo: "",
+        emergencyContact: "",
         birthday: "",
         image: null,
         avatarAsset: null,
@@ -223,6 +242,20 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
 
         <FormField
           control={form.control}
+          name="emergencyContact"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Emergency Contact</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter emergency contact number" {...field} value={field.value || ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="birthday"
           render={({ field }) => (
             <FormItem>
@@ -233,11 +266,9 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
                   value={field.value || ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  placeholder="Pick birthday (optional)"
-                  allowClear
+                  placeholder="Pick birthday"
                 />
               </FormControl>
-              <p className="text-muted-foreground text-xs">Optional. Clear to remove a stored birthday.</p>
               <FormMessage />
             </FormItem>
           )}

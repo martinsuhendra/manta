@@ -51,3 +51,46 @@ export function useSession(sessionId: string, enabled = true) {
     retry: false,
   });
 }
+
+interface PrivateSessionEligibilityMembership {
+  id: string;
+  productId: string;
+  productName: string;
+  expiredAt: string;
+  slotsRequired: number;
+  remainingQuota: number | null;
+}
+
+interface PrivateSessionEligibilityResponse {
+  member: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+  memberships: PrivateSessionEligibilityMembership[];
+}
+
+export function usePrivateSessionEligibility({
+  userId,
+  itemId,
+  enabled = true,
+}: {
+  userId?: string;
+  itemId?: string;
+  enabled?: boolean;
+}) {
+  return useQuery<PrivateSessionEligibilityResponse>({
+    queryKey: ["private-session-eligibility", userId, itemId],
+    queryFn: async () => {
+      const response = await axios.get("/api/admin/private-sessions", {
+        params: {
+          userId,
+          itemId,
+        },
+      });
+      return response.data;
+    },
+    enabled: enabled && !!userId && !!itemId,
+    retry: false,
+  });
+}

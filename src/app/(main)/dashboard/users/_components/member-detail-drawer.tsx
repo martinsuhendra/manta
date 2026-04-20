@@ -45,6 +45,7 @@ interface UserEditRecord {
   email: string | null;
   role: Member["role"];
   phoneNo: string | null;
+  emergencyContact: string | null;
   birthday: string | Date | null;
   image?: string | null;
   avatarAsset?: unknown;
@@ -187,6 +188,7 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
       email: userForEdit.email ?? member.email,
       role: userForEdit.role ?? member.role,
       phoneNo: userForEdit.phoneNo ?? member.phoneNo,
+      emergencyContact: userForEdit.emergencyContact ?? member.emergencyContact,
       birthday: birthdayResolved,
       image: userForEdit.image ?? member.image,
       avatarAsset: userForEdit.avatarAsset ?? member.avatarAsset,

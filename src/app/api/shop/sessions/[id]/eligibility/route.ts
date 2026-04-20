@@ -1,4 +1,4 @@
-/* eslint-disable complexity, @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "next-auth";
@@ -12,9 +12,11 @@ import {
   getSessionStartAt,
   isPastBookingCutoff,
 } from "@/lib/booking-settings";
+import { getCapacityBookingStatuses } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
-import { calculateRemainingQuota } from "@/lib/quota-utils";
+import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";
 import { USER_ROLES } from "@/lib/types";
+import { getWaiverSettings, hasAcceptedCurrentWaiver } from "@/lib/waiver-settings";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -55,6 +57,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (classSession.status !== "SCHEDULED") {
       return NextResponse.json({ canJoin: false, reason: "Session is not available for booking" }, { status: 200 });
+    }
+    if (classSession.visibility === "PRIVATE") {
+      return NextResponse.json(
+        { canJoin: false, reason: "Session is private and not publicly bookable" },
+        { status: 200 },
+      );
     }
 
     const existingBooking = await prisma.booking.findUnique({
@@ -105,7 +113,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: { in: ["RESERVED", "CONFIRMED"] },
+        status: { in: getCapacityBookingStatuses() },
       },
       _sum: { participantCount: true },
     });
@@ -116,29 +124,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: userId },
       select: {
         id: true,
-        memberships: {
-          where: {
-            status: "ACTIVE",
-            expiredAt: { gt: new Date() },
-            membershipBrands: {
-              some: { brandId: selectedBrandId },
-            },
-          },
-          include: {
-            product: {
-              include: {
-                productItems: {
-                  where: {
-                    itemId: classSession.itemId,
-                    isActive: true,
-                  },
-                  include: { quotaPool: true },
-                },
-              },
-            },
-            quotaUsage: true,
-          },
-        },
+        waiverAcceptedVersion: true,
       },
     });
 
@@ -146,51 +132,48 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const waiver = await getWaiverSettings();
+    if (
+      waiver.isActive &&
+      !hasAcceptedCurrentWaiver({
+        acceptedVersion: user.waiverAcceptedVersion,
+        waiverVersion: waiver.version,
+      })
+    ) {
+      return NextResponse.json({
+        canJoin: false,
+        alreadyBooked: false,
+        eligibleMemberships: [],
+        reason: "Waiver not accepted",
+      });
+    }
+
+    const eligibleOptions = await resolveEligibleMembershipsForItem({
+      userId,
+      itemId: classSession.itemId,
+      brandId: selectedBrandId,
+    });
+
     const eligibleMemberships: Array<{
       id: string;
       product: { name: string };
       slotsRequired: number;
       remainingQuota: number | null;
       isEligible: true;
-    }> = [];
-    let reason = "";
-
-    for (const membership of user.memberships) {
-      const productItem = membership.product.productItems[0] ?? null;
-
-      if (!productItem) {
-        if (user.memberships.length === 1) reason = "Your membership does not include this class type";
-        continue;
-      }
-
-      const remaining = calculateRemainingQuota(productItem, membership.quotaUsage);
-
-      if (remaining <= 0) {
-        if (user.memberships.length === 1) reason = "No remaining quota for this class";
-        continue;
-      }
-
-      eligibleMemberships.push({
-        id: membership.id,
-        product: { name: membership.product.name },
-        slotsRequired: membership.product.participantsPerPurchase ?? 1,
-        remainingQuota: remaining === Infinity ? null : remaining,
-        isEligible: true,
-      });
-    }
+    }> = eligibleOptions.map((membership) => ({
+      id: membership.id,
+      product: { name: membership.productName },
+      slotsRequired: membership.slotsRequired,
+      remainingQuota: membership.remainingQuota,
+      isEligible: true,
+    }));
 
     if (eligibleMemberships.length === 0) {
-      if (!reason) {
-        reason =
-          user.memberships.length === 0
-            ? "You need an active membership to book this class"
-            : "No eligible membership for this class";
-      }
       return NextResponse.json({
         canJoin: false,
         alreadyBooked: false,
         eligibleMemberships: [],
-        reason,
+        reason: "No eligible membership for this class",
       });
     }
 

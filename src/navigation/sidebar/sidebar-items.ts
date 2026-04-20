@@ -4,6 +4,7 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  FileText,
   ChartBar,
   LayoutDashboard,
   Package,
@@ -15,7 +16,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { USER_ROLES } from "@/lib/types";
+import {
+  RBAC_ADMIN_ROLES,
+  RBAC_DEVELOPER_ONLY_ROLES,
+  RBAC_PAYROLL_MENU_ROLES,
+  RBAC_SESSIONS_MENU_ROLES,
+  RBAC_SUPERADMIN_EDGE_ROLES,
+} from "@/lib/rbac";
 
 export interface NavSubItem {
   title: string;
@@ -69,7 +76,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/users",
         icon: Users,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_ADMIN_ROLES],
         subItems: [
           {
             title: "Users",
@@ -93,21 +100,21 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/admin/items",
         icon: Calendar,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_SUPERADMIN_EDGE_ROLES],
       },
       {
         title: "Products",
         url: "/dashboard/products",
         icon: Package,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_SUPERADMIN_EDGE_ROLES],
       },
       {
         title: "Sessions",
         url: "/dashboard/admin/sessions",
         icon: Calendar,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_SESSIONS_MENU_ROLES],
       },
     ],
   },
@@ -119,19 +126,19 @@ export const sidebarItems: NavGroup[] = [
         title: "Overview",
         url: "/dashboard/finance",
         icon: BarChart3,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_ADMIN_ROLES],
       },
       {
         title: "Payroll",
         url: "/dashboard/finance/payroll",
         icon: Wallet,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_PAYROLL_MENU_ROLES],
       },
       {
         title: "Transactions",
         url: "/dashboard/finance/transactions",
         icon: ReceiptText,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_ADMIN_ROLES],
       },
     ],
   },
@@ -144,7 +151,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/admin/brands",
         icon: Building2,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_DEVELOPER_ONLY_ROLES],
       },
     ],
   },
@@ -157,7 +164,14 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/settings/booking",
         icon: CalendarClock,
         comingSoon: false,
-        requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER],
+        requiredRoles: [...RBAC_ADMIN_ROLES],
+      },
+      {
+        title: "Waiver",
+        url: "/dashboard/settings/waiver-content",
+        icon: FileText,
+        comingSoon: false,
+        requiredRoles: [...RBAC_ADMIN_ROLES],
       },
     ],
   },

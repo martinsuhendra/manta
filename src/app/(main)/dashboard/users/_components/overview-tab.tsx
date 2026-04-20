@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Mail, Phone, Calendar, Shield, KeyRound, User } from "lucide-react";
+import { Loader2, Mail, Phone, Calendar, Shield, KeyRound, User, PhoneCall, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useUpdateUserWaiverStatus } from "@/hooks/use-users-query";
 import { USER_ROLES, USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { Member, MemberDetails } from "./schema";
@@ -22,6 +33,27 @@ interface OverviewTabProps {
 /* eslint-disable complexity */
 export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
   const [isSending, setIsSending] = useState(false);
+  const [isWaiverDialogOpen, setIsWaiverDialogOpen] = useState(false);
+  const [isWaiverAgreed, setIsWaiverAgreed] = useState(false);
+  const updateWaiverStatus = useUpdateUserWaiverStatus();
+
+  const { data: waiverData, isLoading: isWaiverLoading } = useQuery<{
+    waiver: { contentHtml: string; version: number; isActive: boolean };
+    member: { waiverAcceptedAt: string | null; waiverAcceptedVersion: number | null };
+  }>({
+    queryKey: ["user-waiver", member.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${member.id}/waiver`);
+      if (!response.ok) throw new Error("Failed to fetch waiver");
+      return response.json();
+    },
+    enabled: isWaiverDialogOpen,
+  });
+
+  useEffect(() => {
+    if (!waiverData) return;
+    setIsWaiverAgreed(Boolean(waiverData.member.waiverAcceptedAt));
+  }, [waiverData]);
 
   const handleSendResetLink = async () => {
     if (!member.email) {
@@ -49,6 +81,18 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
   const teacherDetails = isTeacher && memberDetails && "image" in memberDetails ? memberDetails : null;
   const image = teacherDetails?.image ?? (member as Member & { image?: string }).image;
   const bio = teacherDetails?.bio ?? (member as Member & { bio?: string }).bio;
+
+  const handleSaveWaiverStatus = () => {
+    updateWaiverStatus.mutate(
+      { userId: member.id, isAccepted: isWaiverAgreed },
+      {
+        onSuccess: () => {
+          toast.success(isWaiverAgreed ? "Waiver marked as agreed" : "Waiver agreement removed");
+          setIsWaiverDialogOpen(false);
+        },
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -113,6 +157,16 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
             </div>
           )}
 
+          {member.emergencyContact && (
+            <div>
+              <label className="text-muted-foreground text-sm font-medium">Emergency Contact</label>
+              <div className="flex items-center gap-2">
+                <PhoneCall className="text-muted-foreground h-4 w-4" />
+                <p className="text-base">{member.emergencyContact}</p>
+              </div>
+            </div>
+          )}
+
           {member.birthday && (
             <div>
               <label className="text-muted-foreground text-sm font-medium">Birthday</label>
@@ -146,6 +200,32 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
             </div>
           </div>
 
+          <div>
+            <label className="text-muted-foreground text-sm font-medium">Waiver</label>
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={
+                  memberDetails?.waiverAcceptedAt && memberDetails.waiverAcceptedVersion
+                    ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/60"
+                    : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+                }
+                onClick={() => setIsWaiverDialogOpen(true)}
+              >
+                <FileSignature className="mr-2 h-4 w-4" />
+                {memberDetails?.waiverAcceptedAt && memberDetails.waiverAcceptedVersion ? `Accepted` : "Not accepted"}
+              </Button>
+            </div>
+            {memberDetails?.waiverAcceptedAt ? (
+              <p className="text-muted-foreground mt-1 text-sm">
+                Accepted on {format(new Date(memberDetails.waiverAcceptedAt), "MMMM dd, yyyy")}
+              </p>
+            ) : (
+              <p className="text-muted-foreground mt-1 text-sm">Open to view waiver and update agreement status.</p>
+            )}
+          </div>
+
           {member.email && (
             <div>
               <label className="text-muted-foreground text-sm font-medium">Password</label>
@@ -166,6 +246,57 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
           )}
         </div>
       </div>
+
+      <Dialog open={isWaiverDialogOpen} onOpenChange={setIsWaiverDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Member waiver status</DialogTitle>
+            <DialogDescription>
+              Review current waiver content and update this member&apos;s agreement status.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isWaiverLoading ? (
+            <div className="text-muted-foreground flex items-center gap-2 py-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading waiver...
+            </div>
+          ) : (
+            <>
+              <div className="max-h-[55vh] overflow-y-auto rounded-md border p-4">
+                <div className="prose prose-sm max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: waiverData?.waiver.contentHtml ?? "" }} />
+                </div>
+              </div>
+
+              <div className="rounded-md border p-3">
+                <label className="flex items-start gap-3 text-sm">
+                  <Checkbox checked={isWaiverAgreed} onCheckedChange={(value) => setIsWaiverAgreed(Boolean(value))} />
+                  <span>Mark this member as agreed to the current waiver version.</span>
+                </label>
+                {waiverData?.waiver.version ? (
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Current waiver version: v{waiverData.waiver.version}
+                  </p>
+                ) : null}
+              </div>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsWaiverDialogOpen(false)}
+              disabled={updateWaiverStatus.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveWaiverStatus} disabled={isWaiverLoading || updateWaiverStatus.isPending}>
+              {updateWaiverStatus.isPending ? "Saving..." : "Save waiver status"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

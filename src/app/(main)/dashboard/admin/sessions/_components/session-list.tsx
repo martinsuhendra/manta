@@ -22,11 +22,12 @@ import { createSessionColumns } from "./session-columns";
 interface SessionListProps {
   filters: SessionFilter;
   onEditSession?: (session: Session) => void;
+  readOnly?: boolean;
 }
 
 const DATE_RANGE_DAYS = 30;
 
-export function SessionList({ filters, onEditSession }: SessionListProps) {
+export function SessionList({ filters, onEditSession, readOnly = false }: SessionListProps) {
   const [currentStartDate, setCurrentStartDate] = useState(() => startOfMonth(new Date()));
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
 
@@ -66,8 +67,9 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
       onEditSession: (session: Session) => {
         onEditSession?.(session);
       },
+      readOnly,
     }),
-    [onEditSession],
+    [onEditSession, readOnly],
   );
 
   const columns = React.useMemo(() => createSessionColumns(actions), [actions]);
@@ -118,7 +120,7 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
     <div className="space-y-4">
       {hasSessions ? (
         <>
-          {selectedSessionIds.length > 0 && (
+          {!readOnly && selectedSessionIds.length > 0 && (
             <div className="bg-muted/50 flex items-center gap-2 rounded-lg border px-4 py-2">
               <span className="text-muted-foreground text-sm">
                 {selectedSessionIds.length} session{selectedSessionIds.length !== 1 ? "s" : ""} selected
@@ -174,15 +176,17 @@ export function SessionList({ filters, onEditSession }: SessionListProps) {
         </div>
       </div>
 
-      <BulkAssignTeacherDialog
-        open={bulkAssignOpen}
-        onOpenChange={setBulkAssignOpen}
-        sessionIds={selectedSessionIds}
-        onSuccess={() => {
-          refetch();
-          table.resetRowSelection();
-        }}
-      />
+      {!readOnly && (
+        <BulkAssignTeacherDialog
+          open={bulkAssignOpen}
+          onOpenChange={setBulkAssignOpen}
+          sessionIds={selectedSessionIds}
+          onSuccess={() => {
+            refetch();
+            table.resetRowSelection();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -5,10 +5,12 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { doesBookingStatusConsumeQuota, getCapacityBookingStatuses } from "@/lib/booking-status";
 import { emailService } from "@/lib/email/service";
 import { createSessionJoinedTemplate, createSessionWaitlistedTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
-import { calculateRemainingQuota, checkQuotaAvailability, deductQuota } from "@/lib/quota-utils";
+import { calculateRemainingQuota, deductQuota } from "@/lib/quota-utils";
+import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";
 import { USER_ROLES } from "@/lib/types";
 
 const addParticipantSchema = z.object({
@@ -29,7 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
+    if (
+      ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(session.user.role)
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -45,6 +49,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+    if (session.user.role === USER_ROLES.TEACHER && classSession.teacherId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Get all members with their active memberships
@@ -158,7 +165,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
-
     // Check if user exists and has MEMBER role
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -186,70 +192,48 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Member is already booked for this session" }, { status: 400 });
     }
 
-    // Validate membership
-    const membership = await prisma.membership.findUnique({
-      where: { id: membershipId },
-      include: {
-        product: {
-          include: {
-            productItems: {
-              where: {
-                itemId: classSession.itemId,
-                isActive: true,
-              },
-              include: {
-                quotaPool: true,
-              },
-            },
-          },
-        },
-        quotaUsage: true,
-      },
+    const eligibleMemberships = await resolveEligibleMembershipsForItem({
+      userId,
+      itemId: classSession.itemId,
+      brandId: classSession.brandId,
     });
-
-    if (!membership) {
-      return NextResponse.json({ error: "Membership not found" }, { status: 404 });
+    const selectedMembership = eligibleMemberships.find((membership) => membership.id === membershipId);
+    if (!selectedMembership) {
+      return NextResponse.json({ error: "Selected membership is not eligible for this class" }, { status: 400 });
     }
 
-    if (membership.userId !== userId) {
-      return NextResponse.json({ error: "Membership does not belong to user" }, { status: 400 });
-    }
-
-    if (membership.status !== "ACTIVE") {
-      return NextResponse.json({ error: "Membership is not active" }, { status: 400 });
-    }
-
-    if (membership.expiredAt <= new Date()) {
-      return NextResponse.json({ error: "Membership has expired" }, { status: 400 });
-    }
-
-    // Check if product includes this item
-    const productItem = membership.product.productItems[0] ?? null;
-
-    if (!productItem) {
-      return NextResponse.json({ error: "Membership does not include this class type" }, { status: 400 });
-    }
-
-    const participantsPerPurchase = membership.product.participantsPerPurchase ?? 1;
+    const participantsPerPurchase = selectedMembership.slotsRequired;
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: { in: ["RESERVED", "CONFIRMED"] },
+        status: { in: getCapacityBookingStatuses() },
       },
       _sum: { participantCount: true },
     });
     const totalSlots = _sum?.participantCount ?? 0;
     const capacity = classSession.item.capacity;
     const isAtCapacity = totalSlots + participantsPerPurchase > capacity;
+    const existingActiveBookings = await prisma.booking.count({
+      where: {
+        classSessionId: sessionId,
+        status: { in: getCapacityBookingStatuses() },
+      },
+    });
 
-    if (!checkQuotaAvailability(productItem, membership.quotaUsage)) {
-      return NextResponse.json({ error: "No remaining quota for this class" }, { status: 400 });
+    if (classSession.visibility === "PRIVATE") {
+      if (existingActiveBookings > 0) {
+        return NextResponse.json({ error: "Private session already has an appointed member" }, { status: 400 });
+      }
+      if (isAtCapacity) {
+        return NextResponse.json({ error: "Private session is at full capacity" }, { status: 400 });
+      }
     }
 
     // Create booking and update quota usage in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Determine booking status based on capacity
-      const bookingStatus = isAtCapacity ? "WAITLISTED" : "RESERVED";
+      const bookingStatus =
+        classSession.visibility === "PRIVATE" ? "CONFIRMED" : isAtCapacity ? "WAITLISTED" : "RESERVED";
 
       // Create booking
       const booking = await tx.booking.create({
@@ -283,8 +267,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       });
 
-      if (bookingStatus === "RESERVED") {
-        await deductQuota({ tx, membershipId, productItem });
+      if (doesBookingStatusConsumeQuota(bookingStatus)) {
+        await deductQuota({ tx, membershipId, productItem: selectedMembership.productItem });
       }
 
       return booking;
@@ -351,7 +335,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const classSession = await prisma.classSession.findUnique({
       where: { id: sessionId },
-      select: { id: true },
+      select: { id: true, teacherId: true },
     });
 
     if (!classSession) {

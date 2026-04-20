@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
+import { RBAC_ADMIN_ROLES, RBAC_SUPERADMIN_EDGE_ROLES } from "@/lib/rbac";
 import { USER_ROLES } from "@/lib/types";
 
 export async function requireAuth() {
@@ -24,10 +25,10 @@ export async function requireSuperAdmin() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
-  if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user?.role ?? "")) {
+  if (!RBAC_SUPERADMIN_EDGE_ROLES.includes(user?.role ?? "")) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
   }
 
@@ -40,10 +41,10 @@ export async function requireAdmin() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
-  if (!user || ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user.role)) {
+  if (!user || !RBAC_ADMIN_ROLES.includes(user.role)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
   }
 

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
 
-import { handleApiError, requireAdmin } from "@/lib/api-utils";
+import { handleApiError, requireAdmin, requireAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
+import { RBAC_ADMIN_ROLES } from "@/lib/rbac";
 import { sumParticipantSlots } from "@/lib/session-utils";
+import { USER_ROLES } from "@/lib/types";
 
 import { checkForDuplicateSession } from "./duplicate-helpers";
 import { sendCancellationEmailsToBookings, sendUpdateEmailsToBookings } from "./email-helpers";
@@ -12,8 +14,14 @@ import { buildUpdateData, detectChanges, buildSessionInfo } from "./session-help
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error } = await requireAdmin();
+    const { error, session } = await requireAuth();
     if (error) return error;
+
+    const isAdmin = RBAC_ADMIN_ROLES.includes(session.user.role);
+    const isTeacher = session.user.role === USER_ROLES.TEACHER;
+    if (!isAdmin && !isTeacher) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await params;
 
@@ -67,6 +75,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
+    const canTeacherAccessSession = classSession.visibility === "PUBLIC" || classSession.teacherId === session.user.id;
+    if (isTeacher && !canTeacherAccessSession) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CONFIRMED");
     const { bookings, ...rest } = classSession;
     return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(occupiedBookings) });
@@ -89,6 +102,7 @@ const updateSessionSchema = z.object({
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
     .optional(),
   status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
   notes: z.string().optional().nullable(),
 });
 

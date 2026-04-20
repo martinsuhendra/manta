@@ -1,4 +1,4 @@
-/* eslint-disable complexity, @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerSession } from "next-auth";
@@ -7,9 +7,12 @@ import { z } from "zod";
 import { authOptions } from "@/auth";
 import { requireBrandAccess } from "@/lib/api-utils";
 import { getBookingSettings, getSessionStartAt, isPastBookingCutoff } from "@/lib/booking-settings";
+import { getCapacityBookingStatuses } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
-import { checkQuotaAvailability, deductQuota } from "@/lib/quota-utils";
+import { deductQuota } from "@/lib/quota-utils";
+import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";
 import { USER_ROLES } from "@/lib/types";
+import { getWaiverSettings, hasAcceptedCurrentWaiver } from "@/lib/waiver-settings";
 
 const bookSchema = z.object({
   membershipId: z.string().uuid("Invalid membership ID"),
@@ -57,6 +60,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (classSession.status !== "SCHEDULED") {
       return NextResponse.json({ error: "Session is not available for booking" }, { status: 400 });
     }
+    if (classSession.visibility === "PRIVATE") {
+      return NextResponse.json({ error: "Session is private and not publicly bookable" }, { status: 403 });
+    }
 
     const settings = await getBookingSettings(selectedBrandId);
     const sessionStartAt = getSessionStartAt({
@@ -87,6 +93,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "You must have a member account to book" }, { status: 400 });
     }
 
+    const waiver = await getWaiverSettings();
+    if (
+      waiver.isActive &&
+      !hasAcceptedCurrentWaiver({
+        acceptedVersion: user.waiverAcceptedVersion,
+        waiverVersion: waiver.version,
+      })
+    ) {
+      return NextResponse.json({ error: "Waiver not accepted" }, { status: 400 });
+    }
+
     const existingBooking = await prisma.booking.findUnique({
       where: {
         classSessionId_userId: {
@@ -100,58 +117,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "You are already booked for this session" }, { status: 400 });
     }
 
-    const membership = await prisma.membership.findUnique({
-      where: { id: membershipId },
-      include: {
-        membershipBrands: {
-          select: { brandId: true },
-        },
-        product: {
-          include: {
-            productItems: {
-              where: {
-                itemId: classSession.itemId,
-                isActive: true,
-              },
-              include: { quotaPool: true },
-            },
-          },
-        },
-        quotaUsage: true,
-      },
+    const eligibleMemberships = await resolveEligibleMembershipsForItem({
+      userId,
+      itemId: classSession.itemId,
+      brandId: selectedBrandId,
     });
-
-    if (!membership) {
-      return NextResponse.json({ error: "Membership not found" }, { status: 404 });
-    }
-    const membershipBrandIds = membership.membershipBrands.map((mb) => mb.brandId);
-    if (!membershipBrandIds.includes(selectedBrandId)) {
-      return NextResponse.json({ error: "Membership does not belong to selected brand" }, { status: 400 });
+    const selectedMembership = eligibleMemberships.find((membership) => membership.id === membershipId);
+    if (!selectedMembership) {
+      return NextResponse.json({ error: "Selected membership is not eligible for this class" }, { status: 400 });
     }
 
-    if (membership.userId !== userId) {
-      return NextResponse.json({ error: "Membership does not belong to you" }, { status: 400 });
-    }
-
-    if (membership.status !== "ACTIVE") {
-      return NextResponse.json({ error: "Membership is not active" }, { status: 400 });
-    }
-
-    if (membership.expiredAt <= new Date()) {
-      return NextResponse.json({ error: "Membership has expired" }, { status: 400 });
-    }
-
-    const productItem = membership.product.productItems[0] ?? null;
-
-    if (!productItem) {
-      return NextResponse.json({ error: "Your membership does not include this class type" }, { status: 400 });
-    }
-
-    const participantsPerPurchase = membership.product.participantsPerPurchase ?? 1;
+    const participantsPerPurchase = selectedMembership.slotsRequired;
     const { _sum } = await prisma.booking.aggregate({
       where: {
         classSessionId: sessionId,
-        status: { in: ["RESERVED", "CONFIRMED"] },
+        status: { in: getCapacityBookingStatuses() },
       },
       _sum: { participantCount: true },
     });
@@ -168,10 +148,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
         { status: 400 },
       );
-    }
-
-    if (!checkQuotaAvailability(productItem, membership.quotaUsage)) {
-      return NextResponse.json({ error: "No remaining quota for this class" }, { status: 400 });
     }
 
     const booking = await prisma.$transaction(async (tx) => {
@@ -207,7 +183,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       });
 
-      await deductQuota({ tx, membershipId, productItem });
+      await deductQuota({ tx, membershipId, productItem: selectedMembership.productItem });
 
       return b;
     });

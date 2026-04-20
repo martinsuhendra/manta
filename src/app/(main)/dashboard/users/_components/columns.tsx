@@ -1,6 +1,16 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { EllipsisVertical, Mail, Phone, Calendar, UserCheck, CreditCard, CalendarCheck } from "lucide-react";
+import {
+  EllipsisVertical,
+  Mail,
+  Phone,
+  Calendar,
+  UserCheck,
+  CreditCard,
+  CalendarCheck,
+  PhoneCall,
+  FileSignature,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -98,6 +108,48 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
+      );
+    },
+  },
+  {
+    accessorKey: "emergencyContact",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Emergency Contact" />,
+    cell: ({ row }) => {
+      const emergencyContact = row.original.emergencyContact;
+
+      return emergencyContact ? (
+        <div className="flex items-center gap-1 text-sm">
+          <PhoneCall className="h-3 w-3" />
+          {emergencyContact}
+        </div>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      );
+    },
+  },
+  {
+    accessorKey: "waiverAcceptedAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Waiver" />,
+    cell: ({ row }) => {
+      const acceptedAt = row.original.waiverAcceptedAt;
+
+      if (!acceptedAt) {
+        return (
+          <StatusBadge variant="warning" className="gap-1">
+            <FileSignature className="h-3 w-3" />
+            Not accepted
+          </StatusBadge>
+        );
+      }
+
+      return (
+        <div className="space-y-1">
+          <StatusBadge variant="success" className="gap-1">
+            <FileSignature className="h-3 w-3" />
+            Accepted
+          </StatusBadge>
+          <p className="text-muted-foreground text-xs">{format(new Date(acceptedAt), "MMM dd, yyyy")}</p>
+        </div>
       );
     },
   },

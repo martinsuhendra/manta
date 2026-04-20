@@ -6,14 +6,15 @@ import axios from "axios";
 import { Item } from "@/app/(main)/dashboard/admin/items/_components/schema";
 import { useBrandStore } from "@/stores/brand/brand-provider";
 
-export function useItems(params?: { includeSchedules?: boolean; includeTeachers?: boolean }) {
+export function useItems(params?: { includeSchedules?: boolean; includeTeachers?: boolean; enabled?: boolean }) {
   const activeBrandId = useBrandStore((s) => s.activeBrandId);
   const incSched = params?.includeSchedules ?? false;
   const incTeachers = params?.includeTeachers ?? false;
+  const enabled = params?.enabled ?? true;
 
   return useQuery<Item[]>({
     // Matches invalidateQueries({ queryKey: ["admin-items"] }) — X-Brand-Id is set by axios when a specific store is selected
-    queryKey: ["admin-items", activeBrandId, incSched, incTeachers],
+    queryKey: ["admin-items", activeBrandId, incSched, incTeachers, enabled],
     queryFn: async () => {
       try {
         const searchParams = new URLSearchParams();
@@ -27,6 +28,7 @@ export function useItems(params?: { includeSchedules?: boolean; includeTeachers?
         throw error;
       }
     },
+    enabled,
     retry: false,
   });
 }

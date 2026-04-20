@@ -33,6 +33,7 @@ interface ValidatedData {
   itemId?: string;
   notes?: string | null;
   status?: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+  visibility?: "PUBLIC" | "PRIVATE";
 }
 
 interface UpdatedSession {
@@ -60,6 +61,7 @@ export function buildUpdateData(
   startTime?: string;
   endTime?: string;
   status?: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+  visibility?: "PUBLIC" | "PRIVATE";
   notes?: string | null;
 } {
   const updateData: {
@@ -69,6 +71,7 @@ export function buildUpdateData(
     startTime?: string;
     endTime?: string;
     status?: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+    visibility?: "PUBLIC" | "PRIVATE";
     notes?: string | null;
   } = {};
 
@@ -96,6 +99,9 @@ export function buildUpdateData(
 
   if (validatedData.status) {
     updateData.status = validatedData.status;
+  }
+  if (validatedData.visibility) {
+    updateData.visibility = validatedData.visibility;
   }
 
   if (validatedData.notes !== undefined) {

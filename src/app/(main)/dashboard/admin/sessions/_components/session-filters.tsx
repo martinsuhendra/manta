@@ -22,14 +22,21 @@ import { SessionFilter } from "./schema";
 interface SessionFiltersProps {
   appliedFilters: SessionFilter;
   onFilterChange: (filters: SessionFilter) => void;
+  hideTeacherFilter?: boolean;
+  hideItemFilter?: boolean;
 }
 
-export function SessionFilters({ appliedFilters, onFilterChange }: SessionFiltersProps) {
+export function SessionFilters({
+  appliedFilters,
+  onFilterChange,
+  hideTeacherFilter = false,
+  hideItemFilter = false,
+}: SessionFiltersProps) {
   const [draftFilters, setDraftFilters] = useState<SessionFilter>(appliedFilters);
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: items = [] } = useItems();
-  const { data: teachers = [] } = useTeachers();
+  const { data: items = [] } = useItems({ enabled: !hideItemFilter });
+  const { data: teachers = [] } = useTeachers(!hideTeacherFilter);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,7 +64,11 @@ export function SessionFilters({ appliedFilters, onFilterChange }: SessionFilter
     setDraftFilters({});
   };
 
-  const activeFilterCount = Object.values(appliedFilters).filter((value) => value !== undefined && value !== "").length;
+  const activeFilterCount = Object.entries(appliedFilters).filter(([key, value]) => {
+    if (hideTeacherFilter && key === "teacherId") return false;
+    if (hideItemFilter && key === "itemId") return false;
+    return value !== undefined && value !== "";
+  }).length;
 
   return (
     <div className="flex items-center gap-2">
@@ -163,45 +174,47 @@ export function SessionFilters({ appliedFilters, onFilterChange }: SessionFilter
               </div>
             </div>
 
-            {/* Item Filter */}
-            <div className="space-y-1">
-              <Label className="text-xs">Class/Activity</Label>
-              <Select value={draftFilters.itemId || "all"} onValueChange={(value) => updateDraft("itemId", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All classes</SelectItem>
-                  {items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!hideItemFilter && (
+              <div className="space-y-1">
+                <Label className="text-xs">Class/Activity</Label>
+                <Select value={draftFilters.itemId || "all"} onValueChange={(value) => updateDraft("itemId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All classes</SelectItem>
+                    {items.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {/* Teacher Filter */}
-            <div className="space-y-1">
-              <Label className="text-xs">Teacher</Label>
-              <Select
-                value={draftFilters.teacherId || "all"}
-                onValueChange={(value) => updateDraft("teacherId", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All teachers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All teachers</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {teachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.name || teacher.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!hideTeacherFilter && (
+              <div className="space-y-1">
+                <Label className="text-xs">Teacher</Label>
+                <Select
+                  value={draftFilters.teacherId || "all"}
+                  onValueChange={(value) => updateDraft("teacherId", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All teachers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All teachers</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {teachers.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.name || teacher.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Status Filter */}
             <div className="space-y-1">
@@ -215,6 +228,23 @@ export function SessionFilters({ appliedFilters, onFilterChange }: SessionFilter
                   <SelectItem value="SCHEDULED">Scheduled</SelectItem>
                   <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   <SelectItem value="COMPLETED">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Visibility</Label>
+              <Select
+                value={draftFilters.visibility || "all"}
+                onValueChange={(value) => updateDraft("visibility", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All visibility" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All visibility</SelectItem>
+                  <SelectItem value="PUBLIC">Public</SelectItem>
+                  <SelectItem value="PRIVATE">Private</SelectItem>
                 </SelectContent>
               </Select>
             </div>

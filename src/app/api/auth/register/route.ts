@@ -6,11 +6,30 @@ import { z } from "zod";
 import { prisma } from "@/lib/generated/prisma";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
 import { registerBodySchema } from "@/lib/validators";
+import { getWaiverSettings } from "@/lib/waiver-settings";
+
+function getClientIp(request: Request): string | null {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (!forwarded) return null;
+  const [ip] = forwarded.split(",");
+  if (!ip) return null;
+  return ip.trim();
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phoneNo, birthday } = registerBodySchema.parse(body);
+    const { email, password, name, phoneNo, birthday, waiverVersion, acceptWaiver } = registerBodySchema.parse(body);
+    const waiver = await getWaiverSettings();
+
+    if (waiver.isActive) {
+      if (!acceptWaiver) {
+        return NextResponse.json({ error: "You must agree to the waiver" }, { status: 400 });
+      }
+      if (waiverVersion !== waiver.version) {
+        return NextResponse.json({ error: "Waiver has changed. Please refresh and try again." }, { status: 409 });
+      }
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -29,10 +48,14 @@ export async function POST(request: Request) {
       data: {
         email,
         password: hashedPassword,
-        name: name ?? email.split("@")[0],
+        name,
         phoneNo: phoneNo,
         birthday: new Date(birthday),
         role: DEFAULT_USER_ROLE,
+        waiverAcceptedAt: waiver.isActive ? new Date() : null,
+        waiverAcceptedVersion: waiver.isActive ? waiver.version : null,
+        waiverAcceptedIp: waiver.isActive ? getClientIp(request) : null,
+        waiverAcceptedUserAgent: waiver.isActive ? request.headers.get("user-agent") : null,
       },
     });
 

@@ -81,3 +81,33 @@ export function useDeleteSession() {
     },
   });
 }
+
+interface CreatePrivateSessionData {
+  userId: string;
+  itemId: string;
+  membershipId: string;
+  teacherId?: string;
+  date: string;
+  startTime: string;
+  notes?: string;
+}
+
+export function useCreatePrivateSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreatePrivateSessionData) => {
+      const response = await axios.post("/api/admin/private-sessions", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      toast.success("Private session created successfully");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || "Failed to create private session";
+      toast.error(message);
+      throw error;
+    },
+  });
+}
