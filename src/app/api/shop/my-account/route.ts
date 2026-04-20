@@ -5,6 +5,10 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/generated/prisma";
 
+function normalizePhoneNumber(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 const updateProfileSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
@@ -14,18 +18,24 @@ const updateProfileSchema = z
       .min(10, "Phone number must be at least 10 digits")
       .max(15, "Phone number must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-    birthday: z.string().optional(),
+    emergencyContact: z
+      .string()
+      .min(10, "Emergency contact must be at least 10 digits")
+      .max(15, "Emergency contact must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    birthday: z
+      .string({ required_error: "Birthday is required" })
+      .min(1, "Birthday is required")
+      .refine((value) => !Number.isNaN(new Date(value).getTime()), "Invalid date")
+      .refine((value) => new Date(value).getTime() < Date.now(), "Birthday must be in the past"),
   })
   .superRefine((data, ctx) => {
-    if (!data.birthday || data.birthday.trim() === "") return;
-    const d = new Date(data.birthday);
-    if (Number.isNaN(d.getTime())) {
-      ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
-      return;
-    }
-    if (d.getTime() >= Date.now()) {
-      ctx.addIssue({ code: "custom", message: "Birthday must be in the past", path: ["birthday"] });
-    }
+    if (normalizePhoneNumber(data.phoneNo) !== normalizePhoneNumber(data.emergencyContact)) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Emergency contact must be different from phone number",
+      path: ["emergencyContact"],
+    });
   });
 
 export async function PATCH(request: NextRequest) {
@@ -40,23 +50,22 @@ export async function PATCH(request: NextRequest) {
     const validatedData = updateProfileSchema.parse(body);
 
     // Update the user's own profile (excluding email)
-    const birthdayForDb =
-      validatedData.birthday === undefined || validatedData.birthday.trim() === ""
-        ? undefined
-        : new Date(validatedData.birthday);
+    const birthdayForDb = new Date(validatedData.birthday);
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name: validatedData.name,
         phoneNo: validatedData.phoneNo,
-        ...(birthdayForDb !== undefined && { birthday: birthdayForDb }),
+        emergencyContact: validatedData.emergencyContact,
+        birthday: birthdayForDb,
       },
       select: {
         id: true,
         name: true,
         email: true,
         phoneNo: true,
+        emergencyContact: true,
         birthday: true,
         role: true,
         createdAt: true,

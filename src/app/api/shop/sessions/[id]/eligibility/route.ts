@@ -15,6 +15,7 @@ import {
 import { prisma } from "@/lib/generated/prisma";
 import { calculateRemainingQuota } from "@/lib/quota-utils";
 import { USER_ROLES } from "@/lib/types";
+import { getWaiverSettings, hasAcceptedCurrentWaiver } from "@/lib/waiver-settings";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -116,6 +117,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: userId },
       select: {
         id: true,
+        waiverAcceptedVersion: true,
         memberships: {
           where: {
             status: "ACTIVE",
@@ -144,6 +146,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const waiver = await getWaiverSettings();
+    if (
+      waiver.isActive &&
+      !hasAcceptedCurrentWaiver({
+        acceptedVersion: user.waiverAcceptedVersion,
+        waiverVersion: waiver.version,
+      })
+    ) {
+      return NextResponse.json({
+        canJoin: false,
+        alreadyBooked: false,
+        eligibleMemberships: [],
+        reason: "Waiver not accepted",
+      });
     }
 
     const eligibleMemberships: Array<{

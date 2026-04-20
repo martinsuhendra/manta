@@ -9,24 +9,47 @@ import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
-const updateUserSchema = z.object({
-  name: z.string().min(1, "Name is required").optional(),
-  email: z.string().email("Valid email is required").optional(),
-  role: z
-    .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
-    .optional(),
-  phoneNo: z
-    .string()
-    .min(1, "Phone number is required")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be at most 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format")
-    .optional(),
-  image: z.string().nullable().optional(),
-  avatarAsset: z.unknown().nullable().optional(),
-  bio: z.string().max(2000).nullable().optional(),
-  birthday: z.string().nullable().optional(),
-});
+function normalizePhoneNumber(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+const updateUserSchema = z
+  .object({
+    name: z.string().min(1, "Name is required").optional(),
+    email: z.string().email("Valid email is required").optional(),
+    role: z
+      .enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER])
+      .optional(),
+    phoneNo: z
+      .string()
+      .min(1, "Phone number is required")
+      .min(10, "Phone number must be at least 10 digits")
+      .max(15, "Phone number must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format")
+      .optional(),
+    emergencyContact: z
+      .string()
+      .min(10, "Emergency contact must be at least 10 digits")
+      .max(15, "Emergency contact must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    image: z.string().nullable().optional(),
+    avatarAsset: z.unknown().nullable().optional(),
+    bio: z.string().max(2000).nullable().optional(),
+    birthday: z
+      .string({ required_error: "Birthday is required" })
+      .min(1, "Birthday is required")
+      .refine((value) => !Number.isNaN(new Date(value).getTime()), "Invalid date")
+      .refine((value) => new Date(value).getTime() < Date.now(), "Birthday must be in the past"),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.phoneNo?.trim()) return;
+    if (normalizePhoneNumber(data.phoneNo) !== normalizePhoneNumber(data.emergencyContact)) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Emergency contact must be different from phone number",
+      path: ["emergencyContact"],
+    });
+  });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -40,6 +63,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         email: true,
         role: true,
         phoneNo: true,
+        emergencyContact: true,
         birthday: true,
         image: true,
         avatarAsset: true,
@@ -80,14 +104,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateUserSchema.parse(body);
-    const { avatarAsset: _avatarAsset, birthday: birthdayRaw, ...updateData } = validatedData;
-    let birthdayForDb: Date | null | undefined;
-    if (birthdayRaw === undefined) birthdayForDb = undefined;
-    else if (birthdayRaw === null || birthdayRaw === "") birthdayForDb = null;
-    else {
-      const parsed = new Date(birthdayRaw);
-      birthdayForDb = Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
+    const {
+      avatarAsset: _avatarAsset,
+      birthday: birthdayRaw,
+      emergencyContact: emergencyContactRaw,
+      ...updateData
+    } = validatedData;
+    const birthdayForDb = new Date(birthdayRaw);
 
     // Get the target user
     const targetUser = await prisma.user.findUnique({
@@ -135,7 +158,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       where: { id },
       data: {
         ...updateData,
-        ...(birthdayRaw !== undefined && { birthday: birthdayForDb }),
+        emergencyContact: emergencyContactRaw,
+        birthday: birthdayForDb,
         ...(validatedData.avatarAsset !== undefined && {
           avatarAsset: nextAssetForDb,
           image: resolveAssetUrl(nextAsset, validatedData.image),

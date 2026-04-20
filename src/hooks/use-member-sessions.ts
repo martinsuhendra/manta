@@ -63,6 +63,17 @@ export interface SessionEligibility {
   reason?: string;
 }
 
+export interface MemberWaiver {
+  waiver: {
+    contentHtml: string;
+    version: number;
+    isActive: boolean;
+  };
+  hasAccepted: boolean;
+  acceptedAt?: string | null;
+  acceptedVersion?: number | null;
+}
+
 export function useMemberSessions(filters?: MemberSessionFilters) {
   const activeBrandId = useBrandStore((state) => state.activeBrandId);
   const params = new URLSearchParams();
@@ -123,6 +134,43 @@ export function useSessionEligibilityBatch(sessionIds: string[], enabled: boolea
   const isError = results.some((r) => r.isError);
 
   return { bySessionId, isLoading, isError, results };
+}
+
+export function useMemberWaiver(enabled = true) {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  return useQuery<MemberWaiver>({
+    queryKey: ["member-waiver", activeBrandId],
+    queryFn: async () => {
+      const { data } = await axios.get<MemberWaiver>("/api/shop/waiver");
+      return data;
+    },
+    enabled,
+    retry: false,
+  });
+}
+
+export function useAcceptMemberWaiver() {
+  const activeBrandId = useBrandStore((state) => state.activeBrandId);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (version: number) => {
+      const { data } = await axios.post("/api/shop/waiver/accept", { version });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["member-waiver", activeBrandId] });
+      queryClient.invalidateQueries({ queryKey: ["session-eligibility", activeBrandId] });
+      toast.success("Waiver accepted");
+    },
+    onError: (err: unknown) => {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? String(err.response.data.error)
+          : "Failed to accept waiver";
+      toast.error(msg);
+    },
+  });
 }
 
 export function useMemberBookSession() {

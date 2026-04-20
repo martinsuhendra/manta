@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -12,13 +12,22 @@ import type { z } from "zod";
 
 import { BirthdayPicker } from "@/components/ui/birthday-picker";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { USER_ROLES } from "@/lib/types";
 import { signUpFormSchema } from "@/lib/validators";
 
+interface PublicWaiverResponse {
+  contentHtml: string;
+  version: number;
+  isActive: boolean;
+}
+
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [waiver, setWaiver] = useState<PublicWaiverResponse | null>(null);
+  const [isWaiverLoading, setIsWaiverLoading] = useState(true);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof signUpFormSchema>>({
@@ -27,11 +36,40 @@ export function RegisterForm() {
       name: "",
       email: "",
       phoneNo: "",
+      emergencyContact: "",
       birthday: "",
+      waiverVersion: 1,
+      acceptWaiver: false,
       password: "",
       confirmPassword: "",
     },
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadWaiver() {
+      try {
+        const response = await fetch("/api/public/waiver");
+        if (!response.ok) throw new Error("Failed to load waiver");
+        const data = (await response.json()) as PublicWaiverResponse;
+        if (!isMounted) return;
+        setWaiver(data);
+        form.setValue("waiverVersion", data.version, { shouldValidate: true });
+        if (!data.isActive) form.setValue("acceptWaiver", true, { shouldValidate: true });
+      } catch {
+        if (!isMounted) return;
+        toast.error("Failed to load waiver");
+      } finally {
+        if (isMounted) setIsWaiverLoading(false);
+      }
+    }
+
+    void loadWaiver();
+    return () => {
+      isMounted = false;
+    };
+  }, [form]);
 
   const onSubmit = async (data: z.infer<typeof signUpFormSchema>) => {
     setIsLoading(true);
@@ -46,7 +84,10 @@ export function RegisterForm() {
           name: data.name,
           email: data.email,
           phoneNo: data.phoneNo,
+          emergencyContact: data.emergencyContact,
           birthday: data.birthday,
+          waiverVersion: data.waiverVersion,
+          acceptWaiver: data.acceptWaiver,
           password: data.password,
         }),
       });
@@ -138,6 +179,25 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
+          name="emergencyContact"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Emergency Contact</FormLabel>
+              <FormControl>
+                <Input
+                  id="emergencyContact"
+                  type="tel"
+                  placeholder="+1234567890"
+                  autoComplete="tel-national"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="birthday"
           render={({ field }) => (
             <FormItem>
@@ -187,8 +247,35 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button className="w-full" type="submit" disabled={isLoading}>
-          {isLoading ? "Creating account..." : "Register"}
+        {waiver?.isActive ? (
+          <>
+            <FormField
+              control={form.control}
+              name="waiverVersion"
+              render={({ field }) => <input type="hidden" value={field.value} readOnly />}
+            />
+            <div className="max-h-56 overflow-y-auto rounded-md border p-3 text-sm">
+              <div dangerouslySetInnerHTML={{ __html: waiver.contentHtml }} />
+            </div>
+            <FormField
+              control={form.control}
+              name="acceptWaiver"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-y-0 space-x-3 rounded-md border p-3">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={(value) => field.onChange(Boolean(value))} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>I agree to this waiver and release of liability</FormLabel>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+          </>
+        ) : null}
+        <Button className="w-full" type="submit" disabled={isLoading || isWaiverLoading}>
+          {isLoading || isWaiverLoading ? "Creating account..." : "Register"}
         </Button>
       </form>
     </Form>

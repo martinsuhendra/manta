@@ -82,7 +82,12 @@ model User {
   updatedAt     DateTime       @updatedAt @db.Timestamp(6)
   licenseKey    String?
   phoneNo       String?        @map("phone_no")
+  emergencyContact String?     @map("emergency_contact")
   birthday      DateTime?      @db.Date
+  waiverAcceptedAt DateTime?   @map("waiver_accepted_at") @db.Timestamp(6)
+  waiverAcceptedVersion Int?   @map("waiver_accepted_version")
+  waiverAcceptedIp String?     @map("waiver_accepted_ip")
+  waiverAcceptedUserAgent String? @map("waiver_accepted_user_agent")
   accounts      Account[]
   bookings      Booking[]
   classSessions ClassSession[] @relation("SessionTeacher")
@@ -93,6 +98,7 @@ model User {
   transactions  Transaction[]
   freezeRequestsRequested MembershipFreezeRequest[] @relation("FreezeRequestedBy")
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
+  waiverSettingsUpdated WaiverSettings[] @relation("WaiverUpdatedBy")
 
   @@map("users")
 }
@@ -477,4 +483,18 @@ model BookingSettings {
   brand                     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("booking_settings")
+}
+
+model WaiverSettings {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @default("GLOBAL") @unique
+  contentHtml String   @map("content_html")
+  version     Int      @default(1)
+  isActive    Boolean  @default(true) @map("is_active")
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  updatedBy   User?    @relation("WaiverUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("waiver_settings")
 }

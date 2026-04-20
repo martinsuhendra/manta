@@ -24,7 +24,7 @@ export async function requireSuperAdmin() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
   if (![USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user?.role ?? "")) {
@@ -40,7 +40,7 @@ export async function requireAdmin() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { id: true, role: true },
   });
 
   if (!user || ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(user.role)) {

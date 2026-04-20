@@ -21,6 +21,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  isScrollable?: boolean;
 }
 
 export function RichTextEditor({
@@ -28,7 +29,8 @@ export function RichTextEditor({
   onChange,
   placeholder = "Enter content...",
   disabled = false,
-  className
+  className,
+  isScrollable = true
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -169,7 +171,10 @@ export function RichTextEditor({
       <div className={cn("prose prose-sm max-w-none", disabled && "opacity-50")}>
         <EditorContent
           editor={editor}
-          className="min-h-[100px] max-h-[200px] overflow-y-auto p-3 focus:outline-none"
+          className={cn(
+            "min-h-[100px] p-3 focus:outline-none",
+            isScrollable && "max-h-[200px] overflow-y-auto"
+          )}
         />
       </div>
 
@@ -177,8 +182,6 @@ export function RichTextEditor({
         .rich-text-editor .ProseMirror {
           outline: none;
           min-height: 100px;
-          max-height: 200px;
-          overflow-y: auto;
         }
         .rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
           content: "${placeholder}";

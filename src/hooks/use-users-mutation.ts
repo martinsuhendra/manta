@@ -12,6 +12,7 @@ interface CreateUserData {
   email: string;
   role: string;
   phoneNo?: string;
+  emergencyContact?: string | null;
   birthday?: string;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;
@@ -23,10 +24,16 @@ interface UpdateUserData {
   email?: string;
   role?: string;
   phoneNo?: string;
+  emergencyContact?: string | null;
   birthday?: string | null;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;
   bio?: string | null;
+}
+
+interface UpdateUserWaiverStatusData {
+  userId: string;
+  isAccepted: boolean;
 }
 
 export function useCreateUser() {
@@ -82,6 +89,28 @@ export function useDeleteUser() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to delete user";
+      toast.error(message);
+      throw error;
+    },
+  });
+}
+
+export function useUpdateUserWaiverStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, isAccepted }: UpdateUserWaiverStatusData) => {
+      const response = await axios.patch(`/api/users/${userId}/waiver`, { isAccepted });
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["member-details", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-edit", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-waiver", variables.userId] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || "Failed to update waiver status";
       toast.error(message);
       throw error;
     },

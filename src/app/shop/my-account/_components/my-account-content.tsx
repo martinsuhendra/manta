@@ -44,6 +44,7 @@ interface AccountData {
     name: string | null;
     email: string | null;
     phoneNo: string | null;
+    emergencyContact: string | null;
     birthday: string | null;
     role: string;
     createdAt: string;
@@ -152,6 +153,10 @@ interface MyAccountContentProps {
 }
 
 const ITEMS_PER_PAGE = 6;
+
+function normalizePhoneNumber(value: string) {
+  return value.replace(/\D/g, "");
+}
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -271,10 +276,22 @@ const editProfileSchema = z
       .min(10, "Phone number must be at least 10 digits")
       .max(15, "Phone number must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-    birthday: z.string().optional(),
+    emergencyContact: z
+      .string()
+      .min(10, "Emergency contact must be at least 10 digits")
+      .max(15, "Emergency contact must be at most 15 digits")
+      .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    birthday: z.string().min(1, "Birthday is required"),
   })
   .superRefine((data, ctx) => {
-    if (!data.birthday || data.birthday.trim() === "") return;
+    if (normalizePhoneNumber(data.phoneNo) === normalizePhoneNumber(data.emergencyContact)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Emergency contact must be different from phone number",
+        path: ["emergencyContact"],
+      });
+    }
+
     const d = new Date(data.birthday);
     if (Number.isNaN(d.getTime())) {
       ctx.addIssue({ code: "custom", message: "Invalid date", path: ["birthday"] });
@@ -315,6 +332,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     defaultValues: {
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      emergencyContact: accountData.user.emergencyContact || "",
       birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     },
   });
@@ -343,6 +361,7 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
     form.reset({
       name: accountData.user.name || "",
       phoneNo: accountData.user.phoneNo || "",
+      emergencyContact: accountData.user.emergencyContact || "",
       birthday: accountData.user.birthday ? accountData.user.birthday.slice(0, 10) : "",
     });
     setIsEditDialogOpen(true);
@@ -769,6 +788,25 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
               />
               <FormField
                 control={form.control}
+                name="emergencyContact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emergency Contact</FormLabel>
+                    <FormControl>
+                      <Input
+                        id="emergencyContact"
+                        type="tel"
+                        placeholder="+1234567890"
+                        autoComplete="tel-national"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="birthday"
                 render={({ field }) => (
                   <FormItem>
@@ -780,7 +818,6 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         placeholder="Pick your birthday"
-                        allowClear
                       />
                     </FormControl>
                     <FormMessage />

@@ -19,8 +19,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  useAcceptMemberWaiver,
   useMemberBookSession,
   useMemberCancelBooking,
+  useMemberWaiver,
   useSessionEligibility,
   type MemberSession,
 } from "@/hooks/use-member-sessions";
@@ -37,6 +39,8 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
     session?.id ?? null,
     open && !!session?.id,
   );
+  const { data: waiverData, isLoading: waiverLoading } = useMemberWaiver(open && !!session?.id);
+  const acceptWaiverMutation = useAcceptMemberWaiver();
   const bookMutation = useMemberBookSession();
   const cancelMutation = useMemberCancelBooking();
 
@@ -77,13 +81,20 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
     });
   };
 
+  const handleAcceptWaiver = () => {
+    const version = waiverData?.waiver.version;
+    if (!version) return;
+    acceptWaiverMutation.mutate(version);
+  };
+
   if (!session) return null;
 
   const spotsLeft = eligibility && eligibility.spotsLeft != null ? eligibility.spotsLeft : (session.spotsLeft ?? 0);
   const selectedMembership = eligibility?.eligibleMemberships.find((m) => m.id === selectedMembershipId);
   const selectedFits = selectedMembership ? spotsLeft >= selectedMembership.slotsRequired : false;
-  const canBook = eligibility?.canJoin && !!selectedMembershipId && selectedFits;
-  const isPending = bookMutation.isPending || cancelMutation.isPending;
+  const needsWaiverAcceptance = waiverData?.waiver.isActive && !waiverData.hasAccepted;
+  const canBook = eligibility?.canJoin && !needsWaiverAcceptance && !!selectedMembershipId && selectedFits;
+  const isPending = bookMutation.isPending || cancelMutation.isPending || acceptWaiverMutation.isPending;
 
   return (
     <Dialog
@@ -104,8 +115,21 @@ export function BookingModal({ session, open, onOpenChange }: BookingModalProps)
         </DialogHeader>
 
         <div className="space-y-4">
-          {eligibilityLoading ? (
+          {eligibilityLoading || waiverLoading ? (
             <Skeleton className="h-24 w-full" />
+          ) : needsWaiverAcceptance ? (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                You need to accept the waiver before you can book this session.
+              </p>
+              <div className="max-h-64 overflow-y-auto rounded-md border p-3 text-sm">
+                <div dangerouslySetInnerHTML={{ __html: waiverData.waiver.contentHtml }} />
+              </div>
+              <Button className="w-full" onClick={handleAcceptWaiver} disabled={isPending}>
+                {acceptWaiverMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Accept waiver
+              </Button>
+            </div>
           ) : eligibility?.alreadyBooked ? (
             <div className="bg-muted/50 rounded-lg border p-4">
               <p className="text-muted-foreground text-sm">
