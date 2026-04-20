@@ -13,33 +13,37 @@ import { SessionTableRowActions } from "./session-table-row-actions";
 
 interface SessionActions {
   onEditSession: (session: Session) => void;
+  readOnly?: boolean;
 }
 
 export function createSessionColumns(actions: SessionActions): ColumnDef<Session>[] {
-  return [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+  const readOnly = actions.readOnly ?? false;
+
+  const selectColumn: ColumnDef<Session> = {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  };
+
+  const baseColumns: ColumnDef<Session>[] = [
     {
       accessorKey: "date",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
@@ -134,6 +138,15 @@ export function createSessionColumns(actions: SessionActions): ColumnDef<Session
         );
       },
     },
+  ];
+
+  if (readOnly) {
+    return baseColumns;
+  }
+
+  return [
+    selectColumn,
+    ...baseColumns,
     {
       id: "actions",
       cell: ({ row }) => {

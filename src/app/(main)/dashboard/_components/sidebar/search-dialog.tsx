@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { Search } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +16,15 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { sidebarItems, type NavMainItem } from "@/navigation/sidebar/sidebar-items";
 
-// Transform sidebar items into search items
-const getSearchItems = () => {
+function isNavItemVisibleForRole(item: NavMainItem, userRole: string | undefined): boolean {
+  if (!item.requiredRoles?.length) return true;
+  return !!userRole && item.requiredRoles.includes(userRole);
+}
+
+// Transform sidebar items into search items (same visibility rules as sidebar)
+function getSearchItems(userRole: string | undefined) {
   const searchItems: Array<{
     group: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -29,25 +35,26 @@ const getSearchItems = () => {
 
   sidebarItems.forEach((group) => {
     group.items.forEach((item) => {
-      if (item.icon) {
-        searchItems.push({
-          group: group.label || "Other",
-          icon: item.icon,
-          label: item.title,
-          url: item.url,
-          disabled: item.comingSoon || false,
-        });
-      }
+      if (!item.icon) return;
+      if (!isNavItemVisibleForRole(item, userRole)) return;
+      searchItems.push({
+        group: group.label || "Other",
+        icon: item.icon,
+        label: item.title,
+        url: item.url,
+        disabled: item.comingSoon || false,
+      });
     });
   });
 
   return searchItems;
-};
+}
 
 export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const router = useRouter();
-  const searchItems = React.useMemo(() => getSearchItems(), []);
+  const { data: session } = useSession();
+  const searchItems = React.useMemo(() => getSearchItems(session?.user?.role), [session?.user?.role]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

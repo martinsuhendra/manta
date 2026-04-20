@@ -139,9 +139,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (
-      ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(session.user.role)
-    ) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -167,10 +165,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
-    if (session.user.role === USER_ROLES.TEACHER && classSession.teacherId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     // Check if user exists and has MEMBER role
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -331,9 +325,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (
-      ![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(session.user.role)
-    ) {
+    if (![USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER].includes(session.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -348,9 +340,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-    if (session.user.role === USER_ROLES.TEACHER && classSession.teacherId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const updateResult = await prisma.booking.updateMany({

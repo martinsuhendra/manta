@@ -27,9 +27,10 @@ interface CompactSessionCardProps {
   session: Session;
   onSessionSelect: (session: Session) => void;
   onEdit?: (session: Session) => void;
+  readOnly?: boolean;
 }
 
-export function CompactSessionCard({ session, onSessionSelect, onEdit }: CompactSessionCardProps) {
+export function CompactSessionCard({ session, onSessionSelect, onEdit, readOnly = false }: CompactSessionCardProps) {
   const deleteSessionMutation = useDeleteSession();
   const updateSessionMutation = useUpdateSession();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -160,17 +161,18 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
               </div>
             )}
 
-            {/* Action Buttons */}
-            <CompactSessionCardActions
-              session={session}
-              hasParticipants={hasParticipants}
-              onEdit={onEdit}
-              onAddParticipant={() => setShowAddParticipantDialog(true)}
-              onViewParticipants={() => setShowParticipantsDialog(true)}
-              onStatusUpdate={handleStatusUpdate}
-              onCancelClick={handleCancelClick}
-              onDeleteClick={handleDeleteClick}
-            />
+            {!readOnly && (
+              <CompactSessionCardActions
+                session={session}
+                hasParticipants={hasParticipants}
+                onEdit={onEdit}
+                onAddParticipant={() => setShowAddParticipantDialog(true)}
+                onViewParticipants={() => setShowParticipantsDialog(true)}
+                onStatusUpdate={handleStatusUpdate}
+                onCancelClick={handleCancelClick}
+                onDeleteClick={handleDeleteClick}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -179,7 +181,12 @@ export function CompactSessionCard({ session, onSessionSelect, onEdit }: Compact
         onOpenChange={setShowAddParticipantDialog}
         session={session}
       />
-      <ParticipantsDialog open={showParticipantsDialog} onOpenChange={setShowParticipantsDialog} session={session} />
+      <ParticipantsDialog
+        open={showParticipantsDialog}
+        onOpenChange={setShowParticipantsDialog}
+        session={session}
+        readOnly={readOnly}
+      />
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

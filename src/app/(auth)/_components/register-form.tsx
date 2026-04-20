@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { shouldRedirectToDashboardAfterAuth } from "@/lib/rbac";
 import { USER_ROLES } from "@/lib/types";
 import { signUpFormSchema } from "@/lib/validators";
 
@@ -121,8 +122,7 @@ export function RegisterForm() {
         await new Promise((resolve) => setTimeout(resolve, 100));
         const session = await getSession();
         const role = session?.user.role;
-        const isDashboardRole = role === USER_ROLES.SUPERADMIN || role === USER_ROLES.DEVELOPER;
-        const redirectPath = isDashboardRole ? "/dashboard/home" : "/shop";
+        const redirectPath = shouldRedirectToDashboardAfterAuth(role) ? "/dashboard/home" : "/shop";
         router.push(redirectPath);
         router.refresh();
       }

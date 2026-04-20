@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getToken } from "next-auth/jwt";
 
+import { shouldRedirectToDashboardAfterAuth } from "@/lib/rbac";
+
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
 
@@ -18,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && isAuthPage) {
-    const redirectPath = ["SUPERADMIN", "DEVELOPER"].includes(String(token.role)) ? "/dashboard/home" : "/shop";
+    const redirectPath = shouldRedirectToDashboardAfterAuth(String(token.role)) ? "/dashboard/home" : "/shop";
     return NextResponse.redirect(new URL(redirectPath, nextUrl));
   }
 

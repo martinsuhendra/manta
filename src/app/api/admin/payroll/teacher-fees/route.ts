@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { handleApiError, requireAdmin } from "@/lib/api-utils";
+import { handleApiError, requireAdmin, requireAuth } from "@/lib/api-utils";
 import { resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
+import { RBAC_ADMIN_ROLES } from "@/lib/rbac";
 import { TeacherFeeModel } from "@/lib/teacher-fee-model";
 import { USER_ROLES } from "@/lib/types";
 
@@ -72,11 +73,20 @@ function mapRow(ti: {
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireAdmin();
+    const { error, session } = await requireAuth();
     if (error) return error;
 
+    const isAdmin = RBAC_ADMIN_ROLES.includes(session.user.role);
+    const isTeacher = session.user.role === USER_ROLES.TEACHER;
+    if (!isAdmin && !isTeacher) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const teacherId = searchParams.get("teacherId") || undefined;
+    let teacherId = searchParams.get("teacherId") || undefined;
+    if (isTeacher) {
+      teacherId = session.user.id;
+    }
     const itemId = searchParams.get("itemId") || undefined;
 
     const teacherItems = await prisma.teacherItem.findMany({

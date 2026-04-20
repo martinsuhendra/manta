@@ -46,24 +46,36 @@ function getDefaultDates(period: PayrollFiltersState["period"]): { start: string
 interface PayrollFiltersProps {
   filters: PayrollFiltersState;
   onFiltersChange: (f: PayrollFiltersState) => void;
+  /** Hide teacher filter (e.g. teacher viewing own payroll only). */
+  hideTeacherFilter?: boolean;
+  /** Hide class/session filter. */
+  hideItemFilter?: boolean;
 }
 
 /* eslint-disable complexity */
-export function PayrollFilters({ filters, onFiltersChange }: PayrollFiltersProps) {
+export function PayrollFilters({
+  filters,
+  onFiltersChange,
+  hideTeacherFilter = false,
+  hideItemFilter = false,
+}: PayrollFiltersProps) {
   const period = filters.period ?? "this-month";
   const { start: defaultStart, end: defaultEnd } = getDefaultDates(period);
   const startDate = filters.startDate ?? defaultStart;
   const endDate = filters.endDate ?? defaultEnd;
 
-  const { data: items = [] } = useItems();
-  const { data: teachers = [] } = useTeachers();
+  const { data: items = [] } = useItems({ enabled: !hideItemFilter });
+  const { data: teachers = [] } = useTeachers(!hideTeacherFilter);
 
   const setPeriod = (p: PayrollFiltersState["period"]) => {
     const { start, end } = getDefaultDates(p);
     onFiltersChange({ ...filters, period: p, startDate: start, endDate: end });
   };
 
-  const activeCount = [filters.teacherId, filters.itemId].filter(Boolean).length;
+  const activeCount = [
+    hideTeacherFilter ? undefined : filters.teacherId,
+    hideItemFilter ? undefined : filters.itemId,
+  ].filter(Boolean).length;
 
   return (
     <Popover>
@@ -144,44 +156,48 @@ export function PayrollFilters({ filters, onFiltersChange }: PayrollFiltersProps
               </div>
             </div>
           )}
-          <div className="space-y-1">
-            <Label className="text-xs">Teacher</Label>
-            <Select
-              value={filters.teacherId ?? "all"}
-              onValueChange={(v) => onFiltersChange({ ...filters, teacherId: v === "all" ? undefined : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All teachers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All teachers</SelectItem>
-                {teachers.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name ?? t.email ?? t.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Session (class)</Label>
-            <Select
-              value={filters.itemId ?? "all"}
-              onValueChange={(v) => onFiltersChange({ ...filters, itemId: v === "all" ? undefined : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All sessions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sessions</SelectItem>
-                {items.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!hideTeacherFilter && (
+            <div className="space-y-1">
+              <Label className="text-xs">Teacher</Label>
+              <Select
+                value={filters.teacherId ?? "all"}
+                onValueChange={(v) => onFiltersChange({ ...filters, teacherId: v === "all" ? undefined : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All teachers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All teachers</SelectItem>
+                  {teachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name ?? t.email ?? t.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {!hideItemFilter && (
+            <div className="space-y-1">
+              <Label className="text-xs">Session (class)</Label>
+              <Select
+                value={filters.itemId ?? "all"}
+                onValueChange={(v) => onFiltersChange({ ...filters, itemId: v === "all" ? undefined : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All sessions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sessions</SelectItem>
+                  {items.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

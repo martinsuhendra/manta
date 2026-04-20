@@ -54,6 +54,7 @@ export interface SessionDayTimetableProps {
   onEditSession?: (session: Session) => void;
   /** Pass snapped hover time as `HH:mm` when creating from the grid; omit for default (e.g. header create). */
   onCreateForDay: (defaultStartTime?: string) => void;
+  readOnly?: boolean;
 }
 
 function useNowTick(isToday: boolean) {
@@ -76,6 +77,7 @@ export function SessionDayTimetable({
   onSessionSelect,
   onEditSession,
   onCreateForDay,
+  readOnly = false,
 }: SessionDayTimetableProps) {
   const today = new Date();
   const isToday = isSameDay(selectedDate, today);
@@ -167,9 +169,11 @@ export function SessionDayTimetable({
           <Card>
             <CardContent className="text-muted-foreground p-6 text-center text-sm">
               <p>No sessions on this day.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => onCreateForDay()}>
-                Create session
-              </Button>
+              {!readOnly && (
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => onCreateForDay()}>
+                  Create session
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -179,6 +183,7 @@ export function SessionDayTimetable({
               session={session}
               onSessionSelect={onSessionSelect}
               onEdit={onEditSession}
+              readOnly={readOnly}
             />
           ))
         )}
@@ -209,15 +214,17 @@ export function SessionDayTimetable({
             ref={laneRef}
             className="relative min-w-0 flex-1"
             style={{ height: laneHeightPx }}
-            onMouseMove={handleLaneMouseMove}
-            onMouseLeave={handleLaneMouseLeave}
+            onMouseMove={readOnly ? undefined : handleLaneMouseMove}
+            onMouseLeave={readOnly ? undefined : handleLaneMouseLeave}
           >
-            <button
-              type="button"
-              className="absolute inset-0 z-0 cursor-crosshair bg-transparent"
-              aria-label="Day schedule background — hover to preview time, click to create session"
-              onClick={() => onCreateForDay(hoverMinutes !== null ? minutesToTimeString(hoverMinutes) : undefined)}
-            />
+            {!readOnly && (
+              <button
+                type="button"
+                className="absolute inset-0 z-0 cursor-crosshair bg-transparent"
+                aria-label="Day schedule background — hover to preview time, click to create session"
+                onClick={() => onCreateForDay(hoverMinutes !== null ? minutesToTimeString(hoverMinutes) : undefined)}
+              />
+            )}
 
             {Array.from({ length: 24 }, (_, hour) => (
               <div
@@ -238,7 +245,7 @@ export function SessionDayTimetable({
               </div>
             ) : null}
 
-            {hoverTopPx !== null && hoverMinutes !== null ? (
+            {!readOnly && hoverTopPx !== null && hoverMinutes !== null ? (
               <>
                 {/* Dashed time preview only on empty grid (hidden while pointer is over a session card). */}
                 <div
@@ -352,6 +359,7 @@ export function SessionDayTimetable({
                             session={ev.session}
                             onEdit={onEditSession}
                             triggerClassName="opacity-100"
+                            readOnly={readOnly}
                           />
                         </div>
                       </div>

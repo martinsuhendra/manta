@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { handleApiError, requireAdmin } from "@/lib/api-utils";
+import { handleApiError, requireAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
 import { perParticipantSessionFeeIdr } from "@/lib/per-participant-session-fee";
+import { RBAC_ADMIN_ROLES } from "@/lib/rbac";
 import type { TeacherFeeModel } from "@/lib/teacher-fee-model";
+import { USER_ROLES } from "@/lib/types";
 
 const MAX_DAYS_RANGE = 365;
 
@@ -33,13 +35,22 @@ function sessionFeeForConfig(config: TeacherFeeConfig | undefined, pax: number):
 /* eslint-disable complexity */
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireAdmin();
+    const { error, session } = await requireAuth();
     if (error) return error;
+
+    const isAdmin = RBAC_ADMIN_ROLES.includes(session.user.role);
+    const isTeacher = session.user.role === USER_ROLES.TEACHER;
+    if (!isAdmin && !isTeacher) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
-    const teacherId = searchParams.get("teacherId") || undefined;
+    let teacherId = searchParams.get("teacherId") || undefined;
+    if (isTeacher) {
+      teacherId = session.user.id;
+    }
     const itemId = searchParams.get("itemId") || undefined;
     // Payroll only counts COMPLETED sessions; cancelled/scheduled sessions do not earn teacher fees
     const status = "COMPLETED" as const;

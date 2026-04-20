@@ -7,6 +7,7 @@ import { requireBrandAccess } from "@/lib/api-utils";
 import { getCapacityBookingStatuses } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
 import { deductQuota } from "@/lib/quota-utils";
+import { RBAC_PRIVATE_SESSION_ADMIN_ROLES } from "@/lib/rbac";
 import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";
 import { USER_ROLES } from "@/lib/types";
 
@@ -35,7 +36,7 @@ function calculateEndTime(startTime: string, durationMinutes: number): string {
 }
 
 function ensureCreatorRole(role: string): boolean {
-  return [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.TEACHER].includes(role);
+  return RBAC_PRIVATE_SESSION_ADMIN_ROLES.includes(role);
 }
 
 function resolveTeacherId({

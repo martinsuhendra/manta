@@ -31,6 +31,12 @@ async function seedSuperAdmin() {
         role: "DEVELOPER",
         name: "Developer",
       },
+      {
+        email: "teacher@example.com",
+        password: "password123",
+        role: "TEACHER",
+        name: "Teacher",
+      },
     ];
 
     for (const seedUser of seedUsers) {

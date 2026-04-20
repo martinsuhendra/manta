@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Plus, Calendar as CalendarIcon, List, Layers } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -29,7 +29,14 @@ export function SessionsView() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [prefillStartTime, setPrefillStartTime] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState("calendar");
-  const canManagePublicSessions = authSession?.user?.role !== USER_ROLES.TEACHER;
+  const sessionReadOnly = authSession?.user?.role === USER_ROLES.TEACHER;
+  const canManagePublicSessions = !sessionReadOnly;
+
+  useEffect(() => {
+    if (authSession?.user?.role === USER_ROLES.TEACHER && authSession.user.id) {
+      setFilters((f) => ({ ...f, teacherId: authSession.user.id }));
+    }
+  }, [authSession?.user?.role, authSession?.user?.id]);
 
   /** Clears create/edit form identity when the dialog closes without using the success path. */
   const clearEditingAndPrefill = useCallback(() => {
@@ -60,13 +67,14 @@ export function SessionsView() {
     (date: Date, hasSessions?: boolean, _sessions?: unknown[], meta?: DateSelectMeta) => {
       setSelectedDate(date);
       if (meta?.silent) return;
+      if (sessionReadOnly) return;
       if (!hasSessions) {
         setEditingSession(null);
         setPrefillStartTime(meta?.defaultStartTime);
         setIsDialogOpen(true);
       }
     },
-    [],
+    [sessionReadOnly],
   );
 
   const handleFilterChange = useCallback((newFilters: SessionFilter) => {
@@ -92,7 +100,12 @@ export function SessionsView() {
       <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <SessionFilters appliedFilters={filters} onFilterChange={handleFilterChange} />
+            <SessionFilters
+              appliedFilters={filters}
+              onFilterChange={handleFilterChange}
+              hideTeacherFilter={sessionReadOnly}
+              hideItemFilter={sessionReadOnly}
+            />
             <TabsList>
               <TabsTrigger value="calendar" className="cursor-pointer">
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -105,10 +118,12 @@ export function SessionsView() {
             </TabsList>
           </div>
           <div className="ml-auto flex shrink-0 flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setIsPrivateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Private Session
-            </Button>
+            {canManagePublicSessions && (
+              <Button variant="outline" onClick={() => setIsPrivateDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Private Session
+              </Button>
+            )}
             {canManagePublicSessions && (
               <>
                 <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)}>
@@ -130,41 +145,49 @@ export function SessionsView() {
             onDateSelect={handleDateSelect}
             onSessionSelect={canManagePublicSessions ? handleEditSession : noopSessionHandler}
             onEditSession={canManagePublicSessions ? handleEditSession : undefined}
+            readOnly={sessionReadOnly}
           />
         </TabsContent>
 
         <TabsContent value="list" className="space-y-4">
-          <SessionList filters={filters} onEditSession={canManagePublicSessions ? handleEditSession : undefined} />
+          <SessionList
+            filters={filters}
+            onEditSession={canManagePublicSessions ? handleEditSession : undefined}
+            readOnly={sessionReadOnly}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* Create/Edit Dialog */}
-      <SessionDialog
-        open={isDialogOpen}
-        onOpenChange={handleSessionDialogOpenChange}
-        selectedDate={selectedDate}
-        editingSession={editingSession}
-        prefillStartTime={prefillStartTime}
-        onSuccess={handleDialogClose}
-      />
+      {canManagePublicSessions && (
+        <SessionDialog
+          open={isDialogOpen}
+          onOpenChange={handleSessionDialogOpenChange}
+          selectedDate={selectedDate}
+          editingSession={editingSession}
+          prefillStartTime={prefillStartTime}
+          onSuccess={handleDialogClose}
+        />
+      )}
 
-      {/* Bulk Create Dialog */}
-      <BulkSessionDialog
-        open={isBulkDialogOpen}
-        onOpenChange={setIsBulkDialogOpen}
-        onSuccess={() => {
-          // Refresh the view after bulk creation
-          window.location.reload();
-        }}
-      />
+      {canManagePublicSessions && (
+        <BulkSessionDialog
+          open={isBulkDialogOpen}
+          onOpenChange={setIsBulkDialogOpen}
+          onSuccess={() => {
+            window.location.reload();
+          }}
+        />
+      )}
 
-      <PrivateSessionDialog
-        open={isPrivateDialogOpen}
-        onOpenChange={setIsPrivateDialogOpen}
-        onSuccess={() => {
-          setIsPrivateDialogOpen(false);
-        }}
-      />
+      {canManagePublicSessions && (
+        <PrivateSessionDialog
+          open={isPrivateDialogOpen}
+          onOpenChange={setIsPrivateDialogOpen}
+          onSuccess={() => {
+            setIsPrivateDialogOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

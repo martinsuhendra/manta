@@ -27,9 +27,9 @@ export interface User {
 // Re-export from mutations for backward compatibility
 export { useCreateUser, useUpdateUser, useDeleteUser, useUpdateUserWaiverStatus } from "./use-users-mutation";
 
-export function useTeachers() {
+export function useTeachers(enabled = true) {
   return useQuery<User[]>({
-    queryKey: ["users", "teachers"],
+    queryKey: ["users", "teachers", enabled],
     queryFn: async () => {
       try {
         const response = await axios.get("/api/users", {
@@ -41,6 +41,7 @@ export function useTeachers() {
         throw error;
       }
     },
+    enabled,
     retry: false,
   });
 }

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
 
-import { handleApiError, requireAdmin } from "@/lib/api-utils";
+import { handleApiError, requireAdmin, requireAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
+import { RBAC_ADMIN_ROLES } from "@/lib/rbac";
 import { sumParticipantSlots } from "@/lib/session-utils";
+import { USER_ROLES } from "@/lib/types";
 
 import { checkForDuplicateSession } from "./duplicate-helpers";
 import { sendCancellationEmailsToBookings, sendUpdateEmailsToBookings } from "./email-helpers";
@@ -12,8 +14,14 @@ import { buildUpdateData, detectChanges, buildSessionInfo } from "./session-help
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error } = await requireAdmin();
+    const { error, session } = await requireAuth();
     if (error) return error;
+
+    const isAdmin = RBAC_ADMIN_ROLES.includes(session.user.role);
+    const isTeacher = session.user.role === USER_ROLES.TEACHER;
+    if (!isAdmin && !isTeacher) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await params;
 
@@ -65,6 +73,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    const canTeacherAccessSession = classSession.visibility === "PUBLIC" || classSession.teacherId === session.user.id;
+    if (isTeacher && !canTeacherAccessSession) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CONFIRMED");

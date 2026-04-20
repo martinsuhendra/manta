@@ -119,7 +119,12 @@ function feeModelShortLabel(model: TeacherFeeModel): string {
   return model === TeacherFeeModelConst.PER_PARTICIPANT ? "Per person" : "Flat / session";
 }
 
-export function TeacherFeesTable() {
+interface TeacherFeesTableProps {
+  teacherId?: string;
+  readOnly?: boolean;
+}
+
+export function TeacherFeesTable({ teacherId, readOnly = false }: TeacherFeesTableProps = {}) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TeacherFeeRow | null>(null);
   const [editFeeAmount, setEditFeeAmount] = useState(0);
@@ -137,13 +142,15 @@ export function TeacherFeesTable() {
   const [addGuaranteeMaxPax, setAddGuaranteeMaxPax] = useState(2);
   const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
 
-  const { data: teachers = [] } = useTeachers();
-  const { data: items = [] } = useItems();
+  const { data: teachers = [] } = useTeachers(!readOnly);
+  const { data: items = [] } = useItems({ enabled: !readOnly });
 
   const { data: rows = [], isLoading } = useQuery<TeacherFeeRow[]>({
-    queryKey: ["payroll-teacher-fees"],
+    queryKey: ["payroll-teacher-fees", teacherId ?? "all"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/payroll/teacher-fees");
+      const search = new URLSearchParams();
+      if (teacherId) search.set("teacherId", teacherId);
+      const res = await fetch(`/api/admin/payroll/teacher-fees${search.toString() ? `?${search.toString()}` : ""}`);
       if (!res.ok) throw new Error("Failed to load teacher fees");
       return res.json();
     },
@@ -334,38 +341,42 @@ export function TeacherFeesTable() {
         </p>
         <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center">
           <p>No teacher–class fee configs yet.</p>
-          <p className="mt-1 text-sm">Add a teacher and class to set fees used for payroll.</p>
-          <Button className="mt-4" onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add teacher fee config
-          </Button>
+          {!readOnly && <p className="mt-1 text-sm">Add a teacher and class to set fees used for payroll.</p>}
+          {!readOnly && (
+            <Button className="mt-4" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add teacher fee config
+            </Button>
+          )}
         </div>
-        <AddFeeDialog
-          open={addOpen}
-          onOpenChange={setAddOpen}
-          teachers={teachers}
-          items={items}
-          addTeacherId={addTeacherId}
-          setAddTeacherId={setAddTeacherId}
-          addItemId={addItemId}
-          setAddItemId={setAddItemId}
-          addFeeAmount={addFeeAmount}
-          setAddFeeAmount={setAddFeeAmount}
-          addFeeModel={addFeeModel}
-          setAddFeeModel={(v) => {
-            setAddFeeModel(v);
-            if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setAddGuaranteeEnabled(false);
-          }}
-          addGuaranteeEnabled={addGuaranteeEnabled}
-          setAddGuaranteeEnabled={setAddGuaranteeEnabled}
-          addMinGuarantee={addMinGuarantee}
-          setAddMinGuarantee={setAddMinGuarantee}
-          addGuaranteeMaxPax={addGuaranteeMaxPax}
-          setAddGuaranteeMaxPax={setAddGuaranteeMaxPax}
-          conflictRow={addConflictRow}
-          onSubmit={handleAdd}
-          isPending={createMutation.isPending}
-        />
+        {!readOnly && (
+          <AddFeeDialog
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            teachers={teachers}
+            items={items}
+            addTeacherId={addTeacherId}
+            setAddTeacherId={setAddTeacherId}
+            addItemId={addItemId}
+            setAddItemId={setAddItemId}
+            addFeeAmount={addFeeAmount}
+            setAddFeeAmount={setAddFeeAmount}
+            addFeeModel={addFeeModel}
+            setAddFeeModel={(v) => {
+              setAddFeeModel(v);
+              if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setAddGuaranteeEnabled(false);
+            }}
+            addGuaranteeEnabled={addGuaranteeEnabled}
+            setAddGuaranteeEnabled={setAddGuaranteeEnabled}
+            addMinGuarantee={addMinGuarantee}
+            setAddMinGuarantee={setAddMinGuarantee}
+            addGuaranteeMaxPax={addGuaranteeMaxPax}
+            setAddGuaranteeMaxPax={setAddGuaranteeMaxPax}
+            conflictRow={addConflictRow}
+            onSubmit={handleAdd}
+            isPending={createMutation.isPending}
+          />
+        )}
       </>
     );
   }
@@ -376,22 +387,24 @@ export function TeacherFeesTable() {
         Set fee type per teacher and class: flat per completed session, or per participant (sum of participant counts on
         confirmed / completed bookings). Payroll uses these when sessions are marked completed.
       </p>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative max-w-xs min-w-[200px] flex-1">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="search"
-            placeholder="Search by teacher name..."
-            value={teacherSearchQuery}
-            onChange={(e) => setTeacherSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+      {!readOnly && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="relative max-w-xs min-w-[200px] flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              type="search"
+              placeholder="Search by teacher name..."
+              value={teacherSearchQuery}
+              onChange={(e) => setTeacherSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add teacher fee config
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add teacher fee config
-        </Button>
-      </div>
+      )}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -479,9 +492,11 @@ export function TeacherFeesTable() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    {!readOnly && (
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -490,102 +505,106 @@ export function TeacherFeesTable() {
         </Table>
       </div>
 
-      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent
-          className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-lg"
-          showCloseButton
-        >
-          <DialogHeader className="border-b px-4 py-3 pr-10 sm:px-6 sm:py-4">
-            <div className="text-primary flex items-center gap-2">
-              <Wallet className="size-5" />
-              <span className="text-xs font-semibold tracking-wide uppercase">Payroll fee</span>
-            </div>
-            <DialogTitle className="text-xl font-semibold tracking-tight">Edit fee</DialogTitle>
-            <DialogDescription>
-              Update how this teacher is paid when a session for this class is marked completed.
-            </DialogDescription>
-            {editing ? (
-              <TeacherContextCard teacher={editing.teacher} classLabel={editing.item.name} cardClassName="mt-3" />
-            ) : null}
-          </DialogHeader>
-          {editing ? (
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-              <FeeModelFields
-                formId="edit-fee"
-                feeModel={editFeeModel}
-                onFeeModelChange={(v) => {
-                  setEditFeeModel(v);
-                  if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setEditGuaranteeEnabled(false);
-                }}
-                feeAmount={editFeeAmount}
-              />
-              <Separator />
-              <div className="space-y-2">
-                <Label className="text-base font-medium">Amount</Label>
-                <p className="text-muted-foreground text-xs">
-                  {editFeeModel === TeacherFeeModelConst.PER_PARTICIPANT
-                    ? "Rate per billable participant (IDR). Used when attendance is above the floor cap, or when no floor is set."
-                    : "Gross IDR paid according to the rule above."}
-                </p>
-                <CurrencyInput
-                  className="h-11 text-base"
-                  placeholder="Enter amount in IDR"
-                  value={editFeeAmount}
-                  onChange={setEditFeeAmount}
-                />
+      {!readOnly && (
+        <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+          <DialogContent
+            className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-lg"
+            showCloseButton
+          >
+            <DialogHeader className="border-b px-4 py-3 pr-10 sm:px-6 sm:py-4">
+              <div className="text-primary flex items-center gap-2">
+                <Wallet className="size-5" />
+                <span className="text-xs font-semibold tracking-wide uppercase">Payroll fee</span>
               </div>
-              {editFeeModel === TeacherFeeModelConst.PER_PARTICIPANT ? (
-                <PerParticipantLowAttendanceFields
-                  formId="edit-fee"
-                  enabled={editGuaranteeEnabled}
-                  onEnabledChange={setEditGuaranteeEnabled}
-                  minGuarantee={editMinGuarantee}
-                  onMinGuaranteeChange={setEditMinGuarantee}
-                  maxPax={editGuaranteeMaxPax}
-                  onMaxPaxChange={setEditGuaranteeMaxPax}
-                  ratePerPerson={editFeeAmount}
-                />
+              <DialogTitle className="text-xl font-semibold tracking-tight">Edit fee</DialogTitle>
+              <DialogDescription>
+                Update how this teacher is paid when a session for this class is marked completed.
+              </DialogDescription>
+              {editing ? (
+                <TeacherContextCard teacher={editing.teacher} classLabel={editing.item.name} cardClassName="mt-3" />
               ) : null}
-            </div>
-          ) : null}
-          <DialogFooter className="flex-col-reverse gap-2 border-t px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
-            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-            <Button className="w-full sm:w-auto" onClick={handleSave} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </DialogHeader>
+            {editing ? (
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                <FeeModelFields
+                  formId="edit-fee"
+                  feeModel={editFeeModel}
+                  onFeeModelChange={(v) => {
+                    setEditFeeModel(v);
+                    if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setEditGuaranteeEnabled(false);
+                  }}
+                  feeAmount={editFeeAmount}
+                />
+                <Separator />
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Amount</Label>
+                  <p className="text-muted-foreground text-xs">
+                    {editFeeModel === TeacherFeeModelConst.PER_PARTICIPANT
+                      ? "Rate per billable participant (IDR). Used when attendance is above the floor cap, or when no floor is set."
+                      : "Gross IDR paid according to the rule above."}
+                  </p>
+                  <CurrencyInput
+                    className="h-11 text-base"
+                    placeholder="Enter amount in IDR"
+                    value={editFeeAmount}
+                    onChange={setEditFeeAmount}
+                  />
+                </div>
+                {editFeeModel === TeacherFeeModelConst.PER_PARTICIPANT ? (
+                  <PerParticipantLowAttendanceFields
+                    formId="edit-fee"
+                    enabled={editGuaranteeEnabled}
+                    onEnabledChange={setEditGuaranteeEnabled}
+                    minGuarantee={editMinGuarantee}
+                    onMinGuaranteeChange={setEditMinGuarantee}
+                    maxPax={editGuaranteeMaxPax}
+                    onMaxPaxChange={setEditGuaranteeMaxPax}
+                    ratePerPerson={editFeeAmount}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            <DialogFooter className="flex-col-reverse gap-2 border-t px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setEditing(null)}>
+                Cancel
+              </Button>
+              <Button className="w-full sm:w-auto" onClick={handleSave} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      <AddFeeDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        teachers={teachers}
-        items={items}
-        addTeacherId={addTeacherId}
-        setAddTeacherId={setAddTeacherId}
-        addItemId={addItemId}
-        setAddItemId={setAddItemId}
-        addFeeAmount={addFeeAmount}
-        setAddFeeAmount={setAddFeeAmount}
-        addFeeModel={addFeeModel}
-        setAddFeeModel={(v) => {
-          setAddFeeModel(v);
-          if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setAddGuaranteeEnabled(false);
-        }}
-        addGuaranteeEnabled={addGuaranteeEnabled}
-        setAddGuaranteeEnabled={setAddGuaranteeEnabled}
-        addMinGuarantee={addMinGuarantee}
-        setAddMinGuarantee={setAddMinGuarantee}
-        addGuaranteeMaxPax={addGuaranteeMaxPax}
-        setAddGuaranteeMaxPax={setAddGuaranteeMaxPax}
-        conflictRow={addConflictRow}
-        onSubmit={handleAdd}
-        isPending={createMutation.isPending}
-      />
+      {!readOnly && (
+        <AddFeeDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          teachers={teachers}
+          items={items}
+          addTeacherId={addTeacherId}
+          setAddTeacherId={setAddTeacherId}
+          addItemId={addItemId}
+          setAddItemId={setAddItemId}
+          addFeeAmount={addFeeAmount}
+          setAddFeeAmount={setAddFeeAmount}
+          addFeeModel={addFeeModel}
+          setAddFeeModel={(v) => {
+            setAddFeeModel(v);
+            if (v === TeacherFeeModelConst.FLAT_PER_SESSION) setAddGuaranteeEnabled(false);
+          }}
+          addGuaranteeEnabled={addGuaranteeEnabled}
+          setAddGuaranteeEnabled={setAddGuaranteeEnabled}
+          addMinGuarantee={addMinGuarantee}
+          setAddMinGuarantee={setAddMinGuarantee}
+          addGuaranteeMaxPax={addGuaranteeMaxPax}
+          setAddGuaranteeMaxPax={setAddGuaranteeMaxPax}
+          conflictRow={addConflictRow}
+          onSubmit={handleAdd}
+          isPending={createMutation.isPending}
+        />
+      )}
     </>
   );
 }

@@ -42,10 +42,11 @@ interface ParticipantsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: Session;
+  readOnly?: boolean;
 }
 
 /* eslint-disable complexity */
-export function ParticipantsDialog({ open, onOpenChange, session }: ParticipantsDialogProps) {
+export function ParticipantsDialog({ open, onOpenChange, session, readOnly = false }: ParticipantsDialogProps) {
   const queryClient = useQueryClient();
   const [bookingToRemove, setBookingToRemove] = useState<SessionBooking | null>(null);
   const [selectedReservedBookingIds, setSelectedReservedBookingIds] = useState<string[]>([]);
@@ -172,7 +173,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
               </Alert>
             ) : (
               <>
-                {reservedBookings.length > 0 && (
+                {reservedBookings.length > 0 && !readOnly && (
                   <div className="bg-primary/5 border-primary/20 space-y-3 rounded-lg border p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -241,6 +242,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
                     selectedBookingIds={selectedReservedSet}
                     onToggleSelect={handleToggleReservedSelection}
                     isUpdatingStatuses={isUpdatingStatuses}
+                    readOnly={readOnly}
                   />
                 )}
                 {confirmedBookings.length > 0 && (
@@ -250,6 +252,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
                     variant="confirmed"
                     onRemove={setBookingToRemove}
                     isRemoving={isRemoving}
+                    readOnly={readOnly}
                   />
                 )}
                 {waitlistedBookings.length > 0 && (
@@ -259,6 +262,7 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
                     variant="waitlisted"
                     onRemove={setBookingToRemove}
                     isRemoving={isRemoving}
+                    readOnly={readOnly}
                   />
                 )}
               </>
@@ -269,15 +273,17 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button
-              type="button"
-              className="w-full sm:w-auto"
-              onClick={() => setIsAddParticipantOpen(true)}
-              disabled={isLoading}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Participant
-            </Button>
+            {!readOnly && (
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={() => setIsAddParticipantOpen(true)}
+                disabled={isLoading}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Participant
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -308,7 +314,9 @@ export function ParticipantsDialog({ open, onOpenChange, session }: Participants
         </AlertDialogContent>
       </AlertDialog>
 
-      <AddParticipantDialog open={isAddParticipantOpen} onOpenChange={setIsAddParticipantOpen} session={session} />
+      {!readOnly && (
+        <AddParticipantDialog open={isAddParticipantOpen} onOpenChange={setIsAddParticipantOpen} session={session} />
+      )}
     </>
   );
 }
@@ -338,6 +346,7 @@ interface BookingSectionProps {
   selectedBookingIds?: Set<string>;
   onToggleSelect?: (bookingId: string, checked: boolean) => void;
   isUpdatingStatuses?: boolean;
+  readOnly?: boolean;
 }
 
 function BookingSection({
@@ -349,6 +358,7 @@ function BookingSection({
   selectedBookingIds,
   onToggleSelect,
   isUpdatingStatuses = false,
+  readOnly = false,
 }: BookingSectionProps) {
   const isWaitlisted = variant === "waitlisted";
   const isReserved = variant === "reserved";
@@ -370,7 +380,7 @@ function BookingSection({
               }
             >
               <div className="flex flex-1 items-center gap-3">
-                {isReserved && (
+                {isReserved && !readOnly && (
                   <Checkbox
                     checked={selectedBookingIds?.has(booking.id) ?? false}
                     onCheckedChange={(checked) => onToggleSelect?.(booking.id, checked === true)}
@@ -408,15 +418,17 @@ function BookingSection({
                   <p className="text-muted-foreground truncate text-xs">{booking.user.email}</p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemove(booking)}
-                disabled={isRemoving}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0 p-0"
-              >
-                <UserMinus className="h-4 w-4" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRemove(booking)}
+                  disabled={isRemoving}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0 p-0"
+                >
+                  <UserMinus className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ))}
         </div>
