@@ -73,7 +73,7 @@ const EMPTY_ACCESSIBLE_BRANDS: BrandSummary[] = [];
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!item;
-  const scheduleSourceKey = isEditMode && item ? item.id : "create";
+  const scheduleSourceKey = item ? item.id : "create";
   const [currentStep, setCurrentStep] = React.useState(1);
   const [createdItem, setCreatedItem] = React.useState<Item | null>(null);
   const { data: brandsQueryData } = useAccessibleBrands();

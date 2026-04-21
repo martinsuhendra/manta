@@ -29,14 +29,16 @@ export function SessionsView() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [prefillStartTime, setPrefillStartTime] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState("calendar");
-  const sessionReadOnly = authSession?.user?.role === USER_ROLES.TEACHER;
+  const userRole = authSession?.user.role;
+  const userId = authSession?.user.id;
+  const sessionReadOnly = userRole === USER_ROLES.TEACHER;
   const canManagePublicSessions = !sessionReadOnly;
 
   useEffect(() => {
-    if (authSession?.user?.role === USER_ROLES.TEACHER && authSession.user.id) {
-      setFilters((f) => ({ ...f, teacherId: authSession.user.id }));
+    if (userRole === USER_ROLES.TEACHER && userId) {
+      setFilters((f) => ({ ...f, teacherId: userId }));
     }
-  }, [authSession?.user?.role, authSession?.user?.id]);
+  }, [userRole, userId]);
 
   /** Clears create/edit form identity when the dialog closes without using the success path. */
   const clearEditingAndPrefill = useCallback(() => {

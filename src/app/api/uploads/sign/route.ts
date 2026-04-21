@@ -35,6 +35,12 @@ function getTargetFolder(target: string) {
   return "manta/users/avatars";
 }
 
+function getUploadConstraint(target: string) {
+  if (target === CLOUDINARY_UPLOAD_TARGETS.BRAND_LOGO) return CLOUDINARY_UPLOAD_CONSTRAINTS.BRAND_LOGO;
+  if (target === CLOUDINARY_UPLOAD_TARGETS.PRODUCT_IMAGE) return CLOUDINARY_UPLOAD_CONSTRAINTS.PRODUCT_IMAGE;
+  return CLOUDINARY_UPLOAD_CONSTRAINTS.USER_AVATAR;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { error, user } = await requireAdmin();
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unsupported upload target" }, { status: 400 });
     }
 
-    const constraint = CLOUDINARY_UPLOAD_CONSTRAINTS[target];
+    const constraint = getUploadConstraint(target);
     if (!constraint.allowedMimeTypes.includes(contentType)) {
       return NextResponse.json({ error: "Unsupported file type for this upload target" }, { status: 400 });
     }
@@ -68,7 +74,8 @@ export async function POST(request: NextRequest) {
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = getTargetFolder(target);
     const safeBaseName = toSafeBaseName(fileName);
-    const publicId = `${folder}/${user?.role?.toLowerCase() ?? "user"}-${safeBaseName}-${randomUUID()}`;
+    const roleSlug = typeof user.role === "string" ? user.role.toLowerCase() : "user";
+    const publicId = `${folder}/${roleSlug}-${safeBaseName}-${randomUUID()}`;
     const { signature } = buildSignedUploadParams({
       timestamp,
       folder,

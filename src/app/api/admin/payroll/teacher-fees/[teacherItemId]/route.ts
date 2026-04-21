@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (nextModel === TeacherFeeModel.FLAT_PER_SESSION) {
       nextMin = null;
       nextMax = null;
-    } else if (nextModel === TeacherFeeModel.PER_PARTICIPANT) {
+    } else {
       const hasMin = nextMin != null;
       const hasMax = nextMax != null;
       if (hasMin !== hasMax) {

@@ -29,7 +29,6 @@ export interface PayrollSummaryRow {
 interface PayrollSummaryTableProps {
   rows: PayrollSummaryRow[];
   grandTotalFee: number;
-  period: { startDate: string; endDate: string };
   isLoading?: boolean;
   embedded?: boolean;
 }
@@ -45,7 +44,7 @@ function classPayrollLine(b: PayrollSummaryRow["byItem"][number]): string {
   return `${b.itemName}: ${b.sessionsCount} session${b.sessionsCount === 1 ? "" : "s"} @ ${formatPrice(b.feeAmount)} flat → ${formatPrice(b.totalFee)}`;
 }
 
-export function PayrollSummaryTable({ rows, grandTotalFee, period, isLoading, embedded }: PayrollSummaryTableProps) {
+export function PayrollSummaryTable({ rows, grandTotalFee, isLoading, embedded }: PayrollSummaryTableProps) {
   if (isLoading) {
     return <div className="text-muted-foreground flex items-center justify-center py-12">Loading summary…</div>;
   }

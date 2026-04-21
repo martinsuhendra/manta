@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
@@ -113,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateUserSchema.parse(body);
     const {
-      avatarAsset: _avatarAsset,
+      avatarAsset: avatarAssetRaw,
       birthday: birthdayRaw,
       emergencyContact: emergencyContactRaw,
       emergencyContactName: emergencyContactNameRaw,
@@ -132,15 +133,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const previousAsset = parseCloudinaryAsset(targetUser.avatarAsset);
-    const nextAsset =
-      validatedData.avatarAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.avatarAsset);
-    const nextAssetForDb =
-      validatedData.avatarAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const nextAsset = avatarAssetRaw === undefined ? previousAsset : parseCloudinaryAsset(avatarAssetRaw);
+    const nextAssetForDb = avatarAssetRaw === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
     const shouldDeletePrevious =
       !!previousAsset &&
       (!nextAsset ||
         previousAsset.publicId !== nextAsset.publicId ||
-        validatedData.avatarAsset === null ||
+        avatarAssetRaw === null ||
         validatedData.image === null);
 
     // Check if trying to update role and if user has permission
@@ -184,7 +183,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
-    if (shouldDeletePrevious && previousAsset) {
+    if (shouldDeletePrevious) {
       deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
         console.warn("Failed to delete previous Cloudinary user avatar:", error);
       });

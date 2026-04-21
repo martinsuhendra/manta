@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+/* eslint-disable max-lines, complexity */
 "use client";
 
 import { useMemo, useState } from "react";

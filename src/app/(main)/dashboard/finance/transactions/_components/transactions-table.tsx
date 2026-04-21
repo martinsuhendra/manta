@@ -126,8 +126,8 @@ export function TransactionsTable() {
     if (!transactionToEdit) return;
     const parsed = editTransactionSchema.safeParse(editForm);
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
-      toast.error(firstIssue ? firstIssue.message : "Invalid edit form");
+      const firstIssueMessage = parsed.error.issues[0]?.message ?? "Invalid edit form";
+      toast.error(firstIssueMessage);
       return;
     }
 
