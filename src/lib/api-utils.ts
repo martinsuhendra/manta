@@ -9,6 +9,20 @@ import { prisma } from "@/lib/generated/prisma";
 import { RBAC_ADMIN_ROLES, RBAC_SUPERADMIN_EDGE_ROLES } from "@/lib/rbac";
 import { USER_ROLES } from "@/lib/types";
 
+function normalizeRole(role: string | null | undefined) {
+  if (!role) return "";
+  return role
+    .trim()
+    .toUpperCase()
+    .replace(/[_\s-]/g, "");
+}
+
+function isRoleAllowed(role: string | null | undefined, allowedRoles: readonly string[]) {
+  const normalizedRole = normalizeRole(role);
+  if (!normalizedRole) return false;
+  return allowedRoles.some((allowedRole) => normalizeRole(allowedRole) === normalizedRole);
+}
+
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
 
@@ -23,12 +37,22 @@ export async function requireSuperAdmin() {
   const { error, session } = await requireAuth();
   if (error) return { error, user: null };
 
+  if (isRoleAllowed(session.user.role, RBAC_SUPERADMIN_EDGE_ROLES)) {
+    return {
+      error: null,
+      user: {
+        id: session.user.id,
+        role: session.user.role,
+      },
+    };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { id: true, role: true },
   });
 
-  if (!RBAC_SUPERADMIN_EDGE_ROLES.includes(user?.role ?? "")) {
+  if (!isRoleAllowed(user?.role, RBAC_SUPERADMIN_EDGE_ROLES)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
   }
 
@@ -39,12 +63,22 @@ export async function requireAdmin() {
   const { error, session } = await requireAuth();
   if (error) return { error, user: null };
 
+  if (isRoleAllowed(session.user.role, RBAC_ADMIN_ROLES)) {
+    return {
+      error: null,
+      user: {
+        id: session.user.id,
+        role: session.user.role,
+      },
+    };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { id: true, role: true },
   });
 
-  if (!user || !RBAC_ADMIN_ROLES.includes(user.role)) {
+  if (!user || !isRoleAllowed(user.role, RBAC_ADMIN_ROLES)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
   }
 
