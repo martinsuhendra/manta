@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/api-utils";
 import { buildSignedUploadParams } from "@/lib/cloudinary";
 import {
   CLOUDINARY_UPLOAD_CONSTRAINTS,
+  type CloudinaryUploadTarget,
   CLOUDINARY_UPLOAD_TARGETS,
   isCloudinaryUploadTarget,
 } from "@/lib/cloudinary-validation";
@@ -35,10 +36,12 @@ function getTargetFolder(target: string) {
   return "manta/users/avatars";
 }
 
-function getUploadConstraint(target: string) {
-  if (target === CLOUDINARY_UPLOAD_TARGETS.BRAND_LOGO) return CLOUDINARY_UPLOAD_CONSTRAINTS.BRAND_LOGO;
-  if (target === CLOUDINARY_UPLOAD_TARGETS.PRODUCT_IMAGE) return CLOUDINARY_UPLOAD_CONSTRAINTS.PRODUCT_IMAGE;
-  return CLOUDINARY_UPLOAD_CONSTRAINTS.USER_AVATAR;
+function getUploadConstraint(target: CloudinaryUploadTarget) {
+  if (target === CLOUDINARY_UPLOAD_TARGETS.BRAND_LOGO)
+    return CLOUDINARY_UPLOAD_CONSTRAINTS[CLOUDINARY_UPLOAD_TARGETS.BRAND_LOGO];
+  if (target === CLOUDINARY_UPLOAD_TARGETS.PRODUCT_IMAGE)
+    return CLOUDINARY_UPLOAD_CONSTRAINTS[CLOUDINARY_UPLOAD_TARGETS.PRODUCT_IMAGE];
+  return CLOUDINARY_UPLOAD_CONSTRAINTS[CLOUDINARY_UPLOAD_TARGETS.USER_AVATAR];
 }
 
 export async function POST(request: NextRequest) {
