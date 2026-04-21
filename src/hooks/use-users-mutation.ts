@@ -13,6 +13,7 @@ interface CreateUserData {
   role: string;
   phoneNo?: string;
   emergencyContact?: string | null;
+  emergencyContactName?: string | null;
   birthday?: string;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;
@@ -25,6 +26,7 @@ interface UpdateUserData {
   role?: string;
   phoneNo?: string;
   emergencyContact?: string | null;
+  emergencyContactName?: string | null;
   birthday?: string | null;
   image?: string | null;
   avatarAsset?: CloudinaryAssetPayload | null;

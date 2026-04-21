@@ -2,6 +2,12 @@ import { escapeHtml } from "../utils";
 
 import { EmailTemplate, baseStyles } from "./base";
 
+interface UserLinkTemplateParams {
+  linkType: "waiver" | "payment";
+  linkUrl: string;
+  recipientName?: string | null;
+}
+
 export function createContactFormTemplate(
   name: string,
   email: string,
@@ -94,6 +100,61 @@ export function createContactFormTemplate(
 
   return {
     subject: `📩 New Contact Message: ${escapedSubject} - from ${escapedName}`,
+    html,
+    text,
+  };
+}
+
+export function createUserLinkTemplate({ linkType, linkUrl, recipientName }: UserLinkTemplateParams): EmailTemplate {
+  const escapedLinkUrl = escapeHtml(linkUrl);
+  const safeName = escapeHtml(recipientName?.trim() || "there");
+  const isWaiver = linkType === "waiver";
+  const title = isWaiver ? "Waiver Link" : "Payment Link";
+  const description = isWaiver
+    ? "Please review and complete your waiver using the button below."
+    : "Please complete your payment using the button below.";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      ${baseStyles}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1 class="logo">Manta</h1>
+        </div>
+        <div class="content">
+          <h2>${title}</h2>
+          <p>Hi ${safeName},</p>
+          <p>${description}</p>
+          <a href="${escapedLinkUrl}" class="button">Open ${title}</a>
+          <p>If the button doesn&apos;t work, copy and paste this URL into your browser:</p>
+          <p><a href="${escapedLinkUrl}">${escapedLinkUrl}</a></p>
+        </div>
+        <div class="footer">
+          <p>&copy; 2026 Manta. All rights reserved.</p>
+          <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    ${title} - Manta
+
+    Hi ${safeName},
+
+    ${isWaiver ? "Please review and complete your waiver:" : "Please complete your payment:"}
+    ${escapedLinkUrl}
+
+    If you have any issue opening the link, please contact support.
+  `;
+
+  return {
+    subject: `${title} - Manta`,
     html,
     text,
   };

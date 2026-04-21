@@ -63,6 +63,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (classSession.visibility === "PRIVATE") {
       return NextResponse.json({ error: "Session is private and not publicly bookable" }, { status: 403 });
     }
+    if (!classSession.item.isPublic || !classSession.item.isActive) {
+      return NextResponse.json({ error: "Session is not publicly available" }, { status: 403 });
+    }
 
     const settings = await getBookingSettings(selectedBrandId);
     const sessionStartAt = getSessionStartAt({
@@ -135,7 +138,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
       _sum: { participantCount: true },
     });
-    const totalSlots = _sum?.participantCount ?? 0;
+    const totalSlots = _sum.participantCount ?? 0;
     const capacity = classSession.item.capacity;
     if (totalSlots + participantsPerPurchase > capacity) {
       const spotsLeft = Math.max(0, capacity - totalSlots);

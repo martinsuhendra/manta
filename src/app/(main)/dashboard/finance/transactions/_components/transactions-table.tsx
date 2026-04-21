@@ -1,3 +1,4 @@
+/* eslint-disable complexity, max-lines */
 "use client";
 
 import * as React from "react";
@@ -11,10 +12,23 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateAdminTransaction } from "@/hooks/use-admin-transactions-mutation";
+import {
+  useCreateAdminTransaction,
+  useDeleteAdminTransaction,
+  useUpdateAdminTransaction,
+} from "@/hooks/use-admin-transactions-mutation";
 import { AdminTransactionsFilters, useAdminTransactions } from "@/hooks/use-admin-transactions-query";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { TRANSACTION_STATUS } from "@/lib/midtrans/constants";
@@ -23,7 +37,12 @@ import { cn } from "@/lib/utils";
 import { createTransactionColumns } from "./columns";
 import { formatPaymentMethodLabel, formatStatusLabel } from "./format-labels";
 import { ManualTransactionDialog } from "./manual-transaction-dialog";
-import { ManualTransactionFormValues, TransactionListItem } from "./schema";
+import {
+  EditTransactionFormValues,
+  editTransactionSchema,
+  ManualTransactionFormValues,
+  TransactionListItem,
+} from "./schema";
 import { TransactionDetailDrawer } from "./transaction-detail-drawer";
 import { TransactionsTableSkeleton } from "./transactions-table-skeleton";
 
@@ -51,14 +70,47 @@ export function TransactionsTable() {
   const [selectedTransactionId, setSelectedTransactionId] = React.useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isManualDialogOpen, setIsManualDialogOpen] = React.useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [transactionToEdit, setTransactionToEdit] = React.useState<TransactionListItem | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = React.useState<TransactionListItem | null>(null);
+  const [editForm, setEditForm] = React.useState<EditTransactionFormValues>({
+    amount: 0,
+    status: TRANSACTION_STATUS.PENDING,
+    paymentMethod: "",
+    paymentProvider: "",
+    paidAt: "",
+    notes: "",
+  });
 
   const deferredFilters = React.useDeferredValue(filters);
   const { data = [], isLoading, isFetching } = useAdminTransactions({ filters: deferredFilters });
   const createMutation = useCreateAdminTransaction();
+  const updateMutation = useUpdateAdminTransaction();
+  const deleteMutation = useDeleteAdminTransaction();
   const startDate = filters.startDate ? new Date(filters.startDate + "T00:00:00") : undefined;
   const endDate = filters.endDate ? new Date(filters.endDate + "T00:00:00") : undefined;
 
-  const columns = React.useMemo(() => createTransactionColumns(), []);
+  const columns = React.useMemo(
+    () =>
+      createTransactionColumns({
+        onEdit: (transaction) => {
+          setTransactionToEdit(transaction);
+          setEditForm({
+            amount: transaction.amount,
+            status: transaction.status as EditTransactionFormValues["status"],
+            paymentMethod: transaction.paymentMethod ?? "",
+            paymentProvider: transaction.paymentProvider ?? "",
+            paidAt: transaction.paidAt ? transaction.paidAt.slice(0, 16) : "",
+            notes: "",
+          });
+          setIsEditDialogOpen(true);
+        },
+        onDelete: (transaction) => {
+          setTransactionToDelete(transaction);
+        },
+      }),
+    [],
+  );
   const table = useDataTableInstance({
     data,
     columns,
@@ -68,6 +120,42 @@ export function TransactionsTable() {
   async function handleCreateManualTransaction(values: ManualTransactionFormValues) {
     await createMutation.mutateAsync(values);
     toast.success("Transaction created successfully");
+  }
+
+  async function handleUpdateTransaction() {
+    if (!transactionToEdit) return;
+    const parsed = editTransactionSchema.safeParse(editForm);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      toast.error(firstIssue ? firstIssue.message : "Invalid edit form");
+      return;
+    }
+
+    await updateMutation.mutateAsync({
+      id: transactionToEdit.id,
+      data: {
+        amount: parsed.data.amount,
+        status: parsed.data.status,
+        paymentMethod: parsed.data.paymentMethod || null,
+        paymentProvider: parsed.data.paymentProvider || null,
+        paidAt: parsed.data.paidAt ? new Date(parsed.data.paidAt).toISOString() : null,
+        notes: parsed.data.notes || null,
+      },
+    });
+    toast.success("Transaction updated successfully");
+    setIsEditDialogOpen(false);
+    setTransactionToEdit(null);
+  }
+
+  async function handleDeleteTransaction() {
+    if (!transactionToDelete) return;
+    await deleteMutation.mutateAsync(transactionToDelete.id);
+    toast.success("Transaction deleted successfully");
+    setTransactionToDelete(null);
+    if (selectedTransactionId === transactionToDelete.id) {
+      setSelectedTransactionId(null);
+      setIsDrawerOpen(false);
+    }
   }
 
   function handleRowClick(transaction: TransactionListItem) {
@@ -214,6 +302,122 @@ export function TransactionsTable() {
         onSubmit={handleCreateManualTransaction}
         isSubmitting={createMutation.isPending}
       />
+
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setTransactionToEdit(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+            <DialogDescription>Update the selected transaction fields.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Amount</Label>
+              <Input
+                type="number"
+                min="1"
+                value={editForm.amount}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, amount: Number(event.target.value) }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select
+                value={editForm.status}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({ ...prev, status: value as EditTransactionFormValues["status"] }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusFilters
+                    .filter((status) => status !== "ALL")
+                    .map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {formatStatusLabel(status)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Payment Method</Label>
+              <Input
+                value={editForm.paymentMethod ?? ""}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}
+                placeholder="manual / qris / transfer"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Payment Provider</Label>
+              <Input
+                value={editForm.paymentProvider ?? ""}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, paymentProvider: event.target.value }))}
+                placeholder="manual / midtrans / other"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Paid At</Label>
+              <Input
+                type="datetime-local"
+                value={editForm.paidAt ?? ""}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, paidAt: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Notes</Label>
+              <Input
+                value={editForm.notes ?? ""}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, notes: event.target.value }))}
+                placeholder="Optional admin note"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={updateMutation.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateTransaction} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Transaction</DialogTitle>
+            <DialogDescription>
+              This will delete the transaction and its linked memberships without bookings. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm">
+            {transactionToDelete ? (
+              <p>
+                Delete transaction <span className="font-medium">{transactionToDelete.id}</span> for{" "}
+                <span className="font-medium">{transactionToDelete.userName}</span>?
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransactionToDelete(null)} disabled={deleteMutation.isPending}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteTransaction} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

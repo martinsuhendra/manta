@@ -9,6 +9,7 @@ export const memberSchema = z.object({
   role: z.enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER]),
   phoneNo: z.string().nullable(),
   emergencyContact: z.string().nullable().optional(),
+  emergencyContactName: z.string().nullable().optional(),
   waiverAcceptedAt: z.string().nullable().optional(),
   waiverAcceptedVersion: z.number().nullable().optional(),
   birthday: z.string().nullable().optional(),
@@ -49,6 +50,7 @@ export const memberDetailsSchema = z.object({
   role: z.enum([USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER, USER_ROLES.MEMBER, USER_ROLES.TEACHER]),
   phoneNo: z.string().nullable(),
   emergencyContact: z.string().nullable().optional(),
+  emergencyContactName: z.string().nullable().optional(),
   waiverAcceptedAt: z.string().nullable().optional(),
   waiverAcceptedVersion: z.number().nullable().optional(),
   birthday: z.string().nullable().optional(),
@@ -69,6 +71,7 @@ export const memberDetailsSchema = z.object({
         name: z.string(),
         price: z.number(),
         validDays: z.number(),
+        paymentUrl: z.string().nullable(),
       }),
       transaction: z
         .object({
@@ -96,6 +99,7 @@ export const memberDetailsSchema = z.object({
         id: z.string(),
         name: z.string(),
         price: z.number(),
+        paymentUrl: z.string().nullable(),
       }),
     }),
   ),

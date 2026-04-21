@@ -10,6 +10,7 @@ export async function GET() {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        isPublic: true,
         ...(activeBrandId ? { productBrands: { some: { brandId: activeBrandId } } } : {}),
       },
       orderBy: { position: "asc" },

@@ -70,6 +70,7 @@ export const itemSchema = z.object({
   duration: z.number(),
   capacity: z.number(),
   isActive: z.boolean(),
+  isPublic: z.boolean().default(true),
   image: z.string().nullable(),
   color: z.string().nullable(),
   createdAt: z.string(),
@@ -94,6 +95,7 @@ export const createItemSchema = z.object({
   duration: z.number().min(1, "Duration must be at least 1 minute"),
   capacity: z.number().min(1, "Capacity must be at least 1"),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(true),
   image: z.string().optional(),
   color: z.string().optional(),
   schedules: z
@@ -153,6 +155,7 @@ export const updateItemSchema = z.object({
   duration: z.number().min(1, "Duration must be at least 1 minute").optional(),
   capacity: z.number().min(1, "Capacity must be at least 1").optional(),
   isActive: z.boolean().optional(),
+  isPublic: z.boolean().optional(),
   image: z.string().optional(),
   color: z.string().optional(),
 });

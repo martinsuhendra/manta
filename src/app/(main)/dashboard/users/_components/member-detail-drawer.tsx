@@ -1,4 +1,4 @@
-/* eslint-disable complexity */
+/* eslint-disable complexity, max-lines */
 "use client";
 
 import * as React from "react";
@@ -46,6 +46,7 @@ interface UserEditRecord {
   role: Member["role"];
   phoneNo: string | null;
   emergencyContact: string | null;
+  emergencyContactName: string | null;
   birthday: string | Date | null;
   image?: string | null;
   avatarAsset?: unknown;
@@ -177,23 +178,21 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
     if (!userForEdit) return member;
 
     const birthdayFromApi = userForEdit.birthday;
-    const birthdayResolved =
-      birthdayFromApi === null || birthdayFromApi === undefined || birthdayFromApi === ""
-        ? null
-        : serializeBirthday(birthdayFromApi);
+    const birthdayResolved = birthdayFromApi == null ? null : serializeBirthday(birthdayFromApi);
 
     return {
       ...member,
       name: userForEdit.name ?? member.name,
       email: userForEdit.email ?? member.email,
-      role: userForEdit.role ?? member.role,
+      role: userForEdit.role,
       phoneNo: userForEdit.phoneNo ?? member.phoneNo,
       emergencyContact: userForEdit.emergencyContact ?? member.emergencyContact,
+      emergencyContactName: userForEdit.emergencyContactName ?? member.emergencyContactName,
       birthday: birthdayResolved,
       image: userForEdit.image ?? member.image,
       avatarAsset: userForEdit.avatarAsset ?? member.avatarAsset,
       bio: userForEdit.bio ?? member.bio,
-      updatedAt: userForEdit.updatedAt ?? member.updatedAt,
+      updatedAt: userForEdit.updatedAt,
       _count: member._count,
     };
   }, [member, userForEdit]);

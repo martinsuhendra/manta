@@ -69,6 +69,7 @@ export const productSchema = z.object({
   price: z.number(),
   validDays: z.number(),
   isActive: z.boolean(),
+  isPublic: z.boolean().default(true),
   features: z.array(z.string()),
   image: z.string().nullable(),
   imageAsset: z.unknown().nullable().optional(),

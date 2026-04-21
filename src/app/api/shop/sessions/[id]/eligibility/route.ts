@@ -64,6 +64,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { status: 200 },
       );
     }
+    if (!classSession.item.isPublic || !classSession.item.isActive) {
+      return NextResponse.json({ canJoin: false, reason: "Session is not publicly available" }, { status: 200 });
+    }
 
     const existingBooking = await prisma.booking.findUnique({
       where: {
@@ -117,7 +120,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
       _sum: { participantCount: true },
     });
-    const totalSlots = _sum?.participantCount ?? 0;
+    const totalSlots = _sum.participantCount ?? 0;
     const spotsLeft = Math.max(0, classSession.item.capacity - totalSlots);
 
     const user = await prisma.user.findUnique({

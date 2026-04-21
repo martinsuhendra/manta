@@ -54,6 +54,7 @@ const formSchema = z
       .min(10, "Emergency contact must be at least 10 digits")
       .max(15, "Emergency contact must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    emergencyContactName: z.string().min(1, "Emergency contact name is required"),
     birthday: z.string().min(1, "Birthday is required"),
     image: z.string().nullable().optional(),
     avatarAsset: cloudinaryAssetSchema.nullable().optional(),
@@ -97,6 +98,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
       role: member?.role ?? DEFAULT_USER_ROLE,
       phoneNo: member?.phoneNo ?? "",
       emergencyContact: member?.emergencyContact ?? "",
+      emergencyContactName: member?.emergencyContactName ?? "",
       birthday: toDateInputValue(member?.birthday),
       image: memberWithExtras?.image ?? null,
       avatarAsset: (memberWithExtras as Member & { avatarAsset?: unknown })?.avatarAsset ?? null,
@@ -114,6 +116,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         role: member.role,
         phoneNo: member.phoneNo ?? "",
         emergencyContact: member.emergencyContact ?? "",
+        emergencyContactName: member.emergencyContactName ?? "",
         birthday: toDateInputValue(member.birthday),
         image: m.image ?? null,
         avatarAsset: m.avatarAsset ?? null,
@@ -126,6 +129,7 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
         role: DEFAULT_USER_ROLE,
         phoneNo: "",
         emergencyContact: "",
+        emergencyContactName: "",
         birthday: "",
         image: null,
         avatarAsset: null,
@@ -248,6 +252,20 @@ export function MemberForm({ mode, member, canEditRoles, canCreateSuperAdmin, on
               <FormLabel>Emergency Contact</FormLabel>
               <FormControl>
                 <Input placeholder="Enter emergency contact number" {...field} value={field.value || ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="emergencyContactName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Emergency Contact Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter emergency contact name" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>

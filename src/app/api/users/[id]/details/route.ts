@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         role: true,
         phoneNo: true,
         emergencyContact: true,
+        emergencyContactName: true,
         waiverAcceptedAt: true,
         waiverAcceptedVersion: true,
         birthday: true,
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 name: true,
                 price: true,
                 validDays: true,
+                paymentUrl: true,
               },
             },
             transaction: {
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 id: true,
                 name: true,
                 price: true,
+                paymentUrl: true,
               },
             },
           },

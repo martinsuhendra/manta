@@ -20,6 +20,7 @@ const createProductSchema = z.object({
   whatIsIncluded: z.string().optional(),
   participantsPerPurchase: z.number().int().min(1).max(10).optional().default(1),
   isActive: z.boolean().optional().default(true),
+  isPublic: z.boolean().optional().default(true),
 });
 
 export async function GET(request: NextRequest) {

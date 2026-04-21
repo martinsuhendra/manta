@@ -33,6 +33,7 @@ const updateUserSchema = z
       .min(10, "Emergency contact must be at least 10 digits")
       .max(15, "Emergency contact must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    emergencyContactName: z.string().min(1, "Emergency contact name is required"),
     image: z.string().nullable().optional(),
     avatarAsset: z.unknown().nullable().optional(),
     bio: z.string().max(2000).nullable().optional(),
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         role: true,
         phoneNo: true,
         emergencyContact: true,
+        emergencyContactName: true,
         birthday: true,
         image: true,
         avatarAsset: true,
@@ -114,6 +116,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       avatarAsset: _avatarAsset,
       birthday: birthdayRaw,
       emergencyContact: emergencyContactRaw,
+      emergencyContactName: emergencyContactNameRaw,
       ...updateData
     } = validatedData;
     const birthdayForDb = new Date(birthdayRaw);
@@ -165,6 +168,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: {
         ...updateData,
         emergencyContact: emergencyContactRaw,
+        emergencyContactName: emergencyContactNameRaw,
         birthday: birthdayForDb,
         ...(validatedData.avatarAsset !== undefined && {
           avatarAsset: nextAssetForDb,

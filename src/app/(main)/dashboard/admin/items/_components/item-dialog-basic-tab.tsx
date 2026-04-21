@@ -203,6 +203,21 @@ export function ItemDialogBasicTab({ form }: ItemDialogBasicTabProps) {
           </FormItem>
         )}
       />
+      <FormField
+        control={form.control}
+        name="isPublic"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">Visible in Customer Dashboard</FormLabel>
+              <div className="text-muted-foreground text-sm">Show or hide this class from customer-facing pages</div>
+            </div>
+            <FormControl>
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
+            </FormControl>
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

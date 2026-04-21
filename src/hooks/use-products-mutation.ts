@@ -19,6 +19,7 @@ interface CreateProductData {
   paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;
+  isPublic: boolean;
 }
 
 type UpdateProductData = Partial<CreateProductData>;

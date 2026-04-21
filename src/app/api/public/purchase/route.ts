@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    if (!product.isActive) {
+    if (!product.isActive || !product.isPublic) {
       return NextResponse.json({ error: "Product is not available" }, { status: 400 });
     }
     const productBrandIds = product.productBrands.map((pb) => pb.brandId);

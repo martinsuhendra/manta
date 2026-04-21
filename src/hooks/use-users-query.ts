@@ -10,6 +10,7 @@ export interface User {
   role: "ADMIN" | "SUPERADMIN" | "DEVELOPER" | "MEMBER" | "TEACHER";
   phoneNo: string | null;
   emergencyContact: string | null;
+  emergencyContactName?: string | null;
   waiverAcceptedAt?: string | null;
   waiverAcceptedVersion?: number | null;
   birthday?: string | null;
