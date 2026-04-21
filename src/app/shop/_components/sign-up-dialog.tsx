@@ -53,6 +53,7 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
       email: "",
       phoneNo: "",
       emergencyContact: "",
+      emergencyContactName: "",
       birthday: "",
       waiverVersion: 1,
       acceptWaiver: true,
@@ -101,6 +102,7 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
           email: data.email,
           phoneNo: data.phoneNo,
           emergencyContact: data.emergencyContact,
+          emergencyContactName: data.emergencyContactName,
           birthday: data.birthday,
           waiverVersion: data.waiverVersion,
           acceptWaiver: data.acceptWaiver,
@@ -257,6 +259,25 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       placeholder="Pick your birthday"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="emergencyContactName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Emergency Contact Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="emergencyContactName"
+                      type="text"
+                      placeholder="Jane Doe"
+                      autoComplete="name"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />

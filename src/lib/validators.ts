@@ -23,6 +23,7 @@ const signUpFieldsBaseSchema = z.object({
     .min(10, { message: "Emergency contact must be at least 10 digits" })
     .max(15, { message: "Emergency contact must be at most 15 digits" })
     .regex(/^[0-9+\-\s()]+$/, { message: "Invalid emergency contact format" }),
+  emergencyContactName: z.string().min(1, { message: "Emergency contact name is required" }),
   birthday: z
     .string({ required_error: "Birthday is required" })
     .min(1, { message: "Birthday is required" })
@@ -57,6 +58,7 @@ export const registerBodySchema = signUpFieldsBaseSchema.pick({
   name: true,
   phoneNo: true,
   emergencyContact: true,
+  emergencyContactName: true,
   birthday: true,
   waiverVersion: true,
   acceptWaiver: true,

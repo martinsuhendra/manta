@@ -3,17 +3,25 @@
 import * as React from "react";
 import { useState } from "react";
 
-import { addDays, format, subDays } from "date-fns";
+import { addDays, addWeeks, endOfWeek, format, startOfWeek, subDays, subWeeks } from "date-fns";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSessions } from "@/hooks/use-sessions-query";
 import { cn } from "@/lib/utils";
 
 import { Session, SessionFilter } from "./schema";
 import { SessionDayTimetable } from "./session-day-timetable";
+import { SessionWeekTimetable } from "./session-week-timetable";
+
+const WEEK_STARTS_ON = 1;
+
+interface CalendarViewConfig {
+  mode: "day" | "week";
+}
 
 export interface DateSelectMeta {
   /** When true, parent only syncs date (no create dialog). */
@@ -43,8 +51,14 @@ export function SessionCalendar({
 }: SessionCalendarProps) {
   void refreshTrigger;
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [viewConfig, setViewConfig] = useState<CalendarViewConfig>({ mode: "week" });
 
   const dayKey = format(selectedDate, "yyyy-MM-dd");
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: WEEK_STARTS_ON });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: WEEK_STARTS_ON });
+  const isWeekMode = viewConfig.mode === "week";
+  const startDateKey = format(isWeekMode ? weekStart : selectedDate, "yyyy-MM-dd");
+  const endDateKey = format(isWeekMode ? weekEnd : selectedDate, "yyyy-MM-dd");
 
   const calendarFilters = React.useMemo<SessionFilter>(() => {
     return {
@@ -52,10 +66,10 @@ export function SessionCalendar({
       ...(filters.itemId ? { itemId: filters.itemId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.visibility ? { visibility: filters.visibility } : {}),
-      startDate: dayKey,
-      endDate: dayKey,
+      startDate: startDateKey,
+      endDate: endDateKey,
     };
-  }, [dayKey, filters.teacherId, filters.itemId, filters.status, filters.visibility]);
+  }, [endDateKey, filters.itemId, filters.status, filters.teacherId, filters.visibility, startDateKey]);
 
   const { data: sessions = [], isLoading } = useSessions(calendarFilters);
 
@@ -73,10 +87,12 @@ export function SessionCalendar({
   }, []);
 
   const handlePrevDay = () => {
+    if (isWeekMode) return commitDateToParent(subWeeks(selectedDate, 1));
     commitDateToParent(subDays(selectedDate, 1));
   };
 
   const handleNextDay = () => {
+    if (isWeekMode) return commitDateToParent(addWeeks(selectedDate, 1));
     commitDateToParent(addDays(selectedDate, 1));
   };
 
@@ -93,6 +109,14 @@ export function SessionCalendar({
     onDateSelect(selectedDate, false, [], { defaultStartTime });
   };
 
+  const handleCreateForWeekDay = (date: Date, defaultStartTime?: string) => {
+    onDateSelect(date, false, [], { defaultStartTime });
+  };
+
+  const dateButtonLabel = isWeekMode
+    ? `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`
+    : format(selectedDate, "PPP");
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +127,7 @@ export function SessionCalendar({
           <PopoverTrigger asChild>
             <Button type="button" variant="outline" className={cn("min-w-[200px] justify-start text-left font-normal")}>
               <CalendarIcon className="text-muted-foreground mr-2 h-4 w-4" />
-              {format(selectedDate, "PPP")}
+              {dateButtonLabel}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -116,17 +140,44 @@ export function SessionCalendar({
         <Button type="button" variant="outline" size="sm" onClick={handleToday}>
           Today
         </Button>
+        <ToggleGroup
+          type="single"
+          value={viewConfig.mode}
+          onValueChange={(value) => {
+            if (value !== "day" && value !== "week") return;
+            setViewConfig({ mode: value });
+          }}
+          variant="outline"
+        >
+          <ToggleGroupItem value="week" aria-label="Week view">
+            Week
+          </ToggleGroupItem>
+          <ToggleGroupItem value="day" aria-label="Day view">
+            Day
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      <SessionDayTimetable
-        selectedDate={selectedDate}
-        sessions={sessions}
-        isLoading={isLoading}
-        onSessionSelect={onSessionSelect}
-        onEditSession={onEditSession}
-        onCreateForDay={handleCreateForDay}
-        readOnly={readOnly}
-      />
+      {isWeekMode ? (
+        <SessionWeekTimetable
+          selectedDate={selectedDate}
+          sessions={sessions}
+          isLoading={isLoading}
+          onSessionSelect={onSessionSelect}
+          onCreateForDay={handleCreateForWeekDay}
+          readOnly={readOnly}
+        />
+      ) : (
+        <SessionDayTimetable
+          selectedDate={selectedDate}
+          sessions={sessions}
+          isLoading={isLoading}
+          onSessionSelect={onSessionSelect}
+          onEditSession={onEditSession}
+          onCreateForDay={handleCreateForDay}
+          readOnly={readOnly}
+        />
+      )}
     </div>
   );
 }

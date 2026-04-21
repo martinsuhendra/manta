@@ -19,7 +19,17 @@ function getClientIp(request: Request): string | null {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phoneNo, birthday, waiverVersion, acceptWaiver } = registerBodySchema.parse(body);
+    const {
+      email,
+      password,
+      name,
+      phoneNo,
+      emergencyContact,
+      emergencyContactName,
+      birthday,
+      waiverVersion,
+      acceptWaiver,
+    } = registerBodySchema.parse(body);
     const waiver = await getWaiverSettings();
 
     if (waiver.isActive) {
@@ -49,7 +59,9 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         name,
-        phoneNo: phoneNo,
+        phoneNo,
+        emergencyContact,
+        emergencyContactName,
         birthday: new Date(birthday),
         role: DEFAULT_USER_ROLE,
         waiverAcceptedAt: waiver.isActive ? new Date() : null,
