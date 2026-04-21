@@ -10,7 +10,7 @@ import { SessionsView } from "./_components/sessions-view";
 
 export default function AdminSessionsPage() {
   const { data: session } = useSession();
-  const isTeacher = session?.user?.role === USER_ROLES.TEACHER;
+  const isTeacher = session?.user.role === USER_ROLES.TEACHER;
 
   return (
     <RoleGuard allowedRoles={[...RBAC_SESSIONS_MENU_ROLES]}>

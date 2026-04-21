@@ -49,7 +49,8 @@ function getTabErrors(errors: Record<string, unknown>): TabErrors {
     errors.capacity ||
     errors.color ||
     errors.image ||
-    errors.isActive
+    errors.isActive ||
+    errors.isPublic
   );
   const scheduleErrors = !!errors.schedules;
 
@@ -72,7 +73,7 @@ const EMPTY_ACCESSIBLE_BRANDS: BrandSummary[] = [];
 export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!item;
-  const scheduleSourceKey = isEditMode ? (item?.id ?? "") : "create";
+  const scheduleSourceKey = item ? item.id : "create";
   const [currentStep, setCurrentStep] = React.useState(1);
   const [createdItem, setCreatedItem] = React.useState<Item | null>(null);
   const { data: brandsQueryData } = useAccessibleBrands();
@@ -89,6 +90,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       color: "#3B82F6",
       image: "",
       isActive: true,
+      isPublic: true,
       schedules: [],
     },
   });
@@ -163,6 +165,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           color: item.color || "#3B82F6",
           image: item.image || "",
           isActive: item.isActive,
+          isPublic: item.isPublic,
           schedules: item.schedules || [],
         });
       } else {
@@ -176,6 +179,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
           color: "#3B82F6",
           image: "",
           isActive: true,
+          isPublic: true,
           schedules: [],
         });
       }
@@ -206,7 +210,17 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
 
   // Validation helpers
   const validateBasicStep = async () => {
-    const fields = ["brandIds", "name", "description", "duration", "capacity", "color", "image", "isActive"] as const;
+    const fields = [
+      "brandIds",
+      "name",
+      "description",
+      "duration",
+      "capacity",
+      "color",
+      "image",
+      "isActive",
+      "isPublic",
+    ] as const;
     const result = await form.trigger(fields);
     return result;
   };

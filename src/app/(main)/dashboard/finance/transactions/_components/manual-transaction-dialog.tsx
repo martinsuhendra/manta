@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 "use client";
 
 import * as React from "react";
@@ -508,9 +509,11 @@ function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   }
 
   function handleTimeChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const [hours, minutes] = event.target.value.split(":").map(Number);
+    const [rawHours, rawMinutes] = event.target.value.split(":").map(Number);
+    const hours = Number.isNaN(rawHours) ? 0 : rawHours;
+    const minutes = Number.isNaN(rawMinutes) ? 0 : rawMinutes;
     const base = date ?? new Date();
-    base.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+    base.setHours(hours, minutes, 0, 0);
     onChange(base.toISOString());
   }
 

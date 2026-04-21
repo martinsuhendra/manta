@@ -20,7 +20,12 @@ export async function generateMetadata({ params }: ClassDetailPageProps): Promis
   const { id } = await params;
   const activeBrandId = await resolveActiveBrandIdFromCookie();
   const item = await prisma.item.findFirst({
-    where: { id, isActive: true, ...(activeBrandId ? { itemBrands: { some: { brandId: activeBrandId } } } : {}) },
+    where: {
+      id,
+      isActive: true,
+      isPublic: true,
+      ...(activeBrandId ? { itemBrands: { some: { brandId: activeBrandId } } } : {}),
+    },
     select: { name: true, description: true },
   });
   if (!item) return { title: "Class Not Found" };
@@ -33,7 +38,7 @@ export async function generateMetadata({ params }: ClassDetailPageProps): Promis
 async function getClassById(id: string, brandId?: string) {
   try {
     const item = await prisma.item.findFirst({
-      where: { id, isActive: true, ...(brandId ? { itemBrands: { some: { brandId } } } : {}) },
+      where: { id, isActive: true, isPublic: true, ...(brandId ? { itemBrands: { some: { brandId } } } : {}) },
       select: {
         id: true,
         name: true,
@@ -62,6 +67,10 @@ async function getUpcomingSessionsForClass(itemId: string, brandId?: string) {
         ...(brandId ? { brandId } : {}),
         date: { gte: today, lte: nextMonth },
         status: "SCHEDULED",
+        item: {
+          isActive: true,
+          isPublic: true,
+        },
       },
       include: {
         item: {

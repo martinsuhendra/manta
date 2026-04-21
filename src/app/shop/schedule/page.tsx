@@ -22,6 +22,7 @@ async function getClasses(brandId?: string) {
     const items = await prisma.item.findMany({
       where: {
         isActive: true,
+        isPublic: true,
         ...(brandId ? { itemBrands: { some: { brandId } } } : {}),
       },
       select: { id: true, name: true },
@@ -47,6 +48,10 @@ async function getFullSchedule(start?: string, end?: string, itemId?: string, br
           lte: endDate,
         },
         status: "SCHEDULED",
+        item: {
+          isActive: true,
+          isPublic: true,
+        },
         ...(brandId ? { brandId } : {}),
         ...(itemId && itemId !== "all" ? { itemId } : {}),
       },

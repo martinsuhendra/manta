@@ -19,6 +19,7 @@ interface CreateProductData {
   paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;
+  isPublic: boolean;
 }
 
 type UpdateProductData = Partial<CreateProductData>;
@@ -32,7 +33,6 @@ export function useCreateProduct() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Product created successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: AxiosError<{ error: string }>) => {
@@ -50,7 +50,6 @@ export function useUpdateProduct() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Product updated successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: AxiosError<{ error: string }>) => {

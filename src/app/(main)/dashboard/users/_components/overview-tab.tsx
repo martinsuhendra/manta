@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Mail, Phone, Calendar, Shield, KeyRound, User, PhoneCall, FileSignature } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  Phone,
+  Calendar,
+  Shield,
+  KeyRound,
+  User,
+  PhoneCall,
+  FileSignature,
+  Copy,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useUpdateUserWaiverStatus } from "@/hooks/use-users-query";
@@ -30,12 +43,35 @@ interface OverviewTabProps {
   memberDetails?: MemberDetails | (MemberDetails & { classSessions?: unknown[] }) | null;
 }
 
-/* eslint-disable complexity */
+const WAIVER_LINK_TEMPLATE = process.env.NEXT_PUBLIC_WAIVER_LINK_TEMPLATE ?? "https://example.com/waiver/{userId}";
+
+function parseUrl(value?: string | null) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function buildWaiverLink({ userId }: { userId: string }) {
+  const linkWithUserId = WAIVER_LINK_TEMPLATE.replaceAll("{userId}", encodeURIComponent(userId));
+  return parseUrl(linkWithUserId);
+}
+
+/* eslint-disable complexity, max-lines */
 export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
-  const [isSending, setIsSending] = useState(false);
+  const [isSendingResetLink, setIsSendingResetLink] = useState(false);
+  const [isSetPasswordDialogOpen, setIsSetPasswordDialogOpen] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [sendingLinkType, setSendingLinkType] = useState<"waiver" | null>(null);
   const [isWaiverDialogOpen, setIsWaiverDialogOpen] = useState(false);
   const [isWaiverAgreed, setIsWaiverAgreed] = useState(false);
   const updateWaiverStatus = useUpdateUserWaiverStatus();
+  const waiverLink = useMemo(() => buildWaiverLink({ userId: member.id }), [member.id]);
 
   const { data: waiverData, isLoading: isWaiverLoading } = useQuery<{
     waiver: { contentHtml: string; version: number; isActive: boolean };
@@ -60,7 +96,7 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
       toast.error("User has no email address");
       return;
     }
-    setIsSending(true);
+    setIsSendingResetLink(true);
     try {
       const res = await fetch(`/api/admin/users/${member.id}/send-reset-password`, {
         method: "POST",
@@ -74,9 +110,100 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
     } catch {
       toast.error("Failed to send reset link");
     } finally {
-      setIsSending(false);
+      setIsSendingResetLink(false);
     }
   };
+
+  const resetPasswordDialogState = () => {
+    setNewPassword("");
+    setConfirmNewPassword("");
+  };
+
+  const handleSetNewPassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const response = await fetch(`/api/admin/users/${member.id}/set-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: newPassword,
+          confirmPassword: confirmNewPassword,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error ?? "Failed to update password");
+        return;
+      }
+
+      toast.success("Password updated successfully");
+      setIsSetPasswordDialogOpen(false);
+      resetPasswordDialogState();
+    } catch {
+      toast.error("Failed to update password");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleCopyLink = async ({ label, link }: { label: string; link: string | null }) => {
+    if (!link) {
+      toast.error(`${label} is not available`);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error(`Failed to copy ${label.toLowerCase()}`);
+    }
+  };
+
+  const handleSendLinkByEmail = async ({ type, link }: { type: "waiver"; link: string | null }) => {
+    if (!member.email) {
+      toast.error("User has no email address");
+      return;
+    }
+    if (!link) {
+      toast.error("Waiver link is not available");
+      return;
+    }
+
+    setSendingLinkType(type);
+    try {
+      const response = await fetch(`/api/admin/users/${member.id}/send-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type, link }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error ?? `Failed to send ${type} link`);
+        return;
+      }
+
+      toast.success(`Waiver link sent to ${member.email}`);
+    } catch {
+      toast.error(`Failed to send ${type} link`);
+    } finally {
+      setSendingLinkType(null);
+    }
+  };
+
   const isTeacher = member.role === USER_ROLES.TEACHER;
   const teacherDetails = isTeacher && memberDetails && "image" in memberDetails ? memberDetails : null;
   const image = teacherDetails?.image ?? (member as Member & { image?: string }).image;
@@ -162,7 +289,10 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
               <label className="text-muted-foreground text-sm font-medium">Emergency Contact</label>
               <div className="flex items-center gap-2">
                 <PhoneCall className="text-muted-foreground h-4 w-4" />
-                <p className="text-base">{member.emergencyContact}</p>
+                <p className="text-base">
+                  {member.emergencyContactName ? `${member.emergencyContactName} — ` : ""}
+                  {member.emergencyContact}
+                </p>
               </div>
             </div>
           )}
@@ -217,6 +347,29 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
                 {memberDetails?.waiverAcceptedAt && memberDetails.waiverAcceptedVersion ? `Accepted` : "Not accepted"}
               </Button>
             </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCopyLink({ label: "Waiver link", link: waiverLink })}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Waiver Link
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSendLinkByEmail({ type: "waiver", link: waiverLink })}
+                disabled={!member.email || !waiverLink || sendingLinkType === "waiver"}
+              >
+                {sendingLinkType === "waiver" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Send Waiver Link
+              </Button>
+            </div>
             {memberDetails?.waiverAcceptedAt ? (
               <p className="text-muted-foreground mt-1 text-sm">
                 Accepted on {format(new Date(memberDetails.waiverAcceptedAt), "MMMM dd, yyyy")}
@@ -230,17 +383,21 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
             <div>
               <label className="text-muted-foreground text-sm font-medium">Password</label>
               <div className="mt-2">
-                <Button variant="outline" size="sm" onClick={handleSendResetLink} disabled={isSending}>
-                  {isSending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={handleSendResetLink} disabled={isSendingResetLink}>
+                    {isSendingResetLink ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="mr-2 h-4 w-4" />
+                    )}
+                    Send Reset Password Link
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsSetPasswordDialogOpen(true)}>
                     <KeyRound className="mr-2 h-4 w-4" />
-                  )}
-                  Send Reset Password Link
-                </Button>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Sends an email with a link for the user to set a new password.
-                </p>
+                    Set New Password
+                  </Button>
+                </div>
+                <p className="text-muted-foreground mt-1 text-xs">Send reset email or set a new password directly.</p>
               </div>
             </div>
           )}
@@ -293,6 +450,53 @@ export function OverviewTab({ member, memberDetails }: OverviewTabProps) {
             </Button>
             <Button onClick={handleSaveWaiverStatus} disabled={isWaiverLoading || updateWaiverStatus.isPending}>
               {updateWaiverStatus.isPending ? "Saving..." : "Save waiver status"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isSetPasswordDialogOpen}
+        onOpenChange={(open) => {
+          setIsSetPasswordDialogOpen(open);
+          if (!open) resetPasswordDialogState();
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set new password</DialogTitle>
+            <DialogDescription>Set a new password directly for this user account.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">New password</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="Enter new password"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Confirm new password</label>
+              <Input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(event) => setConfirmNewPassword(event.target.value)}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSetPasswordDialogOpen(false)} disabled={isUpdatingPassword}>
+              Cancel
+            </Button>
+            <Button onClick={handleSetNewPassword} disabled={isUpdatingPassword}>
+              {isUpdatingPassword ? "Updating..." : "Update Password"}
             </Button>
           </DialogFooter>
         </DialogContent>

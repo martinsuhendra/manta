@@ -16,7 +16,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { shouldRedirectToDashboardAfterAuth } from "@/lib/rbac";
-import { USER_ROLES } from "@/lib/types";
 import { signUpFormSchema } from "@/lib/validators";
 
 interface PublicWaiverResponse {

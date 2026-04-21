@@ -83,6 +83,7 @@ model User {
   licenseKey    String?
   phoneNo       String?        @map("phone_no")
   emergencyContact String?     @map("emergency_contact")
+  emergencyContactName String? @map("emergency_contact_name")
   birthday      DateTime?      @db.Date
   waiverAcceptedAt DateTime?   @map("waiver_accepted_at") @db.Timestamp(6)
   waiverAcceptedVersion Int?   @map("waiver_accepted_version")
@@ -139,6 +140,7 @@ model Product {
   price          Decimal  @db.Decimal(10, 2)
   validDays      Int      @map("valid_days")
   isActive       Boolean  @default(true) @map("is_active")
+  isPublic       Boolean  @default(true) @map("is_public")
   features       String[] @default([])
   image          String?
   imageAsset     Json?
@@ -264,6 +266,7 @@ model Item {
   capacity      Int
   price         Decimal        @default(0) @db.Decimal(10, 2)
   isActive      Boolean        @default(true) @map("is_active")
+  isPublic      Boolean        @default(true) @map("is_public")
   image         String?
   color         String?
   createdAt     DateTime       @default(now()) @db.Timestamp(6)

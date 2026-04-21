@@ -31,6 +31,7 @@ const createUserSchema = z
       .min(10, "Emergency contact must be at least 10 digits")
       .max(15, "Emergency contact must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    emergencyContactName: z.string().min(1, "Emergency contact name is required"),
     image: z.string().nullable().optional(),
     avatarAsset: z.unknown().nullable().optional(),
     bio: z.string().max(2000).nullable().optional(),
@@ -49,6 +50,11 @@ const createUserSchema = z
     });
   });
 
+function isMissingEmergencyContactNameColumnError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("emergency_contact_name");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { error } = await requireAdmin();
@@ -64,32 +70,70 @@ export async function GET(request: NextRequest) {
       whereCondition.role = role;
     }
 
-    const users = await prisma.user.findMany({
-      where: whereCondition,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        phoneNo: true,
-        emergencyContact: true,
-        waiverAcceptedAt: true,
-        waiverAcceptedVersion: true,
-        birthday: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            memberships: true,
-            transactions: true,
-            bookings: true,
+    let users: unknown[] = [];
+    try {
+      users = await prisma.user.findMany({
+        where: whereCondition,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phoneNo: true,
+          emergencyContact: true,
+          emergencyContactName: true,
+          waiverAcceptedAt: true,
+          waiverAcceptedVersion: true,
+          birthday: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              memberships: true,
+              transactions: true,
+              bookings: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    } catch (error) {
+      if (!isMissingEmergencyContactNameColumnError(error)) throw error;
+
+      const legacyUsers = await prisma.user.findMany({
+        where: whereCondition,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phoneNo: true,
+          emergencyContact: true,
+          waiverAcceptedAt: true,
+          waiverAcceptedVersion: true,
+          birthday: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              memberships: true,
+              transactions: true,
+              bookings: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      users = legacyUsers.map((user) => ({
+        ...user,
+        emergencyContactName: null,
+      }));
+    }
 
     return NextResponse.json(users);
   } catch (error) {
@@ -142,6 +186,7 @@ export async function POST(request: NextRequest) {
         role: validatedData.role,
         phoneNo: validatedData.phoneNo,
         emergencyContact: validatedData.emergencyContact,
+        emergencyContactName: validatedData.emergencyContactName,
         birthday: birthdayDate,
         avatarAsset: avatarAsset ?? Prisma.JsonNull,
         image: resolveAssetUrl(avatarAsset, validatedData.image) ?? undefined,

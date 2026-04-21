@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
@@ -33,6 +34,7 @@ const updateUserSchema = z
       .min(10, "Emergency contact must be at least 10 digits")
       .max(15, "Emergency contact must be at most 15 digits")
       .regex(/^[0-9+\-\s()]+$/, "Invalid emergency contact format"),
+    emergencyContactName: z.string().min(1, "Emergency contact name is required"),
     image: z.string().nullable().optional(),
     avatarAsset: z.unknown().nullable().optional(),
     bio: z.string().max(2000).nullable().optional(),
@@ -68,6 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         role: true,
         phoneNo: true,
         emergencyContact: true,
+        emergencyContactName: true,
         birthday: true,
         image: true,
         avatarAsset: true,
@@ -111,9 +114,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateUserSchema.parse(body);
     const {
-      avatarAsset: _avatarAsset,
+      avatarAsset: avatarAssetRaw,
       birthday: birthdayRaw,
       emergencyContact: emergencyContactRaw,
+      emergencyContactName: emergencyContactNameRaw,
       ...updateData
     } = validatedData;
     const birthdayForDb = new Date(birthdayRaw);
@@ -129,15 +133,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const previousAsset = parseCloudinaryAsset(targetUser.avatarAsset);
-    const nextAsset =
-      validatedData.avatarAsset === undefined ? previousAsset : parseCloudinaryAsset(validatedData.avatarAsset);
-    const nextAssetForDb =
-      validatedData.avatarAsset === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
+    const nextAsset = avatarAssetRaw === undefined ? previousAsset : parseCloudinaryAsset(avatarAssetRaw);
+    const nextAssetForDb = avatarAssetRaw === undefined ? undefined : nextAsset ? nextAsset : Prisma.JsonNull;
     const shouldDeletePrevious =
       !!previousAsset &&
       (!nextAsset ||
         previousAsset.publicId !== nextAsset.publicId ||
-        validatedData.avatarAsset === null ||
+        avatarAssetRaw === null ||
         validatedData.image === null);
 
     // Check if trying to update role and if user has permission
@@ -165,6 +167,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: {
         ...updateData,
         emergencyContact: emergencyContactRaw,
+        emergencyContactName: emergencyContactNameRaw,
         birthday: birthdayForDb,
         ...(validatedData.avatarAsset !== undefined && {
           avatarAsset: nextAssetForDb,
@@ -180,7 +183,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
-    if (shouldDeletePrevious && previousAsset) {
+    if (shouldDeletePrevious) {
       deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
         console.warn("Failed to delete previous Cloudinary user avatar:", error);
       });

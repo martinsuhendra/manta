@@ -12,7 +12,7 @@ export {
 } from "./payment-templates";
 
 // General templates
-export { createContactFormTemplate } from "./general-templates";
+export { createContactFormTemplate, createUserLinkTemplate } from "./general-templates";
 
 // Session templates
 export {

@@ -9,6 +9,7 @@ export async function getClasses(brandId?: string) {
     const classes = await prisma.item.findMany({
       where: {
         isActive: true,
+        isPublic: true,
         ...(brandId ? { itemBrands: { some: { brandId } } } : {}),
       },
       select: {
@@ -33,6 +34,7 @@ export async function getActiveProducts(brandId?: string) {
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        isPublic: true,
         ...(brandId ? { productBrands: { some: { brandId } } } : {}),
       },
       orderBy: { position: "asc" },
@@ -78,6 +80,10 @@ export async function getUpcomingSessions(brandId?: string) {
           lte: nextWeek,
         },
         status: "SCHEDULED",
+        item: {
+          isActive: true,
+          isPublic: true,
+        },
         ...(brandId ? { brandId } : {}),
       },
       include: {

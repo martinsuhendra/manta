@@ -13,6 +13,7 @@ export const formSchema = z.object({
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(true),
 });
 
 export type FormData = z.infer<typeof formSchema>;
@@ -29,6 +30,7 @@ export const DEFAULT_FORM_VALUES: FormData = {
   paymentUrl: "",
   whatIsIncluded: "",
   isActive: true,
+  isPublic: true,
 };
 
 export function useFormValidation(form: UseFormReturn<FormData>) {

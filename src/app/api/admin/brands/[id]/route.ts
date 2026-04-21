@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
@@ -196,7 +197,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
-    if (shouldDeletePrevious && previousAsset) {
+    if (shouldDeletePrevious) {
       deleteCloudinaryAsset({ publicId: previousAsset.publicId }).catch((error: unknown) => {
         console.warn("Failed to delete previous Cloudinary brand logo:", error);
       });

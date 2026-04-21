@@ -63,6 +63,7 @@ export function useFormEffects({
           paymentUrl: product.paymentUrl || "",
           whatIsIncluded: product.whatIsIncluded || "",
           isActive: product.isActive,
+          isPublic: product.isPublic,
         });
       } else if (!isEdit) {
         form.reset(DEFAULT_FORM_VALUES);

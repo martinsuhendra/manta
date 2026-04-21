@@ -36,6 +36,7 @@ const formSchema = z.object({
   paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   whatIsIncluded: z.string().optional(),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(true),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,6 +54,7 @@ const DEFAULT_FORM_VALUES: FormData = {
   paymentUrl: "",
   whatIsIncluded: "",
   isActive: true,
+  isPublic: true,
 };
 
 interface ProductFormDialogProps {
@@ -153,6 +155,7 @@ export function ProductFormDialog({
         paymentUrl: product.paymentUrl || "",
         whatIsIncluded: product.whatIsIncluded || "",
         isActive: product.isActive,
+        isPublic: product.isPublic,
       });
     } else if (!isEdit) {
       form.reset(DEFAULT_FORM_VALUES);

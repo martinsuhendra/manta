@@ -44,6 +44,15 @@ export const manualTransactionSchema = z
     }
   });
 
+export const editTransactionSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be greater than zero"),
+  status: transactionStatusEnum,
+  paymentMethod: z.string().optional(),
+  paymentProvider: z.string().optional(),
+  paidAt: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export interface TransactionListItem extends Record<string, unknown> {
   id: string;
   name: string;
@@ -77,3 +86,4 @@ export interface TransactionDetail extends TransactionListItem {
 }
 
 export type ManualTransactionFormValues = z.infer<typeof manualTransactionSchema>;
+export type EditTransactionFormValues = z.infer<typeof editTransactionSchema>;

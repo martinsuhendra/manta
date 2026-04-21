@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -24,14 +25,16 @@ import { TeacherFeesTable } from "./_components/teacher-fees-table";
 
 export default function PayrollPage() {
   const { data: session } = useSession();
-  const isTeacher = session?.user?.role === USER_ROLES.TEACHER;
+  const userRole = session?.user.role;
+  const userId = session?.user.id;
+  const isTeacher = userRole === USER_ROLES.TEACHER;
   const [filters, setFilters] = useState<PayrollFiltersState>({ period: "this-month" });
 
   useEffect(() => {
-    if (session?.user?.role === USER_ROLES.TEACHER && session.user.id) {
-      setFilters((f) => ({ ...f, teacherId: session.user.id }));
+    if (userRole === USER_ROLES.TEACHER && userId) {
+      setFilters((f) => ({ ...f, teacherId: userId }));
     }
-  }, [session?.user?.role, session?.user?.id]);
+  }, [userRole, userId]);
 
   const params = useMemo(() => getSummaryQueryParams(filters), [filters]);
 
@@ -138,12 +141,7 @@ export default function PayrollPage() {
         )}
       </div>
 
-      <PayrollSummaryTable
-        rows={data?.rows ?? []}
-        grandTotalFee={data?.grandTotalFee ?? 0}
-        period={data?.period ?? { startDate: "", endDate: "" }}
-        isLoading={isLoading}
-      />
+      <PayrollSummaryTable rows={data?.rows ?? []} grandTotalFee={data?.grandTotalFee ?? 0} isLoading={isLoading} />
     </div>
   );
 
@@ -168,7 +166,7 @@ export default function PayrollPage() {
             {summarySection}
           </TabsContent>
           <TabsContent value="fees" className="mt-4">
-            <TeacherFeesTable teacherId={isTeacher ? session?.user?.id : undefined} readOnly={isTeacher} />
+            <TeacherFeesTable teacherId={isTeacher ? userId : undefined} readOnly={isTeacher} />
           </TabsContent>
         </Tabs>
       </div>

@@ -54,7 +54,8 @@ export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const router = useRouter();
   const { data: session } = useSession();
-  const searchItems = React.useMemo(() => getSearchItems(session?.user?.role), [session?.user?.role]);
+  const userRole = session?.user.role;
+  const searchItems = React.useMemo(() => getSearchItems(userRole), [userRole]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

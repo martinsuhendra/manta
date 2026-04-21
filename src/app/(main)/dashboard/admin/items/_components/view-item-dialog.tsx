@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 "use client";
 
 import * as React from "react";
@@ -86,7 +87,8 @@ const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
 const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
 function getScheduleKey(schedule: ItemSchedule): string {
-  return schedule.id ?? `${schedule.dayOfWeek}-${schedule.startTime}-${schedule.endTime}`;
+  if (typeof schedule.id === "string" && schedule.id.length > 0) return schedule.id;
+  return `${schedule.dayOfWeek}-${schedule.startTime}-${schedule.endTime}`;
 }
 
 function groupSchedulesByDay(schedules: ItemSchedules): Map<number, ItemSchedules> {

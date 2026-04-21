@@ -86,6 +86,8 @@ export function MembershipDetailDrawer({
   function invalidateMembershipAndUserQueries() {
     queryClient.invalidateQueries({ queryKey: ["admin-memberships"] });
     queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryClient.invalidateQueries({ queryKey: ["member-details"] });
+    queryClient.invalidateQueries({ queryKey: ["user-edit"] });
   }
 
   const form = useForm<CreateMembershipForm | UpdateMembershipForm>({
@@ -550,7 +552,7 @@ export function MembershipDetailDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
                             <SelectTrigger className="h-12">
                               <SelectValue />

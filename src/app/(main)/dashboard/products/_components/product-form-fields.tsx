@@ -30,6 +30,7 @@ interface FormData {
   paymentUrl?: string;
   whatIsIncluded?: string;
   isActive: boolean;
+  isPublic: boolean;
 }
 
 interface ProductFormFieldsProps {
@@ -233,6 +234,23 @@ export function ProductFormFields({
               <div className="space-y-1 leading-none">
                 <FormLabel>Active Product</FormLabel>
                 <p className="text-muted-foreground text-sm">Active products are available for purchase by users</p>
+              </div>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="isPublic"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-y-0 space-x-3">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Visible in Customer Dashboard</FormLabel>
+                <p className="text-muted-foreground text-sm">
+                  Hide this product from shop/customer pages while keeping it available in admin dashboard.
+                </p>
               </div>
             </FormItem>
           )}

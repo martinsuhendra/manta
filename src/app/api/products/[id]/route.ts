@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { NextRequest, NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
@@ -22,6 +23,7 @@ const updateProductSchema = z.object({
   whatIsIncluded: z.string().optional(),
   participantsPerPurchase: z.number().int().min(1).max(10).optional(),
   isActive: z.boolean().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

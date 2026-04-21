@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 "use client";
 
 import * as React from "react";
@@ -39,6 +40,7 @@ interface Transaction {
     id: string;
     name: string;
     price: number;
+    paymentUrl: string | null;
   };
 }
 
@@ -80,11 +82,20 @@ function TransactionCard({ transaction, memberId }: { transaction: Transaction; 
   const queryClient = useQueryClient();
   const { isLoaded: isSnapLoaded, openSnap } = useMidtransSnap();
   const [isLoadingPayment, setIsLoadingPayment] = React.useState(false);
+  const [isSendingPaymentLink, setIsSendingPaymentLink] = React.useState(false);
   const [isSettling, setIsSettling] = React.useState(false);
   const [settleDialogOpen, setSettleDialogOpen] = React.useState(false);
   const isCompleted = transaction.status === "COMPLETED";
   const isPending = transaction.status === "PENDING";
   const isMidtrans = transaction.paymentProvider === "midtrans";
+  const paymentLink = React.useMemo(() => {
+    if (!transaction.product.paymentUrl) return null;
+    try {
+      return new URL(transaction.product.paymentUrl).toString();
+    } catch {
+      return null;
+    }
+  }, [transaction.product.paymentUrl]);
 
   const handlePayNow = async () => {
     if (!isSnapLoaded) {
@@ -212,6 +223,52 @@ function TransactionCard({ transaction, memberId }: { transaction: Transaction; 
     }
   };
 
+  const handleCopyPaymentLink = async () => {
+    if (!paymentLink) {
+      toast.error("Payment link is not available for this transaction.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(paymentLink);
+      toast.success("Payment link copied");
+    } catch {
+      toast.error("Failed to copy payment link");
+    }
+  };
+
+  const handleSendPaymentLink = async () => {
+    if (!paymentLink) {
+      toast.error("Payment link is not available for this transaction.");
+      return;
+    }
+
+    setIsSendingPaymentLink(true);
+    try {
+      const response = await fetch(`/api/admin/users/${memberId}/send-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "payment",
+          link: paymentLink,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error ?? "Failed to send payment link");
+        return;
+      }
+
+      toast.success("Payment link sent to user's email");
+    } catch {
+      toast.error("Failed to send payment link");
+    } finally {
+      setIsSendingPaymentLink(false);
+    }
+  };
+
   return (
     <div
       className={`rounded-lg border p-4 transition-colors ${
@@ -265,6 +322,26 @@ function TransactionCard({ transaction, memberId }: { transaction: Transaction; 
 
           {isPending && (
             <div className="space-y-2 border-t pt-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button variant="outline" size="sm" onClick={handleCopyPaymentLink} disabled={!paymentLink}>
+                  Copy Payment Link
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendPaymentLink}
+                  disabled={!paymentLink || isSendingPaymentLink}
+                >
+                  {isSendingPaymentLink ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Payment Link"
+                  )}
+                </Button>
+              </div>
               {isMidtrans && (
                 <Button
                   onClick={handlePayNow}
