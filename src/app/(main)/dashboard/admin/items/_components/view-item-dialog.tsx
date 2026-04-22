@@ -31,6 +31,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUsers } from "@/hooks/use-users-query";
+import { USER_ROLES } from "@/lib/types";
 
 import { DAY_OF_WEEK_LABELS, Item } from "./schema";
 
@@ -85,6 +87,7 @@ interface ChangeScheduleTeacherPayload {
 
 const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
 const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+const ASSIGNABLE_ROLES = new Set([USER_ROLES.TEACHER, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]);
 
 function getScheduleKey(schedule: ItemSchedule): string {
   if (typeof schedule.id === "string" && schedule.id.length > 0) return schedule.id;
@@ -395,21 +398,38 @@ function ItemTimestamps({ item }: { item: Item }) {
 export function ViewItemDialog({ item, open, onOpenChange }: ViewItemDialogProps) {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  const { data: users = [] } = useUsers();
+  const assignableUsers = React.useMemo(() => users.filter((user) => ASSIGNABLE_ROLES.has(user.role)), [users]);
   const extendedItem = item as ExtendedItem | null;
   const [isAssignTeacherDialogOpen, setIsAssignTeacherDialogOpen] = React.useState(false);
   const [schedules, setSchedules] = React.useState<ItemSchedules>(extendedItem?.schedules ?? []);
-  const teacherById = React.useMemo(
-    () =>
-      new Map((extendedItem?.teacherItems ?? []).map((teacherItem) => [teacherItem.teacher.id, teacherItem.teacher])),
-    [extendedItem?.teacherItems],
-  );
+  const teacherById = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string | null; email: string | null }>();
+    assignableUsers.forEach((user) => {
+      map.set(user.id, {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      });
+    });
+    (extendedItem?.teacherItems ?? []).forEach((teacherItem) => {
+      map.set(teacherItem.teacher.id, teacherItem.teacher);
+    });
+    (extendedItem?.schedules ?? []).forEach((schedule) => {
+      if (!schedule.teacher) return;
+      map.set(schedule.teacher.id, schedule.teacher);
+    });
+    return map;
+  }, [assignableUsers, extendedItem?.teacherItems, extendedItem?.schedules]);
   const teacherOptions = React.useMemo(
     () =>
-      extendedItem?.teacherItems?.map((teacherItem) => ({
-        id: teacherItem.teacher.id,
-        label: teacherItem.teacher.name || teacherItem.teacher.email || "Unnamed teacher",
-      })) ?? [],
-    [extendedItem?.teacherItems],
+      Array.from(teacherById.values())
+        .map((teacher) => ({
+          id: teacher.id,
+          label: teacher.name || teacher.email || "Unnamed teacher",
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [teacherById],
   );
 
   React.useEffect(() => {

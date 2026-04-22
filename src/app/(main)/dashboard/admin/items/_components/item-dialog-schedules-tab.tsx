@@ -7,7 +7,8 @@ import { UseFormReturn, useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTeachers } from "@/hooks/use-users-query";
+import { useUsers } from "@/hooks/use-users-query";
+import { USER_ROLES } from "@/lib/types";
 
 import { CreateItemForm, DAY_OF_WEEK_LABELS, TIME_SLOTS } from "./schema";
 
@@ -17,6 +18,7 @@ const DEFAULT_DURATION = 60;
 const MINUTES_PER_DAY = 24 * 60;
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 const NO_DEFAULT_TEACHER = "__NO_DEFAULT_TEACHER__";
+const ASSIGNABLE_ROLES = new Set([USER_ROLES.TEACHER, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.DEVELOPER]);
 
 // Types
 interface ItemDialogSchedulesTabProps {
@@ -364,18 +366,19 @@ TimeGroup.displayName = "TimeGroup";
 
 // Main component
 export function ItemDialogSchedulesTab({ form, dialogOpen, scheduleSourceKey }: ItemDialogSchedulesTabProps) {
-  const { data: teachers = [] } = useTeachers();
+  const { data: users = [] } = useUsers();
+  const assignableUsers = React.useMemo(() => users.filter((user) => ASSIGNABLE_ROLES.has(user.role)), [users]);
   const { replace } = useFieldArray({
     control: form.control,
     name: "schedules",
   });
   const teacherOptions = React.useMemo(
     () =>
-      teachers.map((teacher) => ({
-        id: teacher.id,
-        label: teacher.name || teacher.email || "Unnamed teacher",
+      assignableUsers.map((user) => ({
+        id: user.id,
+        label: user.name || user.email || "Unnamed teacher",
       })),
-    [teachers],
+    [assignableUsers],
   );
 
   const duration = form.watch("duration");
