@@ -61,7 +61,9 @@ export function DeleteConfirmationDialog({
             </div>
             <div className={`transition-all duration-300 ${isDeleting ? "opacity-50" : "opacity-100"}`}>
               <DialogTitle>Delete Session</DialogTitle>
-              <DialogDescription className="mt-1">Are you sure you want to delete this session?</DialogDescription>
+              <DialogDescription className="mt-1">
+                Are you sure you want to delete this session? Participant quota will be refunded automatically.
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -91,9 +93,10 @@ export function DeleteConfirmationDialog({
               <div className="flex gap-2">
                 <AlertTriangle className="text-destructive mt-0.5 h-4 w-4 flex-shrink-0" />
                 <div className="text-sm">
-                  <div className="text-destructive font-medium">Cannot delete session</div>
+                  <div className="text-destructive font-medium">Deleting this session will remove all bookings</div>
                   <div className="text-muted-foreground mt-1">
-                    This session has participants enrolled. Please cancel or move the participants before deleting.
+                    Quota will be restored for participants with quota-consuming bookings. Unlimited memberships are not
+                    affected.
                   </div>
                 </div>
               </div>
@@ -113,7 +116,7 @@ export function DeleteConfirmationDialog({
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={hasBookings || isDeleting}
+            disabled={isDeleting}
             className="bg-destructive hover:bg-destructive/90 focus:ring-destructive relative overflow-hidden text-white hover:text-white"
           >
             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

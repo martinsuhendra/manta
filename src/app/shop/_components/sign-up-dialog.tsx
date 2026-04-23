@@ -229,6 +229,25 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
             />
             <FormField
               control={form.control}
+              name="emergencyContactName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Emergency Contact Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="emergencyContactName"
+                      type="text"
+                      placeholder="Jane Doe"
+                      autoComplete="name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="emergencyContact"
               render={({ field }) => (
                 <FormItem>
@@ -265,25 +284,7 @@ export function SignUpDialog({ children }: SignUpDialogProps) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="emergencyContactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Emergency Contact Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      id="emergencyContactName"
-                      type="text"
-                      placeholder="Jane Doe"
-                      autoComplete="name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="password"

@@ -146,6 +146,7 @@ export function SessionWeekTimetable({
                 const hoverMinutes = hoverByDay[dayKey] ?? null;
                 const hoverTop = hoverMinutes === null ? null : minutesToPx(hoverMinutes, PX_PER_MINUTE);
                 const hoverLabel = hoverMinutes === null ? null : formatHoverTime(hoverMinutes);
+                const shouldShowHoverLane = daySessions.length === 0;
 
                 return (
                   <div
@@ -173,18 +174,16 @@ export function SessionWeekTimetable({
                           }
                     }
                     onMouseLeave={readOnly ? undefined : () => setHoverByDay((prev) => ({ ...prev, [dayKey]: null }))}
+                    onClick={
+                      readOnly
+                        ? undefined
+                        : (clickEvent) => {
+                            const target = clickEvent.target as HTMLElement | null;
+                            if (target?.closest("[data-session-card='true']")) return;
+                            onCreateForDay(day, hoverMinutes !== null ? minutesToTimeString(hoverMinutes) : undefined);
+                          }
+                    }
                   >
-                    {!readOnly && (
-                      <button
-                        type="button"
-                        className="absolute inset-0 z-0 cursor-crosshair bg-transparent"
-                        aria-label={`Create session on ${format(day, "EEEE")}`}
-                        onClick={() =>
-                          onCreateForDay(day, hoverMinutes !== null ? minutesToTimeString(hoverMinutes) : undefined)
-                        }
-                      />
-                    )}
-
                     {Array.from({ length: 24 }, (_, hour) => (
                       <div
                         key={hour}
@@ -193,7 +192,7 @@ export function SessionWeekTimetable({
                       />
                     ))}
 
-                    {!readOnly && hoverTop !== null && hoverLabel ? (
+                    {!readOnly && shouldShowHoverLane && hoverTop !== null && hoverLabel ? (
                       <>
                         <div
                           className="border-primary/70 pointer-events-none absolute right-0 left-0 z-[15] -translate-y-1/2 border-t-2 border-dashed"
@@ -227,6 +226,7 @@ export function SessionWeekTimetable({
                         >
                           <button
                             type="button"
+                            data-session-card="true"
                             className="group flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border p-2 text-left shadow-sm transition-all hover:shadow-md"
                             style={{
                               backgroundColor: `${eventLayout.color}15`,

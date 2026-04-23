@@ -27,7 +27,7 @@ interface SessionCardActionsProps {
 
 export function SessionCardActions({
   session,
-  hasParticipants,
+  hasParticipants: _hasParticipants,
   onEdit,
   onAddParticipant,
   onViewParticipants,
@@ -93,17 +93,14 @@ export function SessionCardActions({
 
           <DropdownMenuSeparator />
 
-          {/* Delete only for sessions without participants */}
-          {!hasParticipants && (
-            <DropdownMenuItem
-              variant="destructive"
-              className="cursor-pointer text-sm"
-              onClick={() => onDeleteClick(session)}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              Delete Session
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            variant="destructive"
+            className="cursor-pointer text-sm"
+            onClick={() => onDeleteClick(session)}
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
+            Delete Session
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
