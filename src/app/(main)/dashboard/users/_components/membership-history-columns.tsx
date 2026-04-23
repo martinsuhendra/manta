@@ -1,31 +1,23 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Calendar, Package, CreditCard } from "lucide-react";
+import { Calendar, Package, CreditCard, ListChecks } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
 import { MemberDetails } from "./schema";
+import { formatStatusLabel, getMembershipStatusVariant } from "./tabs/utils";
 
 type Membership = MemberDetails["memberships"][number];
+interface MembershipHistoryColumnActions {
+  onViewAttendances?: (membership: Membership) => void;
+}
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-  switch (status) {
-    case "ACTIVE":
-      return "default";
-    case "EXPIRED":
-      return "destructive";
-    case "SUSPENDED":
-      return "outline";
-    case "PENDING":
-      return "secondary";
-    default:
-      return "secondary";
-  }
-};
-
-export const createMembershipHistoryColumns = (): ColumnDef<Membership>[] => [
+export const createMembershipHistoryColumns = ({
+  onViewAttendances,
+}: MembershipHistoryColumnActions = {}): ColumnDef<Membership>[] => [
   {
     accessorKey: "product.name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Product" />,
@@ -42,7 +34,11 @@ export const createMembershipHistoryColumns = (): ColumnDef<Membership>[] => [
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
-      return <StatusBadge variant={getStatusVariant(row.original.status)}>{row.original.status}</StatusBadge>;
+      return (
+        <StatusBadge variant={getMembershipStatusVariant(row.original.status)}>
+          {formatStatusLabel(row.original.status)}
+        </StatusBadge>
+      );
     },
   },
   {
@@ -89,9 +85,33 @@ export const createMembershipHistoryColumns = (): ColumnDef<Membership>[] => [
         <div className="flex items-center gap-2">
           <CreditCard className="text-muted-foreground h-3.5 w-3.5" />
           <StatusBadge variant={transaction.status === "COMPLETED" ? "default" : "secondary"}>
-            {transaction.status}
+            {formatStatusLabel(transaction.status)}
           </StatusBadge>
         </div>
+      );
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    enableHiding: false,
+    cell: ({ row }) => {
+      if (!onViewAttendances) return null;
+
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewAttendances(row.original);
+          }}
+        >
+          <ListChecks className="mr-1.5 h-3.5 w-3.5" />
+          Attendances
+        </Button>
       );
     },
   },

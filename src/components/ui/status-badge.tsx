@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-type StatusVariant = "destructive" | "warning" | "success" | "default" | "secondary" | "outline";
+type StatusVariant = "destructive" | "warning" | "success" | "info" | "default" | "secondary" | "outline";
 
 interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: StatusVariant;
@@ -18,6 +18,7 @@ export function StatusBadge({ variant = "default", children, className, ...props
         variant === "destructive" && "bg-destructive/20 text-destructive",
         variant === "warning" && "bg-yellow-500/20 text-yellow-500",
         variant === "success" && "bg-green-500/20 text-green-500",
+        variant === "info" && "bg-blue-500/20 text-blue-500",
         variant === "default" && "border-transparent bg-primary text-primary-foreground",
         variant === "secondary" && "border-transparent bg-secondary text-secondary-foreground",
         variant === "outline" && "border border-input bg-background text-foreground",

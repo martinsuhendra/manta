@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 import { SESSION_STATUS_COLORS, SESSION_STATUS_LABELS, type Session } from "./schema";
 import { buildTimetableLayout, minutesToPx, minutesToTimeString } from "./session-timetable-utils";
+import { TimetableSessionEventMenu } from "./timetable-session-event-menu";
 
 const MINUTES_PER_DAY = 24 * 60;
 const PX_PER_HOUR = 104;
@@ -29,6 +30,7 @@ interface SessionWeekTimetableProps {
   sessions: Session[];
   isLoading: boolean;
   onSessionSelect: (session: Session) => void;
+  onEditSession?: (session: Session) => void;
   onCreateForDay: (date: Date, defaultStartTime?: string) => void;
   readOnly?: boolean;
 }
@@ -58,6 +60,7 @@ export function SessionWeekTimetable({
   sessions,
   isLoading,
   onSessionSelect,
+  onEditSession,
   onCreateForDay,
   readOnly = false,
 }: SessionWeekTimetableProps) {
@@ -224,10 +227,9 @@ export function SessionWeekTimetable({
                           className="absolute z-10 box-border px-0.5 transition-[z-index,box-shadow] hover:z-40"
                           style={{ top, height, left: `${leftPct}%`, width: `${widthPct}%` }}
                         >
-                          <button
-                            type="button"
+                          <div
                             data-session-card="true"
-                            className="group flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border p-2 text-left shadow-sm transition-all hover:shadow-md"
+                            className="group relative flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border p-2 text-left shadow-sm transition-all hover:shadow-md"
                             style={{
                               backgroundColor: `${eventLayout.color}15`,
                               borderColor: `${eventLayout.color}30`,
@@ -238,7 +240,29 @@ export function SessionWeekTimetable({
                               clickEvent.stopPropagation();
                               onSessionSelect(eventLayout.session);
                             }}
+                            onKeyDown={(keyboardEvent) => {
+                              if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+                                keyboardEvent.preventDefault();
+                                keyboardEvent.stopPropagation();
+                                onSessionSelect(eventLayout.session);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                           >
+                            <div
+                              data-timetable-session-menu
+                              className="absolute top-1 right-1 z-20"
+                              onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
+                              onClick={(clickEvent) => clickEvent.stopPropagation()}
+                            >
+                              <TimetableSessionEventMenu
+                                session={eventLayout.session}
+                                onEdit={onEditSession}
+                                triggerClassName="h-6 w-6 opacity-100"
+                                readOnly={readOnly}
+                              />
+                            </div>
                             <p className="text-foreground line-clamp-2 text-xs leading-snug font-semibold">
                               {eventLayout.session.item.name}
                             </p>
@@ -253,7 +277,15 @@ export function SessionWeekTimetable({
                               <span className="line-clamp-1">{eventLayout.session.teacher?.name || "Unassigned"}</span>
                             </div>
                             <div className="text-muted-foreground mt-auto flex items-center justify-between gap-1 pt-1 text-[10px]">
-                              <StatusBadge variant="secondary" className="px-1.5 py-0 text-[10px] leading-none">
+                              <StatusBadge
+                                variant="secondary"
+                                className="px-1.5 py-0 text-[10px] leading-none"
+                                style={{
+                                  backgroundColor: `${SESSION_STATUS_COLORS[eventLayout.session.status]}15`,
+                                  color: SESSION_STATUS_COLORS[eventLayout.session.status],
+                                  border: `1px solid ${SESSION_STATUS_COLORS[eventLayout.session.status]}30`,
+                                }}
+                              >
                                 {SESSION_STATUS_LABELS[eventLayout.session.status]}
                               </StatusBadge>
                               <span className="flex items-center gap-1">
@@ -261,7 +293,7 @@ export function SessionWeekTimetable({
                                 {participantCount}
                               </span>
                             </div>
-                          </button>
+                          </div>
                         </div>
                       );
                     })}

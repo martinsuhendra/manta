@@ -5,7 +5,7 @@ import * as React from "react";
 import { useState, useMemo } from "react";
 
 import { format, addDays, startOfDay, startOfMonth, subDays } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, Trash2, UserPlus } from "lucide-react";
+import { Calendar, CheckCheck, ChevronLeft, ChevronRight, Trash2, UserPlus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -17,6 +17,7 @@ import { useSessions } from "@/hooks/use-sessions-query";
 
 import { BulkAssignTeacherDialog } from "./bulk-assign-teacher-dialog";
 import { BulkDeleteSessionsDialog } from "./bulk-delete-sessions-dialog";
+import { BulkUpdateStatusDialog } from "./bulk-update-status-dialog";
 import { SessionFilter, Session } from "./schema";
 import { createSessionColumns } from "./session-columns";
 
@@ -31,6 +32,7 @@ const DATE_RANGE_DAYS = 30;
 export function SessionList({ filters, onEditSession, readOnly = false }: SessionListProps) {
   const [currentStartDate, setCurrentStartDate] = useState(() => startOfMonth(new Date()));
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Calculate date range for fetching (30 days from start date)
@@ -131,6 +133,10 @@ export function SessionList({ filters, onEditSession, readOnly = false }: Sessio
                 <UserPlus className="mr-2 h-4 w-4" />
                 Assign Teacher
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setBulkStatusOpen(true)}>
+                <CheckCheck className="mr-2 h-4 w-4" />
+                Update Status
+              </Button>
               <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} className="text-white">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Sessions
@@ -196,6 +202,15 @@ export function SessionList({ filters, onEditSession, readOnly = false }: Sessio
           <BulkDeleteSessionsDialog
             open={bulkDeleteOpen}
             onOpenChange={setBulkDeleteOpen}
+            sessionIds={selectedSessionIds}
+            onSuccess={() => {
+              refetch();
+              table.resetRowSelection();
+            }}
+          />
+          <BulkUpdateStatusDialog
+            open={bulkStatusOpen}
+            onOpenChange={setBulkStatusOpen}
             sessionIds={selectedSessionIds}
             onSuccess={() => {
               refetch();

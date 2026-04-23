@@ -229,7 +229,7 @@ export const bookingSchema = z.object({
   userId: z.string(),
   classSessionId: z.string(),
   membershipId: z.string(),
-  status: z.enum(["CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW"]),
+  status: z.enum(["CHECKED_IN", "CANCELLED", "COMPLETED", "NO_SHOW"]),
   notes: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

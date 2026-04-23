@@ -143,13 +143,10 @@ export const createMemberColumns = (actions: MemberActions): ColumnDef<Member>[]
       }
 
       return (
-        <div className="space-y-1">
-          <StatusBadge variant="success" className="gap-1">
-            <FileSignature className="h-3 w-3" />
-            Accepted
-          </StatusBadge>
-          <p className="text-muted-foreground text-xs">{format(new Date(acceptedAt), "MMM dd, yyyy")}</p>
-        </div>
+        <StatusBadge variant="success" className="gap-1">
+          <FileSignature className="h-3 w-3" />
+          Accepted
+        </StatusBadge>
       );
     },
   },

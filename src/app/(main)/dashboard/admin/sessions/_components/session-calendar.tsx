@@ -164,6 +164,7 @@ export function SessionCalendar({
           sessions={sessions}
           isLoading={isLoading}
           onSessionSelect={onSessionSelect}
+          onEditSession={onEditSession}
           onCreateForDay={handleCreateForWeekDay}
           readOnly={readOnly}
         />

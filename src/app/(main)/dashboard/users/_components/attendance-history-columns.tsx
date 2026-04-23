@@ -6,17 +6,17 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { MemberDetails } from "./schema";
-import { getSessionStatusVariant } from "./tabs/utils";
+import { formatStatusLabel, getSessionStatusVariant } from "./tabs/utils";
 
 type Booking = MemberDetails["bookings"][number];
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+const getStatusVariant = (status: string): "success" | "secondary" | "destructive" | "outline" => {
   switch (status) {
     case "RESERVED":
       return "outline";
-    case "CONFIRMED":
+    case "CHECKED_IN":
     case "COMPLETED":
-      return "default";
+      return "success";
     case "CANCELLED":
     case "NO_SHOW":
       return "destructive";
@@ -31,7 +31,7 @@ const getStatusIcon = (status: string) => {
   switch (status) {
     case "RESERVED":
       return <ClockIcon className="h-4 w-4" />;
-    case "CONFIRMED":
+    case "CHECKED_IN":
     case "COMPLETED":
       return <CheckCircle2 className="h-4 w-4" />;
     case "CANCELLED":
@@ -65,7 +65,7 @@ export const createAttendanceHistoryColumns = (): ColumnDef<Booking>[] => [
       return (
         <StatusBadge variant={getStatusVariant(row.original.status)}>
           {icon && <span className="mr-1">{icon}</span>}
-          {row.original.status}
+          {formatStatusLabel(row.original.status)}
         </StatusBadge>
       );
     },
@@ -100,7 +100,7 @@ export const createAttendanceHistoryColumns = (): ColumnDef<Booking>[] => [
     cell: ({ row }) => {
       return (
         <StatusBadge variant={getSessionStatusVariant(row.original.classSession.status)}>
-          {row.original.classSession.status}
+          {formatStatusLabel(row.original.classSession.status)}
         </StatusBadge>
       );
     },
