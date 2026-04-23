@@ -113,6 +113,18 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         return;
       }
 
+      // Close dialog and open Snap payment
+      setIsDialogOpen(false);
+      form.reset();
+
+      if (result.isFreePurchase) {
+        toast.success("Membership activated!", {
+          description: "Your free trial is active immediately.",
+        });
+        router.push("/shop/my-account");
+        return;
+      }
+
       // Check if Snap is loaded
       if (!isSnapLoaded) {
         toast.error("Payment gateway not ready", {
@@ -120,10 +132,6 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
         });
         return;
       }
-
-      // Close dialog and open Snap payment
-      setIsDialogOpen(false);
-      form.reset();
 
       // Open Snap payment popup
       if (result.snapToken) {
@@ -322,19 +330,21 @@ export function PublicProductCard({ product }: PublicProductCardProps) {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={isPurchasing || !isSnapLoaded}>
+                      <Button type="submit" disabled={isPurchasing || (product.price > 0 && !isSnapLoaded)}>
                         {isPurchasing ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Processing...
                           </>
-                        ) : !isSnapLoaded ? (
+                        ) : product.price > 0 && !isSnapLoaded ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Loading Payment...
                           </>
-                        ) : (
+                        ) : product.price > 0 ? (
                           "Continue to Payment"
+                        ) : (
+                          "Activate Free Trial"
                         )}
                       </Button>
                     </DialogFooter>

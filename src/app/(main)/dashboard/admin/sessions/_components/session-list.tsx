@@ -5,7 +5,7 @@ import * as React from "react";
 import { useState, useMemo } from "react";
 
 import { format, addDays, startOfDay, startOfMonth, subDays } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Trash2, UserPlus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -16,6 +16,7 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useSessions } from "@/hooks/use-sessions-query";
 
 import { BulkAssignTeacherDialog } from "./bulk-assign-teacher-dialog";
+import { BulkDeleteSessionsDialog } from "./bulk-delete-sessions-dialog";
 import { SessionFilter, Session } from "./schema";
 import { createSessionColumns } from "./session-columns";
 
@@ -30,6 +31,7 @@ const DATE_RANGE_DAYS = 30;
 export function SessionList({ filters, onEditSession, readOnly = false }: SessionListProps) {
   const [currentStartDate, setCurrentStartDate] = useState(() => startOfMonth(new Date()));
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Calculate date range for fetching (30 days from start date)
   const dateRange = useMemo(() => {
@@ -129,6 +131,10 @@ export function SessionList({ filters, onEditSession, readOnly = false }: Sessio
                 <UserPlus className="mr-2 h-4 w-4" />
                 Assign Teacher
               </Button>
+              <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} className="text-white">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Sessions
+              </Button>
             </div>
           )}
           <DataTable table={table} columns={columns} />
@@ -177,15 +183,26 @@ export function SessionList({ filters, onEditSession, readOnly = false }: Sessio
       </div>
 
       {!readOnly && (
-        <BulkAssignTeacherDialog
-          open={bulkAssignOpen}
-          onOpenChange={setBulkAssignOpen}
-          sessionIds={selectedSessionIds}
-          onSuccess={() => {
-            refetch();
-            table.resetRowSelection();
-          }}
-        />
+        <>
+          <BulkAssignTeacherDialog
+            open={bulkAssignOpen}
+            onOpenChange={setBulkAssignOpen}
+            sessionIds={selectedSessionIds}
+            onSuccess={() => {
+              refetch();
+              table.resetRowSelection();
+            }}
+          />
+          <BulkDeleteSessionsDialog
+            open={bulkDeleteOpen}
+            onOpenChange={setBulkDeleteOpen}
+            sessionIds={selectedSessionIds}
+            onSuccess={() => {
+              refetch();
+              table.resetRowSelection();
+            }}
+          />
+        </>
       )}
     </div>
   );

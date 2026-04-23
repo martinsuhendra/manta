@@ -24,6 +24,8 @@ interface FormData {
   price: number;
   validDays: number;
   participantsPerPurchase: number;
+  isPurchaseUnlimited: boolean;
+  purchaseLimitPerUser?: number | null;
   features: string[];
   image?: string;
   imageAsset?: CloudinaryAssetPayload | null;
@@ -53,6 +55,7 @@ export function ProductFormFields({
   const [isUploading, setIsUploading] = React.useState(false);
   const { data: brands = [] } = useBrandsAdmin();
   const activeBrands = React.useMemo(() => brands.filter((brand) => brand.isActive), [brands]);
+  const isPurchaseUnlimited = form.watch("isPurchaseUnlimited");
 
   return (
     <Form {...form}>
@@ -222,6 +225,58 @@ export function ProductFormFields({
               </FormItem>
             )}
           />
+        </div>
+        <div className="space-y-4 rounded-md border p-4">
+          <FormField
+            control={form.control}
+            name="isPurchaseUnlimited"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-y-0 space-x-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    disabled={mutation.isPending}
+                    onCheckedChange={(checked) => {
+                      const isChecked = checked === true;
+                      field.onChange(isChecked);
+                      if (isChecked) form.setValue("purchaseLimitPerUser", null);
+                    }}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Unlimited purchases per user</FormLabel>
+                  <p className="text-muted-foreground text-sm">
+                    If disabled, each user can only buy this product up to the configured limit.
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
+          {!isPurchaseUnlimited && (
+            <FormField
+              control={form.control}
+              name="purchaseLimitPerUser"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purchase limit per user</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="e.g. 1"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        if (event.target.value === "") return field.onChange(null);
+                        const parsed = Number.parseInt(event.target.value, 10);
+                        field.onChange(Number.isNaN(parsed) ? null : parsed);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
         <FormField
           control={form.control}

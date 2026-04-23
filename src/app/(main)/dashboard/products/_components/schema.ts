@@ -68,6 +68,8 @@ export const productSchema = z.object({
   description: z.string().nullable(),
   price: z.number(),
   validDays: z.number(),
+  isPurchaseUnlimited: z.boolean().default(true),
+  purchaseLimitPerUser: z.number().int().nullable().optional(),
   isActive: z.boolean(),
   isPublic: z.boolean().default(true),
   features: z.array(z.string()),

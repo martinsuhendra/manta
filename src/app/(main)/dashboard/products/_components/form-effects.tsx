@@ -58,6 +58,8 @@ export function useFormEffects({
           validDays: product.validDays,
           participantsPerPurchase:
             typeof product.participantsPerPurchase === "number" ? product.participantsPerPurchase : 1,
+          isPurchaseUnlimited: product.isPurchaseUnlimited ?? true,
+          purchaseLimitPerUser: product.purchaseLimitPerUser ?? null,
           features: product.features,
           image: product.image || "",
           paymentUrl: product.paymentUrl || "",

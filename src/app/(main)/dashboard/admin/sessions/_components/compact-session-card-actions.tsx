@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Trash2, UserCircle2, UserPlus, Users as UsersIcon, MoreHorizontal, X } from "lucide-react";
+import { Edit2, Trash2, UserCircle2, UserPlus, Users as UsersIcon, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +30,12 @@ interface CompactSessionCardActionsProps {
 
 export function CompactSessionCardActions({
   session,
-  hasParticipants,
+  hasParticipants: _hasParticipants,
   onEdit,
   onAddParticipant,
   onViewParticipants,
   onStatusUpdate,
-  onCancelClick,
+  onCancelClick: _onCancelClick,
   onDeleteClick,
   onAssignTeacher,
   compact = false,
@@ -147,32 +147,17 @@ export function CompactSessionCardActions({
 
           <DropdownMenuSeparator />
 
-          {/* Cancel or Delete based on participants */}
-          {hasParticipants ? (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancelClick(session);
-              }}
-              className="cursor-pointer text-sm"
-              disabled={session.status === "CANCELLED"}
-            >
-              <X className="mr-2 h-3.5 w-3.5" />
-              Cancel Session
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              variant="destructive"
-              className="cursor-pointer text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteClick(session);
-              }}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              Delete Session
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            variant="destructive"
+            className="cursor-pointer text-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteClick(session);
+            }}
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
+            Delete Session
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

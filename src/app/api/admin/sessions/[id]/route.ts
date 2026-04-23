@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { handleApiError, requireAdmin, requireAuth } from "@/lib/api-utils";
+import { doesBookingStatusConsumeQuota } from "@/lib/booking-status";
 import { prisma } from "@/lib/generated/prisma";
+import { restoreQuota } from "@/lib/quota-utils";
 import { RBAC_ADMIN_ROLES } from "@/lib/rbac";
 import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
@@ -261,24 +263,74 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     const classSession = await prisma.classSession.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, itemId: true },
     });
 
     if (!classSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    const activeBookingsCount = await prisma.booking.count({
-      where: { classSessionId: id, status: { not: "CANCELLED" } },
+    const result = await prisma.$transaction(async (tx) => {
+      const bookings = await tx.booking.findMany({
+        where: { classSessionId: id },
+        include: {
+          membership: {
+            include: {
+              product: {
+                include: {
+                  // Include inactive items so historical bookings still map correctly for refund.
+                  productItems: {
+                    where: {
+                      itemId: classSession.itemId,
+                    },
+                    include: {
+                      quotaPool: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      let refundedBookings = 0;
+      let skippedRefunds = 0;
+
+      for (const booking of bookings) {
+        if (!doesBookingStatusConsumeQuota(booking.status)) continue;
+        const productItem = booking.membership.product.productItems[0];
+        if (!productItem) {
+          throw new Error(`Cannot refund quota: missing product item mapping for booking ${booking.id}`);
+        }
+        await restoreQuota({
+          tx,
+          membershipId: booking.membershipId,
+          productItem,
+        });
+        refundedBookings += 1;
+      }
+
+      await tx.booking.deleteMany({
+        where: {
+          classSessionId: id,
+        },
+      });
+
+      await tx.classSession.delete({ where: { id } });
+
+      skippedRefunds = bookings.filter((booking) => !doesBookingStatusConsumeQuota(booking.status)).length;
+      return {
+        deletedBookings: bookings.length,
+        refundedBookings,
+        skippedRefunds,
+      };
     });
 
-    if (activeBookingsCount > 0) {
-      return NextResponse.json({ error: "Cannot delete a session that has active bookings" }, { status: 400 });
-    }
-
-    await prisma.classSession.delete({ where: { id } });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...result,
+    });
   } catch (error) {
     return handleApiError(error, "Failed to delete session");
   }

@@ -70,9 +70,15 @@ export function useDeleteSession() {
       const response = await axios.delete(`/api/admin/sessions/${sessionId}`);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      toast.success("Session deleted successfully");
+      const deletedBookings = data?.deletedBookings ?? 0;
+      const refundedBookings = data?.refundedBookings ?? 0;
+      toast.success(
+        deletedBookings > 0
+          ? `Session deleted. Removed ${deletedBookings} booking(s), refunded ${refundedBookings} quota-consuming booking(s).`
+          : "Session deleted successfully",
+      );
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to delete session";
