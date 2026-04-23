@@ -25,7 +25,7 @@ import { MemberDetails } from "../schema";
 
 import { EmptyState } from "./empty-state";
 import { SeeHistoryButton } from "./see-history-button";
-import { getTransactionStatusIcon, getTransactionStatusVariant } from "./utils";
+import { formatStatusLabel, getTransactionStatusIcon, getTransactionStatusVariant } from "./utils";
 
 interface Transaction {
   id: string;
@@ -284,7 +284,7 @@ function TransactionCard({ transaction, memberId }: { transaction: Transaction; 
             </div>
             <StatusBadge variant={getTransactionStatusVariant(transaction.status)}>
               <span className="mr-1">{getTransactionStatusIcon(transaction.status)}</span>
-              {transaction.status}
+              {formatStatusLabel(transaction.status)}
             </StatusBadge>
           </div>
 

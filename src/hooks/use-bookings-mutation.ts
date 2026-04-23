@@ -168,20 +168,20 @@ export function useConfirmSessionParticipants() {
     mutationFn: async ({ sessionId, bookingIds }: ConfirmParticipantsData): Promise<ConfirmParticipantsResponse> => {
       const response = await axios.patch(`/api/admin/sessions/${sessionId}/bookings`, {
         bookingIds,
-        targetStatus: "CONFIRMED",
+        targetStatus: "CHECKED_IN",
       });
       return response.data;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       if (result.skippedCount > 0) {
-        toast.success(`Confirmed ${result.updatedCount} participant(s). Skipped ${result.skippedCount}.`);
+        toast.success(`Checked in ${result.updatedCount} participant(s). Skipped ${result.skippedCount}.`);
         return;
       }
-      toast.success(`Confirmed ${result.updatedCount} participant(s).`);
+      toast.success(`Checked in ${result.updatedCount} participant(s).`);
     },
     onError: (error) => {
-      toast.error(bookingMutationErrorMessage(error, "Failed to confirm participants"));
+      toast.error(bookingMutationErrorMessage(error, "Failed to check in participants"));
     },
   });
 }

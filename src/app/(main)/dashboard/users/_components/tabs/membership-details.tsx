@@ -3,6 +3,8 @@ import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
+import { formatStatusLabel } from "./utils";
+
 interface MembershipDetailsProps {
   membership: {
     product: {
@@ -42,7 +44,7 @@ export function MembershipDetails({ membership }: MembershipDetailsProps) {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Transaction Status</span>
             <StatusBadge variant={membership.transaction.status === "COMPLETED" ? "default" : "secondary"}>
-              {membership.transaction.status}
+              {formatStatusLabel(membership.transaction.status)}
             </StatusBadge>
           </div>
           {membership.transaction.paidAt && (

@@ -10,7 +10,7 @@ import { USER_ROLES } from "@/lib/types";
 const MAX_DAYS_RANGE = 365;
 
 /** Bookings that count toward per-participant payroll headcount */
-const PAYROLL_BILLABLE_BOOKING_STATUSES = ["CONFIRMED"] as const;
+const PAYROLL_BILLABLE_BOOKING_STATUSES = ["CHECKED_IN"] as const;
 
 interface TeacherFeeConfig {
   feeAmount: number;

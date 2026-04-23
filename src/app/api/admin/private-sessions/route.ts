@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
           membershipId: data.membershipId,
           brandId: selectedBrandId,
           participantCount: requiredSlots,
-          status: "CONFIRMED",
+          status: "CHECKED_IN",
         },
       });
 

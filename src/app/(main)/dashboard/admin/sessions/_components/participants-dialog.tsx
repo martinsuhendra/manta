@@ -59,14 +59,14 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
 
   const bookings = sessionDetail?.bookings ?? [];
   const reservedBookings = bookings.filter((b) => b.status === "RESERVED");
-  const confirmedBookings = bookings.filter((b) => b.status === "CONFIRMED");
+  const checkedInBookings = bookings.filter((b) => b.status === "CHECKED_IN");
   const waitlistedBookings = bookings.filter((b) => b.status === "WAITLISTED");
   const reservedBookingIds = useMemo(() => reservedBookings.map((booking) => booking.id), [reservedBookings]);
   const reservedBookingIdSet = useMemo(() => new Set(reservedBookingIds), [reservedBookingIds]);
   const selectedReservedSet = useMemo(() => new Set(selectedReservedBookingIds), [selectedReservedBookingIds]);
   const allReservedSelected =
     reservedBookings.length > 0 && selectedReservedBookingIds.length === reservedBookings.length;
-  const moveToConfirmedCount =
+  const moveToCheckedInCount =
     selectedReservedBookingIds.length > 0 ? selectedReservedBookingIds.length : reservedBookings.length;
   const totalSlots = sessionDetail ? (sessionDetail.totalParticipantSlots ?? 0) : 0;
 
@@ -177,9 +177,9 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
                   <div className="bg-primary/5 border-primary/20 space-y-3 rounded-lg border p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold">Move Reserved Participants to Confirmed</p>
+                        <p className="text-sm font-semibold">Move Reserved Participants to Checked in</p>
                         <p className="text-muted-foreground text-xs">
-                          Select specific participants, or confirm all reserved in one action.
+                          Select specific participants, or check in all reserved in one action.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -190,8 +190,8 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
                         />
                         <StatPill
                           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                          label="Confirmed"
-                          value={confirmedBookings.length}
+                          label="Checked in"
+                          value={checkedInBookings.length}
                         />
                       </div>
                     </div>
@@ -199,8 +199,8 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
                       <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                         <ArrowRight className="h-3.5 w-3.5" />
                         {selectedReservedBookingIds.length > 0
-                          ? `${selectedReservedBookingIds.length} selected will move to confirmed`
-                          : `No selection yet — action will confirm all ${reservedBookings.length} reserved participants`}
+                          ? `${selectedReservedBookingIds.length} selected will move to checked in`
+                          : `No selection yet - action will check in all ${reservedBookings.length} reserved participants`}
                       </div>
                       <Button
                         variant="ghost"
@@ -219,15 +219,15 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
                         disabled={selectedReservedBookingIds.length === 0 || isUpdatingStatuses}
                       >
                         {isUpdatingStatuses
-                          ? "Confirming..."
-                          : `Confirm Selected (${selectedReservedBookingIds.length})`}
+                          ? "Checking in..."
+                          : `Check In Selected (${selectedReservedBookingIds.length})`}
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => handleConfirmReservedBookings(reservedBookings.map((booking) => booking.id))}
                         disabled={reservedBookings.length === 0 || isUpdatingStatuses}
                       >
-                        {isUpdatingStatuses ? "Confirming..." : `Confirm All (${moveToConfirmedCount})`}
+                        {isUpdatingStatuses ? "Checking in..." : `Check In All (${moveToCheckedInCount})`}
                       </Button>
                     </div>
                   </div>
@@ -245,10 +245,10 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
                     readOnly={readOnly}
                   />
                 )}
-                {confirmedBookings.length > 0 && (
+                {checkedInBookings.length > 0 && (
                   <BookingSection
-                    title={`Confirmed Participants (${confirmedBookings.length})`}
-                    bookings={confirmedBookings}
+                    title={`Checked in Participants (${checkedInBookings.length})`}
+                    bookings={checkedInBookings}
                     variant="confirmed"
                     onRemove={setBookingToRemove}
                     isRemoving={isRemoving}
@@ -296,9 +296,9 @@ export function ParticipantsDialog({ open, onOpenChange, session, readOnly = fal
               Are you sure you want to remove{" "}
               <strong>{bookingToRemove ? bookingToRemove.user.name || bookingToRemove.user.email : ""}</strong> from
               this session?
-              {bookingToRemove?.status === "CONFIRMED" && " Their quota will be restored."}
+              {bookingToRemove?.status === "CHECKED_IN" && " Their quota will be restored."}
               {bookingToRemove?.status === "WAITLISTED" &&
-                " If there's space, the next waitlisted member will be automatically confirmed."}
+                " If there's space, the next waitlisted member will be automatically checked in."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

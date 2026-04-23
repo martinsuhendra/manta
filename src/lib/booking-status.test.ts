@@ -5,7 +5,7 @@ import { doesBookingStatusConsumeQuota, getCapacityBookingStatuses } from "./boo
 describe("doesBookingStatusConsumeQuota", () => {
   it("returns true for reserved and confirmed", () => {
     expect(doesBookingStatusConsumeQuota("RESERVED")).toBe(true);
-    expect(doesBookingStatusConsumeQuota("CONFIRMED")).toBe(true);
+    expect(doesBookingStatusConsumeQuota("CHECKED_IN")).toBe(true);
   });
 
   it("returns false for non quota-consuming statuses", () => {
@@ -17,6 +17,6 @@ describe("doesBookingStatusConsumeQuota", () => {
 
 describe("getCapacityBookingStatuses", () => {
   it("returns statuses that consume participant slots", () => {
-    expect(getCapacityBookingStatuses()).toEqual(["RESERVED", "CONFIRMED"]);
+    expect(getCapacityBookingStatuses()).toEqual(["RESERVED", "CHECKED_IN"]);
   });
 });

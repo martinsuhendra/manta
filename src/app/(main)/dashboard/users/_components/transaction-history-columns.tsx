@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPrice } from "@/lib/utils";
 
 import { MemberDetails } from "./schema";
+import { formatStatusLabel } from "./tabs/utils";
 
 type Transaction = MemberDetails["transactions"][number];
 
@@ -65,7 +66,7 @@ export const createTransactionHistoryColumns = (): ColumnDef<Transaction>[] => [
       return (
         <StatusBadge variant={getStatusVariant(row.original.status)}>
           <span className="mr-1">{getStatusIcon(row.original.status)}</span>
-          {row.original.status}
+          {formatStatusLabel(row.original.status)}
         </StatusBadge>
       );
     },

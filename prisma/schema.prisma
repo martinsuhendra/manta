@@ -471,7 +471,7 @@ enum SessionVisibility {
 
 enum BookingStatus {
   RESERVED
-  CONFIRMED
+  CHECKED_IN
   CANCELLED
   COMPLETED
   NO_SHOW

@@ -8,7 +8,7 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-import { Session, SESSION_STATUS_COLORS } from "./schema";
+import { Session, SESSION_STATUS_COLORS, SESSION_STATUS_LABELS } from "./schema";
 import { SessionTableRowActions } from "./session-table-row-actions";
 
 interface SessionActions {
@@ -118,7 +118,7 @@ export function createSessionColumns(actions: SessionActions): ColumnDef<Session
               border: `1px solid ${SESSION_STATUS_COLORS[session.status]}40`,
             }}
           >
-            {session.status}
+            {SESSION_STATUS_LABELS[session.status]}
           </StatusBadge>
         );
       },

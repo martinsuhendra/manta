@@ -20,7 +20,7 @@ const addParticipantSchema = z.object({
 
 const updateBookingStatusesSchema = z.object({
   bookingIds: z.array(z.string().uuid("Invalid booking ID")).min(1, "At least one booking ID is required"),
-  targetStatus: z.literal("CONFIRMED"),
+  targetStatus: z.literal("CHECKED_IN"),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const result = await prisma.$transaction(async (tx) => {
       // Determine booking status based on capacity
       const bookingStatus =
-        classSession.visibility === "PRIVATE" ? "CONFIRMED" : isAtCapacity ? "WAITLISTED" : "RESERVED";
+        classSession.visibility === "PRIVATE" ? "CHECKED_IN" : isAtCapacity ? "WAITLISTED" : "RESERVED";
 
       // Create booking
       const booking = await tx.booking.create({
@@ -349,7 +349,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         status: "RESERVED",
       },
       data: {
-        status: "CONFIRMED",
+        status: "CHECKED_IN",
       },
     });
 
@@ -360,7 +360,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       success: true,
       updatedCount,
       skippedCount,
-      message: `Updated ${updatedCount} booking(s) to CONFIRMED.`,
+      message: `Checked in ${updatedCount} booking(s).`,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

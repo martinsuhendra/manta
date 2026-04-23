@@ -1,6 +1,6 @@
 import type { BookingStatus } from "@prisma/client";
 
-const CAPACITY_BOOKING_STATUSES: BookingStatus[] = ["RESERVED", "CONFIRMED"];
+const CAPACITY_BOOKING_STATUSES: BookingStatus[] = ["RESERVED", "CHECKED_IN"];
 const BOOKING_STATUSES_THAT_CONSUME_QUOTA = new Set<string>(CAPACITY_BOOKING_STATUSES);
 
 export function doesBookingStatusConsumeQuota(status: string): boolean {

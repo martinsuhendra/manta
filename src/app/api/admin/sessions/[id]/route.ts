@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CONFIRMED");
+    const occupiedBookings = classSession.bookings.filter((b) => b.status === "RESERVED" || b.status === "CHECKED_IN");
     const { bookings, ...rest } = classSession;
     return NextResponse.json({ ...rest, bookings, totalParticipantSlots: sumParticipantSlots(occupiedBookings) });
   } catch (error) {

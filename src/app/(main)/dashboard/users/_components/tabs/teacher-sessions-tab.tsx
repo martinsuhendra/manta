@@ -3,9 +3,11 @@
 import { format } from "date-fns";
 import { Calendar, User } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
+
+import { formatStatusLabel, getSessionStatusVariant } from "./utils";
 
 interface TeacherSession {
   id: string;
@@ -58,7 +60,9 @@ export function TeacherSessionsTab({ sessions }: TeacherSessionsTabProps) {
                 />
                 <span className="font-medium">{session.item.name}</span>
               </div>
-              <Badge variant={session.status === "SCHEDULED" ? "default" : "secondary"}>{session.status}</Badge>
+              <StatusBadge variant={getSessionStatusVariant(session.status)}>
+                {formatStatusLabel(session.status)}
+              </StatusBadge>
             </CardHeader>
             <CardContent className="space-y-1 py-0 pb-3">
               <div className="text-muted-foreground flex items-center gap-2 text-sm">

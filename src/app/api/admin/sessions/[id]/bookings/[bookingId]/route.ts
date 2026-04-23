@@ -153,10 +153,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
         // Only confirm if quota is available and there is room (participant slots)
         if (hasQuota && hasRoom) {
-          // Update booking status to CONFIRMED
+          // Update booking status to CHECKED_IN
           await tx.booking.update({
             where: { id: firstWaitlisted.id },
-            data: { status: "CONFIRMED" },
+            data: { status: "CHECKED_IN" },
           });
 
           await deductQuota({ tx, membershipId: firstWaitlisted.membershipId, productItem: waitlistedProductItem });

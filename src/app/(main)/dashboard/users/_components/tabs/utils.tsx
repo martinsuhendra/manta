@@ -4,6 +4,16 @@ import * as React from "react";
 
 import { CheckCircle2, XCircle, Clock, AlertCircle, CreditCard, CalendarCheck, ClockIcon } from "lucide-react";
 
+export function formatStatusLabel(status: string) {
+  if (status === "CHECKED_IN") return "Checked in";
+  return status
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function getTransactionStatusVariant(
   status: string,
 ): "default" | "secondary" | "destructive" | "outline" | "warning" {
@@ -24,10 +34,10 @@ export function getTransactionStatusVariant(
   }
 }
 
-export function getMembershipStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+export function getMembershipStatusVariant(status: string): "success" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "ACTIVE":
-      return "default";
+      return "success";
     case "EXPIRED":
       return "destructive";
     case "SUSPENDED":
@@ -39,13 +49,13 @@ export function getMembershipStatusVariant(status: string): "default" | "seconda
   }
 }
 
-export function getBookingStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+export function getBookingStatusVariant(status: string): "success" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "RESERVED":
       return "outline";
-    case "CONFIRMED":
+    case "CHECKED_IN":
     case "COMPLETED":
-      return "default";
+      return "success";
     case "CANCELLED":
     case "NO_SHOW":
       return "destructive";
@@ -56,14 +66,14 @@ export function getBookingStatusVariant(status: string): "default" | "secondary"
   }
 }
 
-export function getSessionStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+export function getSessionStatusVariant(status: string): "default" | "info" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "COMPLETED":
       return "default";
     case "CANCELLED":
       return "destructive";
     case "SCHEDULED":
-      return "secondary";
+      return "info";
     default:
       return "secondary";
   }
@@ -90,7 +100,7 @@ export function getBookingStatusIcon(status: string) {
   switch (status) {
     case "RESERVED":
       return <ClockIcon className="h-4 w-4" />;
-    case "CONFIRMED":
+    case "CHECKED_IN":
     case "COMPLETED":
       return <CheckCircle2 className="h-4 w-4" />;
     case "CANCELLED":

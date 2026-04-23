@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 import { EmptyState } from "./empty-state";
 import { SeeHistoryButton } from "./see-history-button";
-import { getBookingStatusIcon, getBookingStatusVariant, getSessionStatusVariant } from "./utils";
+import { formatStatusLabel, getBookingStatusIcon, getBookingStatusVariant, getSessionStatusVariant } from "./utils";
 
 interface Booking {
   id: string;
@@ -74,7 +74,7 @@ export function AttendanceTab({ bookings, memberId }: AttendanceTabProps) {
 }
 
 function AttendanceCard({ booking }: { booking: Booking }) {
-  const isConfirmed = booking.status === "CONFIRMED" || booking.status === "COMPLETED";
+  const isConfirmed = booking.status === "CHECKED_IN" || booking.status === "COMPLETED";
 
   return (
     <div
@@ -91,7 +91,7 @@ function AttendanceCard({ booking }: { booking: Booking }) {
             </div>
             <StatusBadge variant={getBookingStatusVariant(booking.status)}>
               <span className="mr-1">{getBookingStatusIcon(booking.status)}</span>
-              {booking.status}
+              {formatStatusLabel(booking.status)}
             </StatusBadge>
           </div>
 
@@ -115,7 +115,7 @@ function AttendanceCard({ booking }: { booking: Booking }) {
             <div>
               <p className="text-muted-foreground text-xs">Session Status</p>
               <StatusBadge variant={getSessionStatusVariant(booking.classSession.status)}>
-                {booking.classSession.status}
+                {formatStatusLabel(booking.classSession.status)}
               </StatusBadge>
             </div>
             <div>
