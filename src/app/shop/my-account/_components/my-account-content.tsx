@@ -127,7 +127,10 @@ interface AccountData {
       id: string;
       name: string;
       price: number;
+      isPurchaseUnlimited: boolean;
+      purchaseLimitPerUser: number | null;
     };
+    timesBought: number | null;
   }>;
   upcomingBookings: Array<{
     id: string;
@@ -668,7 +671,17 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                       {currentPurchases.map((inv) => (
                         <div key={inv.id} className="border-border bg-background/50 rounded-xl border p-4">
                           <div className="mb-2 flex items-start justify-between">
-                            <p className="text-foreground font-bold">{inv.product.name}</p>
+                            <div>
+                              <p className="text-foreground font-bold">{inv.product.name}</p>
+                              {inv.timesBought !== null && (
+                                <p className="text-muted-foreground text-xs">
+                                  Bought {inv.timesBought}x
+                                  {typeof inv.product.purchaseLimitPerUser === "number"
+                                    ? ` / ${inv.product.purchaseLimitPerUser}x limit`
+                                    : ""}
+                                </p>
+                              )}
+                            </div>
                             <p className="text-primary font-black">{formatPrice(inv.amount)}</p>
                           </div>
                           <div className="text-muted-foreground flex items-center justify-between text-xs">
@@ -715,7 +728,19 @@ export function MyAccountContent({ accountData }: MyAccountContentProps) {
                             <tr key={inv.id} className="hover:bg-accent/30 cursor-pointer transition-colors">
                               <td className="text-foreground py-4 text-sm font-medium">{inv.id.slice(0, 12)}</td>
                               <td className="text-muted-foreground py-4 text-sm">{formatDateShort(inv.createdAt)}</td>
-                              <td className="text-foreground py-4 text-sm font-bold">{inv.product.name}</td>
+                              <td className="text-foreground py-4 text-sm font-bold">
+                                <div className="space-y-0.5">
+                                  <p>{inv.product.name}</p>
+                                  {inv.timesBought !== null && (
+                                    <p className="text-muted-foreground text-xs font-normal">
+                                      Bought {inv.timesBought}x
+                                      {typeof inv.product.purchaseLimitPerUser === "number"
+                                        ? ` / ${inv.product.purchaseLimitPerUser}x limit`
+                                        : ""}
+                                    </p>
+                                  )}
+                                </div>
+                              </td>
                               <td className="text-primary py-4 text-sm font-black">{formatPrice(inv.amount)}</td>
                               <td className="py-4 text-right">
                                 {inv.status === "PENDING" ? (

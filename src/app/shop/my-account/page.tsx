@@ -32,7 +32,7 @@ async function getAccountData() {
     }
 
     // Get user with memberships, transactions, and upcoming bookings
-    const user = await prisma.user.findUnique({
+    const user = (await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
         id: true,
@@ -88,7 +88,9 @@ async function getAccountData() {
                 id: true,
                 name: true,
                 price: true,
-              },
+                isPurchaseUnlimited: true,
+                purchaseLimitPerUser: true,
+              } as Record<string, boolean>,
             },
           },
           orderBy: {
@@ -134,7 +136,7 @@ async function getAccountData() {
           },
         },
       },
-    });
+    })) as any;
 
     if (!user) {
       redirect("/shop");
@@ -142,8 +144,12 @@ async function getAccountData() {
 
     // Format the response
     const now = new Date();
-    const activeMemberships = user.memberships.filter((m) => m.status === "ACTIVE" && new Date(m.expiredAt) > now);
-    const frozenMemberships = user.memberships.filter((m) => m.status === "FREEZED" && new Date(m.expiredAt) > now);
+    const activeMemberships = user.memberships.filter(
+      (m: MembershipWithQuota) => m.status === "ACTIVE" && new Date(m.expiredAt) > now,
+    );
+    const frozenMemberships = user.memberships.filter(
+      (m: MembershipWithQuota) => m.status === "FREEZED" && new Date(m.expiredAt) > now,
+    );
 
     const freezeRequests = await prisma.membershipFreezeRequest.findMany({
       where: { requestedById: user.id, membership: { membershipBrands: { some: { brandId: activeBrandId } } } },
@@ -159,7 +165,14 @@ async function getAccountData() {
       orderBy: { createdAt: "desc" },
     });
 
-    type MembershipWithQuota = NonNullable<typeof user>["memberships"][0];
+    type MembershipWithQuota = (typeof user)["memberships"][number];
+    const countableTransactionStatuses = new Set(["PENDING", "PROCESSING", "COMPLETED"]);
+    const purchaseCountByProductId = user.transactions.reduce((acc: Record<string, number>, transaction: any) => {
+      if (!countableTransactionStatuses.has(transaction.status)) return acc;
+      const next = acc[transaction.productId] ?? 0;
+      acc[transaction.productId] = next + 1;
+      return acc;
+    }, {});
 
     const formatMembership = (m: MembershipWithQuota) => ({
       id: m.id,
@@ -209,7 +222,7 @@ async function getAccountData() {
         createdAt: fr.createdAt.toISOString(),
         membership: fr.membership,
       })),
-      allMemberships: user.memberships.map((m) => ({
+      allMemberships: user.memberships.map((m: MembershipWithQuota) => ({
         id: m.id,
         status: m.status,
         joinDate: m.joinDate.toISOString(),
@@ -231,21 +244,34 @@ async function getAccountData() {
             }
           : null,
       })),
-      purchaseHistory: user.transactions.map((t) => ({
-        id: t.id,
-        status: t.status,
-        amount: Number(t.amount),
-        currency: t.currency,
-        paymentMethod: t.paymentMethod,
-        paymentProvider: t.paymentProvider,
-        paidAt: t.paidAt?.toISOString() || null,
-        createdAt: t.createdAt.toISOString(),
-        product: {
-          id: t.product.id,
-          name: t.product.name,
-          price: Number(t.product.price),
-        },
-      })),
+      purchaseHistory: user.transactions.map((t: any) => {
+        const productWithPurchaseLimit: {
+          id: string;
+          name: string;
+          price: number;
+          isPurchaseUnlimited?: boolean;
+          purchaseLimitPerUser?: number | null;
+        } = t.product;
+        const isPurchaseUnlimited = productWithPurchaseLimit.isPurchaseUnlimited ?? true;
+        return {
+          id: t.id,
+          status: t.status,
+          amount: Number(t.amount),
+          currency: t.currency,
+          paymentMethod: t.paymentMethod,
+          paymentProvider: t.paymentProvider,
+          paidAt: t.paidAt?.toISOString() || null,
+          createdAt: t.createdAt.toISOString(),
+          product: {
+            id: t.product.id,
+            name: t.product.name,
+            price: Number(t.product.price),
+            isPurchaseUnlimited,
+            purchaseLimitPerUser: productWithPurchaseLimit.purchaseLimitPerUser ?? null,
+          },
+          timesBought: isPurchaseUnlimited ? null : (purchaseCountByProductId[t.product.id] ?? 0),
+        };
+      }),
       upcomingBookings: await (async () => {
         const settings = await getBookingSettings(activeBrandId);
         return [...user.bookings]

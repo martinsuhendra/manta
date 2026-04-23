@@ -13,6 +13,8 @@ interface CreateProductData {
   price: number;
   validDays: number;
   participantsPerPurchase?: number;
+  isPurchaseUnlimited: boolean;
+  purchaseLimitPerUser?: number | null;
   features: string[];
   image?: string;
   imageAsset?: CloudinaryAssetPayload | null;

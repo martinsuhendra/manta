@@ -4,7 +4,13 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/api-utils";
 import { prisma } from "@/lib/generated/prisma";
-import { createSnapTransaction, MEMBERSHIP_STATUS, TRANSACTION_STATUS, type TransactionMetadata } from "@/lib/midtrans";
+import {
+  createSnapTransaction,
+  MEMBERSHIP_STATUS,
+  SUSPENDED_TRANSACTION_STATUSES,
+  TRANSACTION_STATUS,
+  type TransactionMetadata,
+} from "@/lib/midtrans";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
 
 const adminPurchaseSchema = z.object({
@@ -38,6 +44,10 @@ export async function POST(request: NextRequest) {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+    const productWithPurchaseLimit = product as typeof product & {
+      isPurchaseUnlimited?: boolean;
+      purchaseLimitPerUser?: number | null;
+    };
 
     if (!product.isActive) {
       return NextResponse.json({ error: "Product is not available" }, { status: 400 });
@@ -81,6 +91,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Either userId or customerEmail must be provided" }, { status: 400 });
     }
 
+    if (!productWithPurchaseLimit.isPurchaseUnlimited) {
+      const purchaseCount = await prisma.transaction.count({
+        where: {
+          userId: user.id,
+          productId: product.id,
+          status: {
+            notIn: SUSPENDED_TRANSACTION_STATUSES,
+          },
+        },
+      });
+      if (purchaseCount >= (productWithPurchaseLimit.purchaseLimitPerUser ?? 0)) {
+        return NextResponse.json({ error: "Purchase limit reached for this product" }, { status: 400 });
+      }
+    }
+
+    const isFreePurchase = Number(product.price) === 0;
+
     // Create transaction
     const transaction = await prisma.transaction.create({
       data: {
@@ -89,8 +116,10 @@ export async function POST(request: NextRequest) {
         brandId: primaryBrandId,
         amount: product.price,
         currency: "IDR", // Midtrans requires IDR
-        status: TRANSACTION_STATUS.PENDING,
-        paymentProvider: "midtrans",
+        status: isFreePurchase ? TRANSACTION_STATUS.COMPLETED : TRANSACTION_STATUS.PENDING,
+        paymentProvider: isFreePurchase ? "none" : "midtrans",
+        paymentMethod: isFreePurchase ? "FREE_TRIAL" : null,
+        paidAt: isFreePurchase ? new Date() : null,
         metadata: {
           customerEmail: user.email,
           customerName: user.name,
@@ -111,7 +140,7 @@ export async function POST(request: NextRequest) {
         productId: validatedData.productId,
         expiredAt,
         transactionId: transaction.id,
-        status: MEMBERSHIP_STATUS.PENDING,
+        status: isFreePurchase ? MEMBERSHIP_STATUS.ACTIVE : MEMBERSHIP_STATUS.PENDING,
         membershipBrands: {
           create: productBrandIds.map((brandId) => ({ brandId })),
         },
@@ -141,6 +170,32 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    if (isFreePurchase) {
+      return NextResponse.json(
+        {
+          success: true,
+          isFreePurchase: true,
+          snapToken: null,
+          transaction: {
+            id: transaction.id,
+            status: transaction.status,
+            amount: Number(transaction.amount),
+            currency: transaction.currency,
+          },
+          membership: {
+            id: membership.id,
+            status: membership.status,
+            expiredAt: membership.expiredAt,
+            product: membership.product,
+            user: membership.user,
+            brandIds: membership.membershipBrands.map((mb) => mb.brandId),
+            brands: membership.membershipBrands.map((mb) => mb.brand),
+          },
+        },
+        { status: 201 },
+      );
+    }
 
     // Create Midtrans Snap token (requires valid email)
     const customerEmail = user.email ?? validatedData.customerEmail;
@@ -194,6 +249,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        isFreePurchase: false,
         snapToken,
         transaction: {
           id: transaction.id,

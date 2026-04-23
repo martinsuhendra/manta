@@ -23,21 +23,33 @@ import { ProductPreview } from "./product-card";
 import { ProductFormFields } from "./product-form-fields";
 import { Product } from "./schema";
 
-const formSchema = z.object({
-  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  price: z.coerce.number().positive("Price must be positive"),
-  validDays: z.coerce.number().positive("Valid days must be positive"),
-  participantsPerPurchase: z.coerce.number().int().min(1).max(10),
-  features: z.array(z.string()).default([]),
-  image: z.string().optional(),
-  imageAsset: cloudinaryAssetSchema.nullable().optional(),
-  paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  whatIsIncluded: z.string().optional(),
-  isActive: z.boolean().default(true),
-  isPublic: z.boolean().default(true),
-});
+const formSchema = z
+  .object({
+    brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    price: z.coerce.number().min(0, "Price must be at least 0"),
+    validDays: z.coerce.number().positive("Valid days must be positive"),
+    participantsPerPurchase: z.coerce.number().int().min(1).max(10),
+    isPurchaseUnlimited: z.boolean().default(true),
+    purchaseLimitPerUser: z.coerce.number().int().min(1).nullable().optional(),
+    features: z.array(z.string()).default([]),
+    image: z.string().optional(),
+    imageAsset: cloudinaryAssetSchema.nullable().optional(),
+    paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+    whatIsIncluded: z.string().optional(),
+    isActive: z.boolean().default(true),
+    isPublic: z.boolean().default(true),
+  })
+  .superRefine((data, ctx) => {
+    if (data.isPurchaseUnlimited) return;
+    if (typeof data.purchaseLimitPerUser === "number" && data.purchaseLimitPerUser >= 1) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Purchase limit per user is required when unlimited is disabled",
+      path: ["purchaseLimitPerUser"],
+    });
+  });
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -48,6 +60,8 @@ const DEFAULT_FORM_VALUES: FormData = {
   price: 0,
   validDays: 30,
   participantsPerPurchase: 1,
+  isPurchaseUnlimited: true,
+  purchaseLimitPerUser: null,
   features: [],
   image: "",
   imageAsset: null,
@@ -149,6 +163,8 @@ export function ProductFormDialog({
         validDays: product.validDays,
         participantsPerPurchase:
           typeof product.participantsPerPurchase === "number" ? product.participantsPerPurchase : 1,
+        isPurchaseUnlimited: product.isPurchaseUnlimited ?? true,
+        purchaseLimitPerUser: product.purchaseLimitPerUser ?? null,
         features: product.features,
         image: product.image || "",
         imageAsset: (product as Product & { imageAsset?: unknown }).imageAsset ?? null,

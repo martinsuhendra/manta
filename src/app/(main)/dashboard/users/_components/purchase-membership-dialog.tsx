@@ -136,6 +136,18 @@ export function PurchaseMembershipDialog({ open, onOpenChange, selectedMember }:
         return;
       }
 
+      if (result.isFreePurchase) {
+        toast.success("Membership activated", {
+          description: "Free-trial membership is active immediately.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+        queryClient.invalidateQueries({ queryKey: ["memberships"] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        onOpenChange(false);
+        form.reset();
+        return;
+      }
+
       // Check if Snap is loaded
       if (!isSnapLoaded) {
         toast.error("Payment gateway is loading. Please wait a moment and try again.");
@@ -507,7 +519,7 @@ export function PurchaseMembershipDialog({ open, onOpenChange, selectedMember }:
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPurchasing}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPurchasing || !isSnapLoaded}>
+              <Button type="submit" disabled={isPurchasing}>
                 {isPurchasing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -516,7 +528,7 @@ export function PurchaseMembershipDialog({ open, onOpenChange, selectedMember }:
                 ) : (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Purchase & Pay
+                    Purchase
                   </>
                 )}
               </Button>

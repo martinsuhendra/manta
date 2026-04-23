@@ -9,22 +9,38 @@ import { deleteCloudinaryAsset } from "@/lib/cloudinary";
 import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
-const updateProductSchema = z.object({
-  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand").optional(),
-  name: z.string().min(1, "Name is required").optional(),
-  description: z.string().optional(),
-  price: z.number().positive("Price must be positive").optional(),
-  validDays: z.number().positive("Valid days must be positive").optional(),
-  quota: z.number().positive("Quota must be positive").optional(),
-  features: z.array(z.string()).optional(),
-  image: z.string().optional(),
-  imageAsset: z.unknown().nullable().optional(),
-  paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  whatIsIncluded: z.string().optional(),
-  participantsPerPurchase: z.number().int().min(1).max(10).optional(),
-  isActive: z.boolean().optional(),
-  isPublic: z.boolean().optional(),
-});
+const updateProductSchema = z
+  .object({
+    brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand").optional(),
+    name: z.string().min(1, "Name is required").optional(),
+    description: z.string().optional(),
+    price: z.number().min(0, "Price must be at least 0").optional(),
+    validDays: z.number().positive("Valid days must be positive").optional(),
+    quota: z.number().positive("Quota must be positive").optional(),
+    isPurchaseUnlimited: z.boolean().optional(),
+    purchaseLimitPerUser: z.number().int().min(1, "Purchase limit must be at least 1").nullable().optional(),
+    features: z.array(z.string()).optional(),
+    image: z.string().optional(),
+    imageAsset: z.unknown().nullable().optional(),
+    paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+    whatIsIncluded: z.string().optional(),
+    participantsPerPurchase: z.number().int().min(1).max(10).optional(),
+    isActive: z.boolean().optional(),
+    isPublic: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasUnlimitedFlag = typeof data.isPurchaseUnlimited === "boolean";
+    const hasPurchaseLimit = Object.prototype.hasOwnProperty.call(data, "purchaseLimitPerUser");
+    if (!hasUnlimitedFlag && !hasPurchaseLimit) return;
+    const isUnlimited = data.isPurchaseUnlimited ?? false;
+    if (isUnlimited) return;
+    if (typeof data.purchaseLimitPerUser === "number" && data.purchaseLimitPerUser >= 1) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Purchase limit per user is required when unlimited is disabled",
+      path: ["purchaseLimitPerUser"],
+    });
+  });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

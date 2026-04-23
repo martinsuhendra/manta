@@ -7,21 +7,33 @@ import { getProductWhereForBrandAccess, handleApiError, requireBrandAccess, requ
 import { parseCloudinaryAsset, resolveAssetUrl } from "@/lib/cloudinary-asset";
 import { prisma } from "@/lib/generated/prisma";
 
-const createProductSchema = z.object({
-  brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  price: z.number().positive("Price must be positive"),
-  validDays: z.number().positive("Valid days must be positive"),
-  features: z.array(z.string()).optional().default([]),
-  image: z.string().optional(),
-  imageAsset: z.unknown().nullable().optional(),
-  paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  whatIsIncluded: z.string().optional(),
-  participantsPerPurchase: z.number().int().min(1).max(10).optional().default(1),
-  isActive: z.boolean().optional().default(true),
-  isPublic: z.boolean().optional().default(true),
-});
+const createProductSchema = z
+  .object({
+    brandIds: z.array(z.string().uuid("Invalid brand ID")).min(1, "Select at least one brand"),
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    price: z.number().min(0, "Price must be at least 0"),
+    validDays: z.number().positive("Valid days must be positive"),
+    isPurchaseUnlimited: z.boolean().optional().default(true),
+    purchaseLimitPerUser: z.number().int().min(1, "Purchase limit must be at least 1").nullable().optional(),
+    features: z.array(z.string()).optional().default([]),
+    image: z.string().optional(),
+    imageAsset: z.unknown().nullable().optional(),
+    paymentUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+    whatIsIncluded: z.string().optional(),
+    participantsPerPurchase: z.number().int().min(1).max(10).optional().default(1),
+    isActive: z.boolean().optional().default(true),
+    isPublic: z.boolean().optional().default(true),
+  })
+  .superRefine((data, ctx) => {
+    if (data.isPurchaseUnlimited) return;
+    if (typeof data.purchaseLimitPerUser === "number" && data.purchaseLimitPerUser >= 1) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Purchase limit per user is required when unlimited is disabled",
+      path: ["purchaseLimitPerUser"],
+    });
+  });
 
 export async function GET(request: NextRequest) {
   try {

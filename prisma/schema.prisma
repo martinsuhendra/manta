@@ -139,6 +139,8 @@ model Product {
   description    String?
   price          Decimal  @db.Decimal(10, 2)
   validDays      Int      @map("valid_days")
+  isPurchaseUnlimited  Boolean  @default(true) @map("is_purchase_unlimited")
+  purchaseLimitPerUser Int?     @map("purchase_limit_per_user")
   isActive       Boolean  @default(true) @map("is_active")
   isPublic       Boolean  @default(true) @map("is_public")
   features       String[] @default([])
