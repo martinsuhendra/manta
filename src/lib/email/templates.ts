@@ -21,7 +21,9 @@ export { createContactFormTemplate, createUserLinkTemplate } from "./general-tem
 
 // Session templates
 export {
+  createMemberBookingCancellationConfirmationTemplate,
   createSessionJoinedTemplate,
+  createSessionPromotedFromWaitlistTemplate,
   createSessionUpdatedTemplate,
   createSessionCancelledTemplate,
   createSessionWaitlistedTemplate,

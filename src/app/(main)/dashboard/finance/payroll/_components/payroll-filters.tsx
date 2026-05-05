@@ -20,6 +20,11 @@ export type PayrollFiltersState = {
   itemId?: string;
 };
 
+function clampDateRange(startIso: string, endIso: string): { startDate: string; endDate: string } {
+  if (startIso <= endIso) return { startDate: startIso, endDate: endIso };
+  return { startDate: startIso, endDate: startIso };
+}
+
 function getDefaultDates(period: PayrollFiltersState["period"]): { start: string; end: string } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -107,55 +112,60 @@ export function PayrollFilters({
               </SelectContent>
             </Select>
           </div>
-          {period === "custom" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Start date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground",
-                      )}
-                    >
-                      {startDate ? format(new Date(startDate + "T00:00:00"), "PPP") : "Pick date"}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate ? new Date(startDate + "T00:00:00") : undefined}
-                      onSelect={(d) => d && onFiltersChange({ ...filters, startDate: d.toISOString().slice(0, 10) })}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">End date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
-                    >
-                      {endDate ? format(new Date(endDate + "T00:00:00"), "PPP") : "Pick date"}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate ? new Date(endDate + "T00:00:00") : undefined}
-                      onSelect={(d) => d && onFiltersChange({ ...filters, endDate: d.toISOString().slice(0, 10) })}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Start date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                  >
+                    {startDate ? format(new Date(startDate + "T00:00:00"), "PPP") : "Pick date"}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate ? new Date(startDate + "T00:00:00") : undefined}
+                    onSelect={(d) => {
+                      if (!d) return;
+                      const nextStart = d.toISOString().slice(0, 10);
+                      const { startDate: sd, endDate: ed } = clampDateRange(nextStart, endDate);
+                      onFiltersChange({ ...filters, period: "custom", startDate: sd, endDate: ed });
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+            <div className="space-y-1">
+              <Label className="text-xs">End date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
+                  >
+                    {endDate ? format(new Date(endDate + "T00:00:00"), "PPP") : "Pick date"}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate ? new Date(endDate + "T00:00:00") : undefined}
+                    onSelect={(d) => {
+                      if (!d) return;
+                      const nextEnd = d.toISOString().slice(0, 10);
+                      const { startDate: sd, endDate: ed } = clampDateRange(startDate, nextEnd);
+                      onFiltersChange({ ...filters, period: "custom", startDate: sd, endDate: ed });
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
           {!hideTeacherFilter && (
             <div className="space-y-1">
               <Label className="text-xs">Teacher</Label>
