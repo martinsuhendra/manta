@@ -22,7 +22,6 @@ import { BrandProviderWrapper } from "./_components/brand-provider-wrapper";
 import { BrandThemeInjector } from "./_components/brand-theme-injector";
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
-import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const session = await auth();
@@ -70,7 +69,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                 <SearchDialog />
               </div>
               <div className="flex items-center gap-2">
-                <ThemeSwitcher />
                 <AccountSwitcher users={[currentUser]} />
               </div>
             </div>
