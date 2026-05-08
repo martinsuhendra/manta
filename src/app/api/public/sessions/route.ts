@@ -14,9 +14,15 @@ interface ResolvedBrandWhereResult {
   errorResponse: NextResponse | null;
 }
 
+interface SessionWithRole {
+  user?: {
+    role?: string;
+  };
+}
+
 async function resolvePublicSessionsBrandWhere(
   request: NextRequest,
-  session: Awaited<ReturnType<typeof getServerSession>>,
+  session: SessionWithRole | null,
 ): Promise<ResolvedBrandWhereResult> {
   if (session?.user?.role === USER_ROLES.MEMBER) {
     const { error, brandIds } = await requireBrandAccess(request);

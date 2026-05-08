@@ -4,6 +4,7 @@ value: manta
 */
 
 :root[data-theme-preset="manta"] {
+  color-scheme: light;
   --brand-primary: #ef5f18;
   --brand-accent: oklch(0.2881 0.126 281.59);
   --background: oklch(1 0 0);
@@ -47,6 +48,7 @@ value: manta
 }
 
 .dark:root[data-theme-preset="manta"] {
+  color-scheme: dark;
   --brand-primary: #ef5f18;
   --brand-accent: oklch(0.2881 0.126 281.59);
   --background: oklch(0.18 0.03 281.59);
