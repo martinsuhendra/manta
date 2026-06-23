@@ -25,6 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useMidtransSnap } from "@/lib/hooks/use-midtrans-snap";
+import { unwrapUsersListResponse } from "@/lib/users-api";
 import { cn } from "@/lib/utils";
 
 import { Member } from "./schema";
@@ -68,8 +69,8 @@ export function PurchaseMembershipDialog({ open, onOpenChange, selectedMember }:
   const { data: members = [] } = useQuery<Member[]>({
     queryKey: ["users"],
     queryFn: async () => {
-      const response = await axios.get("/api/users");
-      return response.data;
+      const response = await axios.get("/api/users", { params: { limit: 500 } });
+      return unwrapUsersListResponse(response.data);
     },
     enabled: open && !selectedMember,
   });

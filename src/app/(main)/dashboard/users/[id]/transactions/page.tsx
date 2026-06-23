@@ -26,9 +26,9 @@ export default function MemberTransactionsPage() {
     isLoading,
     error,
   } = useQuery<MemberDetails>({
-    queryKey: ["member-details", memberId],
+    queryKey: ["member-details", memberId, "transactions"],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${memberId}/details`);
+      const response = await fetch(`/api/users/${memberId}/details?include=transactions`);
       if (!response.ok) throw new Error("Failed to fetch member details");
       return response.json();
     },

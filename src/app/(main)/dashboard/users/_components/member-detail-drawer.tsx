@@ -21,7 +21,9 @@ import {
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useMemberDetailsBase, useMemberDetailsSection, type MemberDetailsSection } from "@/hooks/use-member-details";
 import { useCreateUser, useUpdateUser, useDeleteUser } from "@/hooks/use-users-query";
+import { canActorEditUserRoles } from "@/lib/rbac";
 import { USER_ROLES, USER_ROLE_LABELS, getRoleVariant } from "@/lib/types";
 
 import { DrawerFooterButtons } from "./drawer-footer-buttons";
@@ -145,21 +147,43 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
   const [isEditModeReady, setIsEditModeReady] = React.useState(false);
 
   const currentUserRole = session?.user.role;
-  const canCreateSuperAdmin = isPrivilegedRole(currentUserRole);
-  const canEditRoles = isPrivilegedRole(currentUserRole);
+  const canEditRoles = canActorEditUserRoles(currentUserRole);
   const { canDelete, isSelfDelete, isTargetSuperAdmin, canDeleteSuperAdmin } = useDeletePermissions(member, session);
 
-  // Fetch detailed member data when in view mode
-  const { data: memberDetails, isLoading: isLoadingDetails } = useQuery<MemberDetails>({
-    queryKey: ["member-details", member?.id],
-    queryFn: async () => {
-      if (!member?.id) throw new Error("Member ID is required");
-      const response = await fetch(`/api/users/${member.id}/details`);
-      if (!response.ok) throw new Error("Failed to fetch member details");
-      return response.json();
-    },
-    enabled: mode === "view" && !!member?.id && open,
-  });
+  const isViewMode = mode === "view" && !!member?.id && open;
+
+  const sectionByTab: Record<string, MemberDetailsSection | null> = {
+    overview: null,
+    sessions: "classSessions",
+    memberships: "memberships",
+    transactions: "transactions",
+    attendance: "bookings",
+  };
+
+  const activeSection = sectionByTab[activeTab] ?? null;
+
+  const { data: memberBase, isLoading: isLoadingBase } = useMemberDetailsBase(member?.id, isViewMode);
+
+  const { data: sectionDetails, isLoading: isLoadingSection } = useMemberDetailsSection(
+    member?.id,
+    activeSection ?? "memberships",
+    isViewMode && activeSection !== null,
+  );
+
+  const memberDetails = React.useMemo((): MemberDetails | undefined => {
+    if (!memberBase) return undefined;
+
+    return {
+      ...memberBase,
+      memberships: sectionDetails?.memberships ?? memberBase.memberships ?? [],
+      transactions: sectionDetails?.transactions ?? memberBase.transactions ?? [],
+      bookings: sectionDetails?.bookings ?? memberBase.bookings ?? [],
+      classSessions: sectionDetails?.classSessions ?? memberBase.classSessions ?? [],
+      scheduledSessionCount: memberBase.scheduledSessionCount,
+    };
+  }, [memberBase, sectionDetails]);
+
+  const isLoadingDetails = isLoadingBase || (activeSection !== null && activeTab !== "overview" && isLoadingSection);
 
   // Hydrate edit form from canonical user row (birthday, teacher profile, etc.)
   const { data: userForEdit } = useQuery<UserEditRecord>({
@@ -269,7 +293,11 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                 <LoadingSpinner />
               ) : (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col justify-start gap-6">
-                  <TabTriggers memberDetails={memberDetails} memberRole={member.role} />
+                  <TabTriggers
+                    memberDetails={memberDetails}
+                    memberRole={member.role}
+                    scheduledSessionCount={memberBase?.scheduledSessionCount}
+                  />
 
                   <TabsContent value="overview" className="relative flex flex-col gap-4 overflow-auto">
                     <OverviewTab member={member} memberDetails={memberDetails} />
@@ -277,7 +305,9 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
 
                   {member.role === USER_ROLES.TEACHER ? (
                     <TabsContent value="sessions" className="flex flex-col">
-                      {memberDetails && "classSessions" in memberDetails ? (
+                      {activeTab === "sessions" && isLoadingSection ? (
+                        <LoadingSpinner />
+                      ) : memberDetails ? (
                         <TeacherSessionsTab sessions={memberDetails.classSessions ?? []} />
                       ) : (
                         <LoadingSpinner />
@@ -286,7 +316,9 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                   ) : (
                     <>
                       <TabsContent value="memberships" className="flex flex-col">
-                        {memberDetails ? (
+                        {activeTab === "memberships" && isLoadingSection ? (
+                          <LoadingSpinner />
+                        ) : memberDetails ? (
                           <MembershipsTab
                             memberships={memberDetails.memberships}
                             memberId={member.id}
@@ -298,7 +330,9 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                       </TabsContent>
 
                       <TabsContent value="transactions" className="flex flex-col">
-                        {memberDetails ? (
+                        {activeTab === "transactions" && isLoadingSection ? (
+                          <LoadingSpinner />
+                        ) : memberDetails ? (
                           <TransactionsTab transactions={memberDetails.transactions} memberId={member.id} />
                         ) : (
                           <LoadingSpinner />
@@ -306,7 +340,9 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
                       </TabsContent>
 
                       <TabsContent value="attendance" className="flex flex-col">
-                        {memberDetails ? (
+                        {activeTab === "attendance" && isLoadingSection ? (
+                          <LoadingSpinner />
+                        ) : memberDetails ? (
                           <AttendanceTab bookings={memberDetails.bookings} memberId={member.id} />
                         ) : (
                           <LoadingSpinner />
@@ -320,8 +356,8 @@ export function MemberDetailDrawer({ member, mode, open, onOpenChange, onModeCha
               <MemberForm
                 mode={mode}
                 member={mode === "edit" ? memberForForm : member}
+                actorRole={currentUserRole}
                 canEditRoles={canEditRoles}
-                canCreateSuperAdmin={canCreateSuperAdmin}
                 onSubmit={handleSubmit}
                 isPending={createUser.isPending || updateUser.isPending}
               />

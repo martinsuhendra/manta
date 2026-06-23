@@ -6,9 +6,8 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
-import { doesBookingStatusConsumeQuota } from "@/lib/booking-status";
+import { sumParticipantSlotsBySessionIds } from "@/lib/booking-aggregates";
 import { prisma } from "@/lib/generated/prisma";
-import { sumParticipantSlots } from "@/lib/session-utils";
 import { USER_ROLES } from "@/lib/types";
 
 const ALLOWED_SESSION_STATUS = new Set(["SCHEDULED", "CANCELLED", "COMPLETED"]);
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { error, brandIds } = await requireBrandAccess(request);
+    const { error, brandIds } = await requireBrandAccess(request, session);
     if (error) return error;
     const whereBrand = getBrandFilterFromRequest(request, brandIds);
 
@@ -160,18 +159,19 @@ export async function GET(request: NextRequest) {
             bookings: true,
           },
         },
-        bookings: {
-          select: { participantCount: true, status: true },
-        },
       },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
 
-    const sessionsWithSlots = sessions.map((s) => {
-      const { bookings, ...rest } = s;
-      const occupiedBookings = bookings.filter((booking) => doesBookingStatusConsumeQuota(booking.status));
-      return { ...rest, totalParticipantSlots: sumParticipantSlots(occupiedBookings) };
-    });
+    const slotTotals = await sumParticipantSlotsBySessionIds(
+      sessions.map((s) => s.id),
+      "quota-consuming",
+    );
+
+    const sessionsWithSlots = sessions.map((s) => ({
+      ...s,
+      totalParticipantSlots: slotTotals.get(s.id) ?? 0,
+    }));
 
     return NextResponse.json(sessionsWithSlots);
   } catch (error) {
