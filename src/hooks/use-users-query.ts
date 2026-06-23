@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+import { unwrapUsersListResponse, type UsersListResponse } from "@/lib/users-api";
+
 export interface User {
   id: string;
   name: string | null;
@@ -33,10 +35,10 @@ export function useTeachers(enabled = true) {
     queryKey: ["users", "teachers", enabled],
     queryFn: async () => {
       try {
-        const response = await axios.get("/api/users", {
-          params: { role: "TEACHER" },
+        const response = await axios.get<UsersListResponse<User>>("/api/users", {
+          params: { role: "TEACHER", limit: 500 },
         });
-        return response.data;
+        return unwrapUsersListResponse(response.data);
       } catch (error) {
         console.error("Teachers API error:", error);
         throw error;
@@ -47,13 +49,15 @@ export function useTeachers(enabled = true) {
   });
 }
 
-export function useUsers(params?: { role?: string }) {
+export function useUsers(params?: { role?: string; page?: number; limit?: number; search?: string }) {
   return useQuery<User[]>({
     queryKey: ["users", params],
     queryFn: async () => {
       try {
-        const response = await axios.get("/api/users", { params });
-        return response.data;
+        const response = await axios.get<UsersListResponse<User>>("/api/users", {
+          params: { limit: 200, ...params },
+        });
+        return unwrapUsersListResponse(response.data);
       } catch (error) {
         console.error("Users API error:", error);
         throw error;
