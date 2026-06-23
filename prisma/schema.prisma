@@ -101,6 +101,7 @@ model User {
   freezeRequestsApproved  MembershipFreezeRequest[] @relation("FreezeApprovedBy")
   waiverSettingsUpdated WaiverSettings[] @relation("WaiverUpdatedBy")
 
+  @@index([role, createdAt])
   @@map("users")
 }
 
@@ -350,6 +351,9 @@ model ClassSession {
   brand     Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, date, startTime])
+  @@index([brandId, date, status])
+  @@index([brandId, date, visibility, status])
+  @@index([teacherId, date, status])
   @@map("class_sessions")
 }
 
@@ -397,6 +401,8 @@ model Booking {
   brand            Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([classSessionId, userId])
+  @@index([classSessionId, status])
+  @@index([userId, createdAt])
   @@map("bookings")
 }
 

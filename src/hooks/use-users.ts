@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 import { Member } from "@/app/(main)/dashboard/users/_components/schema";
+import { unwrapUsersListResponse } from "@/lib/users-api";
 
 interface UseUsersReturn {
   users: Member[];
@@ -21,14 +22,14 @@ export function useUsers(): UseUsersReturn {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users?limit=200");
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
 
       const data = await response.json();
-      setUsers(data);
+      setUsers(unwrapUsersListResponse(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Error fetching users:", err);

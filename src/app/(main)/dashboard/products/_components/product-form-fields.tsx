@@ -57,6 +57,14 @@ export function ProductFormFields({
   const activeBrands = React.useMemo(() => brands.filter((brand) => brand.isActive), [brands]);
   const isPurchaseUnlimited = form.watch("isPurchaseUnlimited");
 
+  React.useEffect(() => {
+    if (activeBrands.length !== 1) return;
+    const onlyId = activeBrands[0].id;
+    const current = form.getValues("brandIds");
+    if (current.length === 1 && current[0] === onlyId) return;
+    form.setValue("brandIds", [onlyId], { shouldValidate: true, shouldDirty: false });
+  }, [activeBrands, form]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-1">

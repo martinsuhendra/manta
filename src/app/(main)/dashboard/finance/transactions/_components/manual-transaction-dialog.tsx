@@ -40,6 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TRANSACTION_STATUS } from "@/lib/midtrans/constants";
+import { unwrapUsersListResponse } from "@/lib/users-api";
 import { cn } from "@/lib/utils";
 
 import { formatPaymentMethodLabel, formatStatusLabel } from "./format-labels";
@@ -106,9 +107,9 @@ export function ManualTransactionDialog({ open, onOpenChange, onSubmit, isSubmit
   const { data: members = [], isLoading: isLoadingMembers } = useQuery<MemberOption[]>({
     queryKey: ["users"],
     queryFn: async () => {
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users?limit=500");
       if (!response.ok) throw new Error("Failed to fetch members");
-      return response.json();
+      return unwrapUsersListResponse(await response.json());
     },
     enabled: open,
   });

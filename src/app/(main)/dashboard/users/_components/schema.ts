@@ -134,6 +134,7 @@ export const memberDetailsSchema = z.object({
     bookings: z.number(),
   }),
   classSessions: z.array(teacherSessionSchema).optional(),
+  scheduledSessionCount: z.number().optional(),
 });
 
 export type MemberDetails = z.infer<typeof memberDetailsSchema>;

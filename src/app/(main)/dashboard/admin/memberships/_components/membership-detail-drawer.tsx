@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { USER_ROLES } from "@/lib/types";
+import { unwrapUsersListResponse } from "@/lib/users-api";
 import { cn, formatPrice } from "@/lib/utils";
 
 import { EmptyProductsState } from "./empty-products-state";
@@ -112,9 +113,9 @@ export function MembershipDetailDrawer({
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["users", "MEMBER"],
     queryFn: async () => {
-      const response = await fetch(`/api/users?role=${USER_ROLES.MEMBER}`);
+      const response = await fetch(`/api/users?role=${USER_ROLES.MEMBER}&limit=500`);
       if (!response.ok) throw new Error("Failed to fetch users");
-      return response.json();
+      return unwrapUsersListResponse(await response.json());
     },
     enabled: mode === "add",
   });

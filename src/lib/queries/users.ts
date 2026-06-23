@@ -1,4 +1,5 @@
 import { Member } from "@/app/(main)/dashboard/users/_components/schema";
+import { unwrapUsersListResponse } from "@/lib/users-api";
 
 export const userQueryKeys = {
   all: ["users"] as const,
@@ -9,13 +10,13 @@ export const userQueryKeys = {
 };
 
 export async function fetchUsers(): Promise<Member[]> {
-  const response = await fetch("/api/users");
+  const response = await fetch("/api/users?limit=200");
 
   if (!response.ok) {
     throw new Error("Failed to fetch users");
   }
 
-  return response.json();
+  return unwrapUsersListResponse(await response.json());
 }
 
 export async function fetchUser(id: string): Promise<Member> {

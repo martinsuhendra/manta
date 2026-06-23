@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import type { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
@@ -23,8 +23,8 @@ function isRoleAllowed(role: string | null | undefined, allowedRoles: readonly s
   return allowedRoles.some((allowedRole) => normalizeRole(allowedRole) === normalizedRole);
 }
 
-export async function requireAuth() {
-  const session = await getServerSession(authOptions);
+export async function requireAuth(existingSession?: Session | null) {
+  const session = existingSession ?? (await getServerSession(authOptions));
 
   if (!session?.user.id) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), session: null };
@@ -33,8 +33,8 @@ export async function requireAuth() {
   return { error: null, session };
 }
 
-export async function requireSuperAdmin() {
-  const { error, session } = await requireAuth();
+export async function requireSuperAdmin(existingSession?: Session | null) {
+  const { error, session } = await requireAuth(existingSession);
   if (error) return { error, user: null };
 
   if (isRoleAllowed(session.user.role, RBAC_SUPERADMIN_EDGE_ROLES)) {
@@ -59,8 +59,8 @@ export async function requireSuperAdmin() {
   return { error: null, user };
 }
 
-export async function requireAdmin() {
-  const { error, session } = await requireAuth();
+export async function requireAdmin(existingSession?: Session | null) {
+  const { error, session } = await requireAuth(existingSession);
   if (error) return { error, user: null };
 
   if (isRoleAllowed(session.user.role, RBAC_ADMIN_ROLES)) {
@@ -85,8 +85,8 @@ export async function requireAdmin() {
   return { error: null, user };
 }
 
-export async function requireBrandAccess(request: NextRequest) {
-  const { error, session } = await requireAuth();
+export async function requireBrandAccess(request: NextRequest, existingSession?: Session | null) {
+  const { error, session } = await requireAuth(existingSession);
   if (error) {
     return {
       error,

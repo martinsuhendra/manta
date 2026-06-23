@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import type { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 
 import { authOptions } from "@/auth";
 import { getBrandFilterFromRequest, requireBrandAccess } from "@/lib/api-utils";
+import { sumParticipantSlotsBySessionIds } from "@/lib/booking-aggregates";
 import { prisma } from "@/lib/generated/prisma";
-import { sumParticipantSlots } from "@/lib/session-utils";
+import { createPublicCache, publicCacheHeaders } from "@/lib/http-cache";
 import { USER_ROLES } from "@/lib/types";
 
 interface ResolvedBrandWhereResult {
@@ -25,7 +26,7 @@ async function resolvePublicSessionsBrandWhere(
   session: SessionWithRole | null,
 ): Promise<ResolvedBrandWhereResult> {
   if (session?.user?.role === USER_ROLES.MEMBER) {
-    const { error, brandIds } = await requireBrandAccess(request);
+    const { error, brandIds } = await requireBrandAccess(request, session as Session | null);
     if (error) return { whereBrand: {}, errorResponse: error };
     return { whereBrand: getBrandFilterFromRequest(request, brandIds), errorResponse: null };
   }
@@ -44,6 +45,51 @@ async function resolvePublicSessionsBrandWhere(
   if (!brand) return { whereBrand: {}, errorResponse: null };
   return { whereBrand: { brandId: brand.id }, errorResponse: null };
 }
+
+const getCachedPublicSessions = createPublicCache(["public-sessions"], async (cacheKey: string) => {
+  const { whereBrand, whereConditions } = JSON.parse(cacheKey) as {
+    whereBrand: Prisma.ClassSessionWhereInput;
+    whereConditions: Prisma.ClassSessionWhereInput;
+  };
+
+  const sessions = await prisma.classSession.findMany({
+    where: { ...whereConditions, ...whereBrand },
+    include: {
+      item: {
+        select: {
+          id: true,
+          name: true,
+          duration: true,
+          capacity: true,
+          color: true,
+        },
+      },
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
+
+  const slotTotals = await sumParticipantSlotsBySessionIds(
+    sessions.map((s) => s.id),
+    "not-cancelled",
+  );
+
+  return sessions.map((s) => {
+    const totalSlots = slotTotals.get(s.id) ?? 0;
+    return {
+      ...s,
+      date: s.date.toISOString().split("T")[0],
+      spotsLeft: Math.max(0, s.item.capacity - totalSlots),
+      capacity: s.item.capacity,
+    };
+  });
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,45 +132,10 @@ export async function GET(request: NextRequest) {
       whereConditions.itemId = itemId;
     }
 
-    const sessions = await prisma.classSession.findMany({
-      where: { ...whereConditions, ...whereBrand },
-      include: {
-        item: {
-          select: {
-            id: true,
-            name: true,
-            duration: true,
-            capacity: true,
-            color: true,
-          },
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        bookings: {
-          where: { status: { not: "CANCELLED" } },
-          select: { id: true, participantCount: true },
-        },
-      },
-      orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    });
+    const cacheKey = JSON.stringify({ whereBrand, whereConditions });
+    const result = await getCachedPublicSessions(cacheKey);
 
-    const result = sessions.map((s) => {
-      const { bookings, ...rest } = s;
-      const totalSlots = sumParticipantSlots(bookings);
-      return {
-        ...rest,
-        date: s.date.toISOString().split("T")[0],
-        spotsLeft: Math.max(0, s.item.capacity - totalSlots),
-        capacity: s.item.capacity,
-      };
-    });
-
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: publicCacheHeaders() });
   } catch (error) {
     console.error("Error fetching member sessions:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
