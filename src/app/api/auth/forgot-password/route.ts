@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createPasswordResetToken } from "@/lib/auth/tokens";
+import { createPasswordResetTemplate } from "@/lib/email/auth-templates";
 import { emailService } from "@/lib/email/service";
-import { createPasswordResetTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
 
 export async function POST(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
 
       // Create email template
-      const emailTemplate = createPasswordResetTemplate(resetUrl);
+      const emailTemplate = await createPasswordResetTemplate(resetUrl);
 
       // Send email
       const emailSent = await emailService.sendEmail(email, emailTemplate);

@@ -1,5 +1,5 @@
+import { createPaymentSuccessTemplate } from "@/lib/email/payment-templates";
 import { emailService } from "@/lib/email/service";
-import { createPaymentSuccessTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
 
 import {
@@ -135,7 +135,7 @@ export async function sendPaymentSuccessEmail(transaction: TransactionWithRelati
   }
 
   try {
-    const emailTemplate = createPaymentSuccessTemplate({
+    const emailTemplate = await createPaymentSuccessTemplate({
       userName: transaction.user.name || undefined,
       productName: transaction.product.name,
       accountUrl: getAccountUrl(),

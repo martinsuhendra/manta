@@ -11,7 +11,7 @@ import { emailService } from "@/lib/email/service";
 import {
   createMemberBookingCancellationConfirmationTemplate,
   createSessionPromotedFromWaitlistTemplate,
-} from "@/lib/email/templates";
+} from "@/lib/email/session-templates";
 import { prisma } from "@/lib/generated/prisma";
 import { checkQuotaAvailability, deductQuota, restoreQuota } from "@/lib/quota-utils";
 import { sumParticipantSlots } from "@/lib/session-utils";

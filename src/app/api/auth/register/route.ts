@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { validateRegistrationWaiver } from "@/lib/auth/register-waiver";
+import { createSignupWelcomeTemplate } from "@/lib/email/auth-templates";
 import { emailService } from "@/lib/email/service";
-import { createSignupWelcomeTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
 import { DEFAULT_USER_ROLE } from "@/lib/types";
 import { registerBodySchema } from "@/lib/validators";
@@ -70,13 +70,15 @@ export async function POST(request: Request) {
 
     const appBase = process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "";
     const shopUrl = appBase ? `${appBase}/public` : "#";
-    try {
-      const welcomeTemplate = createSignupWelcomeTemplate(name, shopUrl);
-      const sent = await emailService.sendEmail(email, welcomeTemplate);
-      if (!sent) console.error("Failed to send welcome email to:", email);
-    } catch (emailError) {
-      console.error("Welcome email error:", emailError);
-    }
+    after(async () => {
+      try {
+        const welcomeTemplate = await createSignupWelcomeTemplate(name, shopUrl);
+        const sent = await emailService.sendEmail(email, welcomeTemplate);
+        if (!sent) console.error("Failed to send welcome email to:", email);
+      } catch (emailError) {
+        console.error("Welcome email error:", emailError);
+      }
+    });
 
     // Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
