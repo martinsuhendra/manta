@@ -26,7 +26,7 @@ import { BookSessionsPanel } from "./book-sessions-panel";
 import { BookingModal } from "./booking-modal";
 
 const defaultStart = startOfDay(new Date());
-const defaultEnd = addDays(defaultStart, 14);
+const RANGE_DAYS = 14;
 
 interface ClassOption {
   id: string;
@@ -120,7 +120,7 @@ function SessionsResult({
 
 export function BookPageContent({ classes, initialItemId }: BookPageContentProps) {
   const [startDate, setStartDate] = useState(() => format(defaultStart, "yyyy-MM-dd"));
-  const [endDate, setEndDate] = useState(() => format(defaultEnd, "yyyy-MM-dd"));
+  const endDate = useMemo(() => format(addDays(parseISO(startDate), RANGE_DAYS), "yyyy-MM-dd"), [startDate]);
   const [itemId, setItemId] = useState<string>(() => initialItemId ?? "");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<MemberSession | null>(null);
@@ -176,12 +176,19 @@ export function BookPageContent({ classes, initialItemId }: BookPageContentProps
       setSelectedDate(null);
       return;
     }
+    setSelectedDate(daysInRange[0]);
+  }, [startDate, daysInRange]);
+
+  useEffect(() => {
+    if (daysInRange.length === 0) return;
     setSelectedDate((prev) => {
       if (prev && daysInRange.includes(prev)) return prev;
       const firstWithSessions = daysInRange.find((d) => getSessionsOnDate(sessionsByDate, d).length > 0);
       return firstWithSessions ?? daysInRange[0];
     });
-  }, [startDate, endDate, daysInRange, sessionsByDate]);
+    // Only re-anchor when session data loads, not when the user changes the date filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- daysInRange read from closure
+  }, [sessionsByDate]);
 
   const sessionsForSelected = useMemo(
     () => (selectedDate ? getSessionsOnDate(sessionsByDate, selectedDate) : []),
@@ -198,6 +205,12 @@ export function BookPageContent({ classes, initialItemId }: BookPageContentProps
     }
     setSelectedSession(s);
     setModalOpen(true);
+  };
+
+  const applyStartDate = (date: Date) => {
+    const formatted = format(date, "yyyy-MM-dd");
+    setStartDate(formatted);
+    setSelectedDate(formatted);
   };
 
   const startDateObj = startDate ? new Date(startDate + "T00:00:00") : undefined;
@@ -240,7 +253,7 @@ export function BookPageContent({ classes, initialItemId }: BookPageContentProps
               <Calendar
                 mode="single"
                 selected={startDateObj}
-                onSelect={(date) => date && setStartDate(format(date, "yyyy-MM-dd"))}
+                onSelect={(date) => date && applyStartDate(date)}
                 initialFocus
               />
             </PopoverContent>
@@ -250,30 +263,16 @@ export function BookPageContent({ classes, initialItemId }: BookPageContentProps
           <Label className="text-muted-foreground text-sm" htmlFor="end">
             To
           </Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="end"
-                variant="ghost"
-                className={cn(
-                  "h-10 min-w-[140px] justify-start text-left font-normal sm:w-[180px]",
-                  !endDate && "opacity-90",
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
-                {endDateObj ? format(endDateObj, "MMM d, yyyy") : "Pick date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDateObj}
-                onSelect={(date) => date && setEndDate(format(date, "yyyy-MM-dd"))}
-                disabled={startDateObj ? { before: startDateObj } : undefined}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Button
+            id="end"
+            variant="ghost"
+            disabled
+            aria-disabled
+            className="h-10 min-w-[140px] justify-start text-left font-normal disabled:opacity-70 sm:w-[180px]"
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-white" />
+            {endDateObj ? format(endDateObj, "MMM d, yyyy") : "—"}
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Label className="text-muted-foreground text-sm" htmlFor="class">

@@ -115,11 +115,9 @@ export function BookDateStrip({
     if (allDays.length === 0) return;
     if (lastRangeKeyRef.current !== rangeKey) {
       lastRangeKeyRef.current = rangeKey;
-      const idx = selectedDate ? allDays.indexOf(selectedDate) : 0;
-      const safeIdx = idx >= 0 ? idx : 0;
-      setViewportStart(useWindow ? clampWindowStart(safeIdx, allDays.length) : 0);
+      setViewportStart(0);
     }
-  }, [allDays, rangeKey, selectedDate, useWindow]);
+  }, [allDays.length, rangeKey]);
 
   useEffect(() => {
     if (!useWindow || allDays.length === 0) return;
