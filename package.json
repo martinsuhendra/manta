@@ -1,6 +1,6 @@
 {
   "name": "manta",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.development.local -- prisma generate && dotenv -e .env.development.local -- next dev --turbopack",
