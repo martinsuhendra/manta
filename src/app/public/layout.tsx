@@ -64,7 +64,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <ShopBrandProviderWrapper initialActiveBrandId={initialActiveBrandId} initialBrands={brands}>
-      <div className="dark bg-background flex min-h-screen flex-col" style={{ colorScheme: "dark" }}>
+      <div className="bg-background flex min-h-screen flex-col" style={{ colorScheme: "light" }}>
         <ShopHeaderWrapper session={session} />
         <main className="flex min-h-0 flex-1 flex-col pt-20">{children}</main>
         <div className="h-10 bg-white sm:h-14 md:h-20" aria-hidden />

@@ -120,8 +120,7 @@ export function RegisterForm() {
           description: "Welcome! You have been automatically signed in.",
         });
         const session = await waitForAuthenticatedSession();
-        router.push(getPostAuthRedirectPath(session?.user.role));
-        router.refresh();
+        window.location.assign(getPostAuthRedirectPath(session?.user.role));
       }
     } catch {
       toast.error("Something went wrong", {

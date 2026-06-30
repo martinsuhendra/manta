@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 
+import { TeacherViewToggle } from "@/components/teacher-view-toggle";
 import { Button } from "@/components/ui/button";
 import { APP_CONFIG } from "@/config/app-config";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ export function ShopHeader({ session }: ShopHeaderProps) {
             <div className="bg-muted h-9 w-24 animate-pulse rounded-md" />
           ) : session ? (
             <>
+              <TeacherViewToggle role={session.user.role} appearance="public" />
               <ShopBrandSwitcher />
               <Link href="/public/my-account">
                 <Button

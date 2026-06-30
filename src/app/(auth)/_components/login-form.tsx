@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -26,7 +26,8 @@ const FormSchema = z.object({
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -54,8 +55,8 @@ export function LoginForm() {
       } else if (result?.ok) {
         toast.success("Successfully signed in!");
         const session = await waitForAuthenticatedSession();
-        router.push(getPostAuthRedirectPath(session?.user.role));
-        router.refresh();
+        const redirectPath = getPostAuthRedirectPath(session?.user.role, callbackUrl);
+        window.location.assign(redirectPath);
       }
     } catch {
       toast.error("Something went wrong", {

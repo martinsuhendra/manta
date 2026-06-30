@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogIn, LogOut, Menu, User, UserPlus } from "lucide-react";
 import type { Session } from "next-auth";
 
+import { TeacherViewToggle } from "@/components/teacher-view-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -81,6 +82,7 @@ export function PublicMobileMenu({
 
             {mounted && session ? (
               <div className="space-y-3">
+                <TeacherViewToggle role={session.user.role} appearance="public" className="w-full justify-center" />
                 <ShopBrandSwitcher mobile />
                 <SheetClose asChild>
                   <Link href="/public/my-account">
