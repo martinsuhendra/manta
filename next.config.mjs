@@ -6,6 +6,7 @@ const projectDirectory = path.dirname(fileURLToPath(import.meta.url))
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: projectDirectory,
+  serverExternalPackages: ["@react-email/components", "@react-email/render"],
   experimental: {
     optimizePackageImports: ["lucide-react", "radix-ui", "recharts", "date-fns"],
   },

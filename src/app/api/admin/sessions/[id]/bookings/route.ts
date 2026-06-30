@@ -7,7 +7,7 @@ import { z } from "zod";
 import { authOptions } from "@/auth";
 import { doesBookingStatusConsumeQuota, getCapacityBookingStatuses } from "@/lib/booking-status";
 import { emailService } from "@/lib/email/service";
-import { createSessionJoinedTemplate, createSessionWaitlistedTemplate } from "@/lib/email/templates";
+import { createSessionJoinedTemplate, createSessionWaitlistedTemplate } from "@/lib/email/session-templates";
 import { prisma } from "@/lib/generated/prisma";
 import { calculateRemainingQuota, deductQuota } from "@/lib/quota-utils";
 import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";

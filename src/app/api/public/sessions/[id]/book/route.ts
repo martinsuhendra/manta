@@ -9,7 +9,7 @@ import { requireBrandAccess } from "@/lib/api-utils";
 import { getBookingSettings, getSessionStartAt, isPastBookingCutoff } from "@/lib/booking-settings";
 import { getCapacityBookingStatuses } from "@/lib/booking-status";
 import { emailService } from "@/lib/email/service";
-import { createSessionJoinedTemplate } from "@/lib/email/templates";
+import { createSessionJoinedTemplate } from "@/lib/email/session-templates";
 import { prisma } from "@/lib/generated/prisma";
 import { deductQuota } from "@/lib/quota-utils";
 import { resolveEligibleMembershipsForItem } from "@/lib/session-booking-eligibility";

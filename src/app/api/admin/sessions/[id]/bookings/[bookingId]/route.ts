@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-utils";
 import { doesBookingStatusConsumeQuota, getCapacityBookingStatuses } from "@/lib/booking-status";
 import { emailService } from "@/lib/email/service";
-import { createSessionPromotedFromWaitlistTemplate } from "@/lib/email/templates";
+import { createSessionPromotedFromWaitlistTemplate } from "@/lib/email/session-templates";
 import { prisma } from "@/lib/generated/prisma";
 import { checkQuotaAvailability, deductQuota, restoreQuota } from "@/lib/quota-utils";
 import { sumParticipantSlots } from "@/lib/session-utils";

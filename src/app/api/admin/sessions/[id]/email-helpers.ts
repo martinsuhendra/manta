@@ -1,5 +1,5 @@
 import { emailService } from "@/lib/email/service";
-import { createSessionCancelledTemplate, createSessionUpdatedTemplate } from "@/lib/email/templates";
+import { createSessionCancelledTemplate, createSessionUpdatedTemplate } from "@/lib/email/session-templates";
 
 interface SessionInfo {
   itemName: string;

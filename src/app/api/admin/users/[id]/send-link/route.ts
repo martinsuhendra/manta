@@ -4,8 +4,8 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/auth";
+import { createUserLinkTemplate } from "@/lib/email/general-templates";
 import { emailService } from "@/lib/email/service";
-import { createUserLinkTemplate } from "@/lib/email/templates";
 import { prisma } from "@/lib/generated/prisma";
 import { USER_ROLES } from "@/lib/types";
 
