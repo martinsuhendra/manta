@@ -14,6 +14,10 @@ import type { MidtransNotification, TransactionMetadata } from "./types";
 interface TransactionWithRelations {
   id: string;
   status: string;
+  amount: { toString(): string };
+  currency: string;
+  paymentMethod: string | null;
+  paidAt: Date | null;
   metadata: unknown;
   user: {
     id: string;
@@ -139,6 +143,11 @@ export async function sendPaymentSuccessEmail(transaction: TransactionWithRelati
       userName: transaction.user.name || undefined,
       productName: transaction.product.name,
       accountUrl: getAccountUrl(),
+      amount: Number(transaction.amount),
+      currency: transaction.currency,
+      transactionId: transaction.id,
+      paidAt: transaction.paidAt,
+      paymentMethod: transaction.paymentMethod,
     });
 
     await emailService.sendEmail(transaction.user.email, emailTemplate);

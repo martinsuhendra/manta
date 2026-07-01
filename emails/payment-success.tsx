@@ -1,11 +1,12 @@
 import { Button, Heading, Text } from "@react-email/components";
 
+import { PaymentInvoice } from "./_components/payment-invoice";
 import {
   automatedFooterNote,
   emailBodyStyle,
   emailHeadingStyle,
+  emailMutedTextStyle,
   emailPrimaryButtonStyle,
-  emailSuccessBannerStyle,
 } from "./_components/styles";
 import { MantaEmailLayout } from "./manta-email-layout";
 
@@ -13,39 +14,51 @@ export interface PaymentSuccessEmailProps {
   userName?: string;
   productName: string;
   accountUrl: string;
+  amount?: number;
+  currency?: string;
+  transactionId?: string;
+  paidAt?: string | Date | null;
+  paymentMethod?: string | null;
 }
 
-export function PaymentSuccessEmail({ userName, productName, accountUrl }: PaymentSuccessEmailProps) {
+export function PaymentSuccessEmail({
+  userName,
+  productName,
+  accountUrl,
+  amount,
+  currency,
+  transactionId,
+  paidAt,
+  paymentMethod,
+}: PaymentSuccessEmailProps) {
   const greeting = userName ? `Hi ${userName},` : "Hi,";
 
   return (
-    <MantaEmailLayout preview={`Payment successful — ${productName}`} footerNote={automatedFooterNote}>
+    <MantaEmailLayout preview={`Payment receipt — ${productName}`} footerNote={automatedFooterNote}>
       <Heading as="h2" style={emailHeadingStyle}>
-        Payment Successful
+        Payment received
       </Heading>
 
-      <Text style={emailBodyStyle}>{greeting}</Text>
+      <Text style={{ ...emailBodyStyle, marginBottom: 20 }}>
+        {greeting} Your receipt for <strong>{productName}</strong> is below.
+      </Text>
 
-      <SectionSuccessBanner productName={productName} />
+      <PaymentInvoice
+        userName={userName}
+        productName={productName}
+        amount={amount}
+        currency={currency}
+        transactionId={transactionId}
+        paidAt={paidAt}
+        paymentMethod={paymentMethod}
+      />
 
-      <Text style={{ ...emailBodyStyle, margin: "16px 0" }}>Your membership is now active and ready to use.</Text>
-
-      <Button href={accountUrl} style={emailPrimaryButtonStyle}>
+      <Button href={accountUrl} style={{ ...emailPrimaryButtonStyle, marginTop: 20 }}>
         View My Account
       </Button>
 
-      <Text style={{ ...emailBodyStyle, margin: "16px 0 0" }}>
-        Thank you for your purchase. If you have any questions, contact our support team.
-      </Text>
+      <Text style={emailMutedTextStyle}>Questions about this payment? Reply to our support team.</Text>
     </MantaEmailLayout>
-  );
-}
-
-function SectionSuccessBanner({ productName }: { productName: string }) {
-  return (
-    <Text style={emailSuccessBannerStyle}>
-      Your payment for <span style={{ fontWeight: 700 }}>{productName}</span> has been successfully processed.
-    </Text>
   );
 }
 
@@ -53,6 +66,11 @@ PaymentSuccessEmail.PreviewProps = {
   userName: "Alex",
   productName: "Monthly Unlimited",
   accountUrl: "https://example.com/public/my-account",
+  amount: 1_850_000,
+  currency: "IDR",
+  transactionId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  paidAt: "2026-07-01T09:12:00.000Z",
+  paymentMethod: "bank_transfer",
 } satisfies PaymentSuccessEmailProps;
 
 export default PaymentSuccessEmail;

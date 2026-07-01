@@ -1,6 +1,12 @@
 import { Button, Heading, Text } from "@react-email/components";
 
-import { automatedFooterNote, emailBodyStyle, emailHeadingStyle, emailPrimaryButtonStyle } from "./_components/styles";
+import {
+  automatedFooterNote,
+  emailBodyStyle,
+  emailHeadingStyle,
+  emailMutedTextStyle,
+  emailPrimaryButtonStyle,
+} from "./_components/styles";
 import { MantaEmailLayout } from "./manta-email-layout";
 
 export interface SignupWelcomeEmailProps {
@@ -23,9 +29,7 @@ export function SignupWelcomeEmail({ name, shopUrl }: SignupWelcomeEmailProps) {
         Browse Classes
       </Button>
 
-      <Text style={{ ...emailBodyStyle, margin: "16px 0 0" }}>
-        Thank you for joining us — we look forward to seeing you in the studio.
-      </Text>
+      <Text style={emailMutedTextStyle}>Thank you for joining us — we look forward to seeing you in the studio.</Text>
     </MantaEmailLayout>
   );
 }

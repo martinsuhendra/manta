@@ -1,6 +1,8 @@
 import { Button, Heading, Text } from "@react-email/components";
 
-import { automatedFooterNote, emailBodyStyle, emailHeadingStyle, emailPrimaryButtonStyle } from "./_components/styles";
+import { brandColors } from "@/lib/email/base";
+
+import { automatedFooterNote, emailBodyStyle, emailHeadingStyle, emailMutedTextStyle } from "./_components/styles";
 import { MantaEmailLayout } from "./manta-email-layout";
 
 export interface EmailVerificationEmailProps {
@@ -10,24 +12,40 @@ export interface EmailVerificationEmailProps {
 export function EmailVerificationEmail({ verificationUrl }: EmailVerificationEmailProps) {
   return (
     <MantaEmailLayout preview="Verify your Manta email address" footerNote={automatedFooterNote}>
-      <Heading as="h2" style={emailHeadingStyle}>
-        Verify Your Email Address
+      <Heading as="h2" style={{ ...emailHeadingStyle, textAlign: "center" }}>
+        Verify Your Email
       </Heading>
 
-      <Text style={emailBodyStyle}>
-        Welcome to Manta! Please verify your email address to complete your registration.
+      <Text style={{ ...emailBodyStyle, textAlign: "center", marginBottom: 28 }}>
+        Please click the button below to confirm your email.
       </Text>
 
-      <Text style={emailBodyStyle}>Click the button below to verify your email address:</Text>
-
-      <Button href={verificationUrl} style={emailPrimaryButtonStyle}>
-        Verify Email Address
+      <Button
+        href={verificationUrl}
+        style={{
+          display: "block",
+          width: "100%",
+          boxSizing: "border-box",
+          backgroundColor: brandColors.primary,
+          borderRadius: 999,
+          color: "#ffffff",
+          fontSize: 15,
+          fontWeight: 600,
+          lineHeight: "100%",
+          padding: "16px 24px",
+          textAlign: "center",
+          textDecoration: "none",
+        }}
+      >
+        Confirm your email
       </Button>
 
-      <Text style={emailBodyStyle}>If you did not create an account with us, please ignore this email.</Text>
+      <Text style={{ ...emailMutedTextStyle, textAlign: "center" }}>
+        If you did not request this, no worries — simply ignore this message.
+      </Text>
 
-      <Text style={{ ...emailBodyStyle, margin: 0 }}>
-        This verification link will expire in 24 hours for security reasons.
+      <Text style={{ ...emailMutedTextStyle, marginTop: 12, fontSize: 12, textAlign: "center" }}>
+        This verification link expires in 24 hours.
       </Text>
     </MantaEmailLayout>
   );

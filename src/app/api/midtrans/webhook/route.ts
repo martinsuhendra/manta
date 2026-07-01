@@ -76,7 +76,11 @@ export async function POST(request: NextRequest) {
 
     // Send email for successful payments
     if (newStatus === TRANSACTION_STATUS.COMPLETED) {
-      await sendPaymentSuccessEmail(transaction);
+      await sendPaymentSuccessEmail({
+        ...transaction,
+        paidAt: updatedTransaction.paidAt,
+        paymentMethod: updatedTransaction.paymentMethod,
+      });
     }
 
     return NextResponse.json({

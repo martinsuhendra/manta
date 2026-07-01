@@ -12,7 +12,8 @@ describe("auth email templates", () => {
     const template = await createEmailVerificationTemplate("https://example.com/verify?token=abc");
 
     expect(template.subject).toBe("Verify Your Email Address - Manta");
-    expect(template.html).toContain("Verify Your Email Address");
+    expect(template.html).toContain("Verify Your Email");
+    expect(template.html).toContain("Verify Your Email");
     expect(template.html).toContain("https://example.com/verify?token=abc");
     expect(template.text).toContain("https://example.com/verify?token=abc");
   });

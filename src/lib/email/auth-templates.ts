@@ -5,15 +5,14 @@ import { renderMantaEmail } from "./render-manta-email";
 
 export async function createEmailVerificationTemplate(verificationUrl: string): Promise<EmailTemplate> {
   const text = `
-Welcome to Manta!
+Verify Your Email - Manta
 
-Please verify your email address to complete your registration.
+Please click the link below to confirm your email:
+${verificationUrl}
 
-Visit this link: ${verificationUrl}
+If you did not request this, no worries — simply ignore this message.
 
-If you did not create an account with us, please ignore this email.
-
-This verification link will expire in 24 hours for security reasons.
+This verification link expires in 24 hours.
 `.trim();
 
   const { EmailVerificationEmail } = await import("@/emails/email-verification");
