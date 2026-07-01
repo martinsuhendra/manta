@@ -1,16 +1,37 @@
 import { createElement } from "react";
 
-import { baseStyles, type EmailTemplate } from "./base";
+import { baseStyles, brandColors, emailFooterHtml, emailHeaderHtml, emailInline, type EmailTemplate } from "./base";
 import { renderMantaEmail } from "./render-manta-email";
 
 export interface PaymentSuccessTemplateParams {
   userName?: string;
   productName: string;
   accountUrl: string;
+  amount?: number;
+  currency?: string;
+  transactionId?: string;
+  paidAt?: string | Date | null;
+  paymentMethod?: string | null;
 }
 
-function buildPaymentSuccessPlainText({ userName, productName, accountUrl }: PaymentSuccessTemplateParams) {
+function buildPaymentSuccessPlainText({
+  userName,
+  productName,
+  accountUrl,
+  amount,
+  currency = "IDR",
+  transactionId,
+  paidAt,
+  paymentMethod,
+}: PaymentSuccessTemplateParams) {
   const greeting = userName ? `Hi ${userName},` : "Hi,";
+  const invoiceLine = transactionId ? `Receipt: INV-${transactionId.replace(/-/g, "").slice(0, 8).toUpperCase()}` : "";
+  const amountLine =
+    amount != null
+      ? `Total: ${currency === "IDR" ? `Rp ${amount.toLocaleString("id-ID")}` : `${amount} ${currency}`}`
+      : "";
+  const dateLine = paidAt ? `Paid on: ${new Date(paidAt).toLocaleDateString("en-US")}` : "";
+  const methodLine = paymentMethod ? `Payment method: ${paymentMethod}` : "";
 
   return `
 Payment Successful
@@ -18,6 +39,8 @@ Payment Successful
 ${greeting}
 
 Your payment for ${productName} has been successfully processed.
+
+${[invoiceLine, amountLine, dateLine, methodLine].filter(Boolean).join("\n")}
 
 Your membership is now active and ready to use.
 
@@ -46,15 +69,13 @@ export function createPaymentSuccessPasswordResetTemplate(resetUrl: string, cust
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>✅ Payment Successful - Account Activation Required</h2>
           <p>Congratulations${customerName ? `, ${customerName}` : ""}! Thank you for your trust in using Manta services.</p>
           
-          <div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="color: #15803d; font-weight: 600; margin: 0;">💰 Your payment has been successfully processed</p>
+          <div style="${emailInline.successPanel}">
+            <p style="color:${brandColors.foreground};font-weight:600;margin:0;">💰 Your payment has been successfully processed</p>
           </div>
           
           <p>To use Manta services, you need to set up a password for your account first. Please click the button below to create your password:</p>
@@ -69,16 +90,13 @@ export function createPaymentSuccessPasswordResetTemplate(resetUrl: string, cust
             <li>⚡ Use AI features for automatic scanning</li>
           </ul>
           
-          <p style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0;">
+          <p style="${emailInline.warningPanel}">
             <strong>Important:</strong> This link will expire in 24 hours. Please set up your password immediately to start using the service.
           </p>
           
           <p>If you experience any issues or have questions, our customer support team is ready to help you.</p>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This is an automated email related to payment and account activation.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email related to payment and account activation.")}
       </div>
     </body>
     </html>

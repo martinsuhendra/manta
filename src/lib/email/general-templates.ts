@@ -1,6 +1,6 @@
 import { escapeHtml } from "../utils";
 
-import { EmailTemplate, baseStyles } from "./base";
+import { EmailTemplate, baseStyles, brandColors, emailFooterHtml, emailHeaderHtml, emailInline } from "./base";
 
 interface UserLinkTemplateParams {
   linkType: "waiver" | "payment";
@@ -28,49 +28,44 @@ export function createContactFormTemplate(
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>📩 New Message from Contact Form</h2>
           
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <div style="${emailInline.panel}">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151; width: 120px;">Name:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${escapedName}</td>
+                <td style="${emailInline.label} width: 120px;">Name:</td>
+                <td style="${emailInline.value}">${escapedName}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Email:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${escapedEmail}</td>
+                <td style="${emailInline.label}">Email:</td>
+                <td style="${emailInline.value}">${escapedEmail}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Subject:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${escapedSubject}</td>
+                <td style="${emailInline.label}">Subject:</td>
+                <td style="${emailInline.value}">${escapedSubject}</td>
               </tr>
             </table>
           </div>
           
-          <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin: 0 0 16px 0; color: #374151; font-size: 16px;">Message:</h3>
-            <p style="margin: 0; line-height: 1.6; color: #1f2937; white-space: pre-wrap;">${escapedMessage}</p>
+          <div style="${emailInline.panel}">
+            <h3 style="${emailInline.subheading}">Message:</h3>
+            <p style="margin: 0; line-height: 1.6; color: ${brandColors.text}; white-space: pre-wrap;">${escapedMessage}</p>
           </div>
           
-          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0;">
-            <p style="margin: 0; color: #92400e; font-size: 14px;">
+          <div style="${emailInline.warningPanel}">
+            <p style="${emailInline.warningText}">
               <strong>Note:</strong> This message was sent through the Manta website contact form. 
               Please respond within 1-2 business days as per customer service commitment.
             </p>
           </div>
           
-          <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
+          <p style="margin-top: 24px; font-size: 14px; ${emailInline.muted}">
             Received at: ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })} ET
           </p>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This email was automatically sent from the contact form system.</p>
-        </div>
+        ${emailFooterHtml("This email was automatically sent from the contact form system.")}
       </div>
     </body>
     </html>
@@ -122,21 +117,16 @@ export function createUserLinkTemplate({ linkType, linkUrl, recipientName }: Use
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>${title}</h2>
           <p>Hi ${safeName},</p>
           <p>${description}</p>
           <a href="${escapedLinkUrl}" class="button">Open ${title}</a>
           <p>If the button doesn&apos;t work, copy and paste this URL into your browser:</p>
-          <p><a href="${escapedLinkUrl}">${escapedLinkUrl}</a></p>
+          <p><a href="${escapedLinkUrl}" style="color:${brandColors.primary};">${escapedLinkUrl}</a></p>
         </div>
-        <div class="footer">
-          <p>&copy; 2026 Manta. All rights reserved.</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email. Please do not reply to this message.")}
       </div>
     </body>
     </html>

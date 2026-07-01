@@ -2,7 +2,7 @@ import { format } from "date-fns";
 
 import { escapeHtml } from "../utils";
 
-import { EmailTemplate, baseStyles } from "./base";
+import { EmailTemplate, baseStyles, brandColors, emailFooterHtml, emailHeaderHtml, emailInline } from "./base";
 
 export interface SessionInfo {
   itemName: string;
@@ -31,49 +31,44 @@ export function createSessionJoinedTemplate(session: SessionInfo, participantNam
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>✅ You're Registered for a Class!</h2>
           <p>Hi ${escapedParticipantName},</p>
           <p>Great news! You've been successfully registered for the following class session:</p>
           
-          <div style="background-color: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin: 0 0 16px 0; color: #166534; font-size: 18px;">📅 Session Details</h3>
+          <div style="${emailInline.successPanel}">
+            <h3 style="${emailInline.h3}">📅 Session Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151; width: 140px;">Class:</td>
-                <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">${escapedItemName}</td>
+                <td style="${emailInline.label} width: 140px;">Class:</td>
+                <td style="${emailInline.valueStrong}">${escapedItemName}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Date:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${sessionDate}</td>
+                <td style="${emailInline.label}">Date:</td>
+                <td style="${emailInline.value}">${sessionDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Time:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${session.startTime} - ${session.endTime}</td>
+                <td style="${emailInline.label}">Time:</td>
+                <td style="${emailInline.value}">${session.startTime} - ${session.endTime}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Teacher:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${teacherInfo}</td>
+                <td style="${emailInline.label}">Teacher:</td>
+                <td style="${emailInline.value}">${teacherInfo}</td>
               </tr>
             </table>
-            ${escapedNotes ? `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #d1d5db;"><p style="margin: 0; color: #4b5563; font-style: italic;">${escapedNotes}</p></div>` : ""}
+            ${escapedNotes ? `<div style="${emailInline.notesDivider}"><p style="${emailInline.notesText}">${escapedNotes}</p></div>` : ""}
           </div>
           
           <p style="margin-top: 24px;">We look forward to seeing you there! Please arrive a few minutes early.</p>
           
-          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0;">
-            <p style="margin: 0; color: #92400e; font-size: 14px;">
+          <div style="${emailInline.warningPanel}">
+            <p style="${emailInline.warningText}">
               <strong>Reminder:</strong> If you need to cancel or make changes, please contact us as soon as possible.
             </p>
           </div>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email. Please do not reply to this message.")}
       </div>
     </body>
     </html>
@@ -129,50 +124,45 @@ export function createSessionUpdatedTemplate(
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>📝 Session Update</h2>
           <p>Hi ${escapedParticipantName},</p>
           <p>We wanted to inform you that there have been updates to a class session you're registered for:</p>
           
-          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
-            <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px;">⚠️ Changes Made:</h3>
-            <ul style="margin: 0; padding-left: 20px; color: #78350f;">
+          <div style="${emailInline.warningPanel}">
+            <h3 style="${emailInline.subheading}">⚠️ Changes Made:</h3>
+            <ul style="margin: 0; padding-left: 20px; color: ${brandColors.text};">
               <li>${changesList}</li>
             </ul>
           </div>
           
-          <div style="background-color: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin: 0 0 16px 0; color: #166534; font-size: 18px;">📅 Updated Session Details</h3>
+          <div style="${emailInline.successPanel}">
+            <h3 style="${emailInline.h3}">📅 Updated Session Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151; width: 140px;">Class:</td>
-                <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">${escapedItemName}</td>
+                <td style="${emailInline.label} width: 140px;">Class:</td>
+                <td style="${emailInline.valueStrong}">${escapedItemName}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Date:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${sessionDate}</td>
+                <td style="${emailInline.label}">Date:</td>
+                <td style="${emailInline.value}">${sessionDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Time:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${session.startTime} - ${session.endTime}</td>
+                <td style="${emailInline.label}">Time:</td>
+                <td style="${emailInline.value}">${session.startTime} - ${session.endTime}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Teacher:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${teacherInfo}</td>
+                <td style="${emailInline.label}">Teacher:</td>
+                <td style="${emailInline.value}">${teacherInfo}</td>
               </tr>
             </table>
-            ${escapedNotes ? `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #d1d5db;"><p style="margin: 0; color: #4b5563; font-style: italic;">${escapedNotes}</p></div>` : ""}
+            ${escapedNotes ? `<div style="${emailInline.notesDivider}"><p style="${emailInline.notesText}">${escapedNotes}</p></div>` : ""}
           </div>
           
           <p style="margin-top: 24px;">Please make note of these changes. We apologize for any inconvenience.</p>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email. Please do not reply to this message.")}
       </div>
     </body>
     </html>
@@ -223,46 +213,41 @@ export function createSessionWaitlistedTemplate(session: SessionInfo, participan
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>⏳ You're on the Waitlist</h2>
           <p>Hi ${escapedParticipantName},</p>
           <p>Thank you for your interest! The class session you requested is currently at full capacity, so we've added you to the waitlist.</p>
           
-          <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin: 0 0 16px 0; color: #92400e; font-size: 18px;">📅 Session Details</h3>
+          <div style="${emailInline.panel}">
+            <h3 style="${emailInline.h3}">📅 Session Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151; width: 140px;">Class:</td>
-                <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">${escapedItemName}</td>
+                <td style="${emailInline.label} width: 140px;">Class:</td>
+                <td style="${emailInline.valueStrong}">${escapedItemName}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Date:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${sessionDate}</td>
+                <td style="${emailInline.label}">Date:</td>
+                <td style="${emailInline.value}">${sessionDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Time:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${session.startTime} - ${session.endTime}</td>
+                <td style="${emailInline.label}">Time:</td>
+                <td style="${emailInline.value}">${session.startTime} - ${session.endTime}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Teacher:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${teacherInfo}</td>
+                <td style="${emailInline.label}">Teacher:</td>
+                <td style="${emailInline.value}">${teacherInfo}</td>
               </tr>
             </table>
           </div>
           
-          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 16px 0;">
-            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+          <div style="${emailInline.infoPanel}">
+            <p style="${emailInline.infoText}">
               <strong>What happens next?</strong> If a spot becomes available, you'll automatically be confirmed and receive an email notification. We'll notify you as soon as possible!
             </p>
           </div>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email. Please do not reply to this message.")}
       </div>
     </body>
     </html>
@@ -308,44 +293,39 @@ export function createSessionCancelledTemplate(session: SessionInfo, participant
     </head>
     <body>
       <div class="email-container">
-        <div class="header">
-          <h1 class="logo">Manta</h1>
-        </div>
+        ${emailHeaderHtml()}
         <div class="content">
           <h2>❌ Session Cancelled</h2>
           <p>Hi ${escapedParticipantName},</p>
           <p>We're sorry to inform you that the following class session has been cancelled:</p>
           
-          <div style="background-color: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="margin: 0 0 16px 0; color: #991b1b; font-size: 18px;">📅 Cancelled Session</h3>
+          <div style="${emailInline.destructivePanel}">
+            <h3 style="${emailInline.destructiveHeading}">📅 Cancelled Session</h3>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151; width: 140px;">Class:</td>
-                <td style="padding: 8px 0; color: #1f2937; font-weight: 600;">${escapedItemName}</td>
+                <td style="${emailInline.label} width: 140px;">Class:</td>
+                <td style="${emailInline.valueStrong}">${escapedItemName}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Date:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${sessionDate}</td>
+                <td style="${emailInline.label}">Date:</td>
+                <td style="${emailInline.value}">${sessionDate}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; font-weight: 600; color: #374151;">Time:</td>
-                <td style="padding: 8px 0; color: #1f2937;">${session.startTime} - ${session.endTime}</td>
+                <td style="${emailInline.label}">Time:</td>
+                <td style="${emailInline.value}">${session.startTime} - ${session.endTime}</td>
               </tr>
             </table>
           </div>
           
           <p style="margin-top: 24px;">We sincerely apologize for any inconvenience this may cause. If you have any questions or concerns, please don't hesitate to contact us.</p>
           
-          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 16px 0;">
-            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+          <div style="${emailInline.infoPanel}">
+            <p style="${emailInline.infoText}">
               <strong>Next Steps:</strong> Your booking has been automatically cancelled. If you have any questions about alternative sessions or refunds, please contact our support team.
             </p>
           </div>
         </div>
-        <div class="footer">
-          <p>&copy; 2025 Manta. All rights reserved.</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
+        ${emailFooterHtml("This is an automated email. Please do not reply to this message.")}
       </div>
     </body>
     </html>

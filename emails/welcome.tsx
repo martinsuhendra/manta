@@ -1,6 +1,12 @@
 import { Button, Heading, Text } from "@react-email/components";
 
-import { automatedFooterNote, emailBodyStyle, emailHeadingStyle, emailPrimaryButtonStyle } from "./_components/styles";
+import {
+  automatedFooterNote,
+  emailBodyStyle,
+  emailHeadingStyle,
+  emailMutedTextStyle,
+  emailPrimaryButtonStyle,
+} from "./_components/styles";
 import { MantaEmailLayout } from "./manta-email-layout";
 
 export interface WelcomeEmailProps {
@@ -38,7 +44,7 @@ export function WelcomeEmail({ name, dashboardUrl = "#" }: WelcomeEmailProps) {
         Open Dashboard
       </Button>
 
-      <Text style={{ ...emailBodyStyle, margin: "16px 0 0" }}>
+      <Text style={emailMutedTextStyle}>
         If you have any questions, don&apos;t hesitate to contact our support team.
       </Text>
     </MantaEmailLayout>
